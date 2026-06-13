@@ -84,7 +84,6 @@ def test_texttoimage_widget_bounds(nodes):
     seed = fields["seed"]
     assert seed.options.get("control_after_generate") is True
     assert fields["sourceImage"].kind == "image_inline"
-    assert fields["additionalNetworks"].kind == "json"
     assert [o.kind for o in t2i.outputs] == ["image_list"]
 
 
@@ -133,3 +132,14 @@ def test_all_recipes_have_module_assignment(spec, overrides):
     recipes = generate.list_recipes(spec, overrides)
     for name, _, _ in recipes:
         assert name in generate.MODULES
+
+
+def test_network_fields_become_typed_sockets(nodes):
+    t2i = node_by_name(nodes, "CivitaiTextToImage")
+    fields = {f.api: f for f in t2i.fields}
+    assert fields["additionalNetworks"].kind == "network_map"
+    assert fields["additionalNetworks"].comfy_type == "CIVITAI_LORAS"
+    assert fields["controlNets"].kind == "controlnet_array"
+    assert fields["controlNets"].comfy_type == "CIVITAI_CONTROLNETS"
+    wan = node_by_name(nodes, "CivitaiVideoGenWanV21Fal")
+    assert {f.api: f for f in wan.fields}["loras"].kind == "lora_array"

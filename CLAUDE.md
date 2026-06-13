@@ -8,6 +8,12 @@ converts blob outputs to native Comfy types.
 
 - `civitai_comfy_nodes/generated/` — **AUTO-GENERATED, never hand-edit.** One module per
   category (image/video/audio/text/analysis/training/misc), ~160 declarative node classes.
+- `civitai_comfy_nodes/nodes_manual.py` — hand-written nodes: `CivitaiAuth`, `CivitaiChatSimple`,
+  and the **Civitai/Loaders** helpers (`CivitaiLoraLoader`, `CivitaiControlNet`,
+  `CivitaiCheckpointLoader`). The loaders output typed sockets (`CIVITAI_LORAS` /
+  `CIVITAI_CONTROLNETS`); codegen emits the `loras`/`additionalNetworks`/`controlNets` recipe
+  fields as those socket types (see `ir.classify_input_field` network rules) instead of JSON
+  text, and `base._build_payload` serializes them per field shape (array vs AIR-keyed map).
 - `civitai_comfy_nodes/base.py` — all runtime behavior: payload building from `FIELDS`,
   submit → poll loop (interrupt-aware, ProgressBar), output conversion per `OUTPUTS`.
 - `civitai_comfy_nodes/client.py` — `OrchestrationClient`: workflows submit/get/cancel,

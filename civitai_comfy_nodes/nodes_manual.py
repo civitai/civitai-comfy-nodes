@@ -117,12 +117,150 @@ class CivitaiChatSimple(CivitaiRecipeNodeBase):
         return (text, workflow_id, raw_json)
 
 
+AIR_EXAMPLE = "urn:air:sdxl:lora:civitai:328553@368189"
+
+CONTROLNET_PREPROCESSORS = [
+    "canny",
+    "mlsd",
+    "depthZoe",
+    "depthAnything",
+    "depthAnythingV2",
+    "zoeDepthAnything",
+    "zoeDepth",
+    "midasDepth",
+    "leresDepth",
+    "metric3dDepth",
+    "softedgePidinet",
+    "hed",
+    "teed",
+    "midasNormal",
+    "baeNormal",
+    "dsineNormal",
+    "metric3dNormal",
+    "lineartRealistic",
+    "lineartStandard",
+    "lineartAnime",
+    "lineartManga",
+    "anyline",
+    "scribble",
+    "scribbleXdog",
+    "scribblePidinet",
+    "fakeScribble",
+    "openpose",
+    "dwpose",
+    "oneformerCoco",
+    "oneformerAde20k",
+    "uniformer",
+    "shuffle",
+    "tile",
+    "gray",
+    "rembg",
+]
+
+
+class CivitaiLoraLoader:
+    """Build a Civitai LoRA stack by AIR. Chain several together (loras → loras), then wire the
+    final `loras` output into a recipe node's `loras` / `additional_networks` input."""
+
+    CATEGORY = "Civitai/Loaders"
+    FUNCTION = "append"
+    RETURN_TYPES = ("CIVITAI_LORAS",)
+    RETURN_NAMES = ("loras",)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "air": ("STRING", {"default": "", "tooltip": f"LoRA AIR, e.g. {AIR_EXAMPLE}"}),
+                "strength": ("FLOAT", {"default": 1.0, "min": -10.0, "max": 10.0, "step": 0.05}),
+            },
+            "optional": {
+                "trigger_word": ("STRING", {"default": "", "tooltip": "Optional trigger word / embedding token"}),
+                "loras": ("CIVITAI_LORAS", {"tooltip": "Chain from another Civitai LoRA Loader"}),
+            },
+        }
+
+    def append(self, air, strength, trigger_word="", loras=None):
+        stack = list(loras or [])
+        air = air.strip()
+        if air:
+            entry = {"air": air, "strength": strength}
+            if trigger_word.strip():
+                entry["triggerWord"] = trigger_word.strip()
+            stack.append(entry)
+        return (stack,)
+
+
+class CivitaiControlNet:
+    """Build a Civitai ControlNet stack. Chain several (control_nets → control_nets), then wire the
+    final `control_nets` output into a recipe node's `control_nets` input."""
+
+    CATEGORY = "Civitai/Loaders"
+    FUNCTION = "append"
+    RETURN_TYPES = ("CIVITAI_CONTROLNETS",)
+    RETURN_NAMES = ("control_nets",)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "preprocessor": (CONTROLNET_PREPROCESSORS,),
+                "weight": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.05}),
+                "start_step": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "end_step": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
+            },
+            "optional": {
+                "image": ("IMAGE", {"tooltip": "Optional control image (sent inline)"}),
+                "control_nets": ("CIVITAI_CONTROLNETS", {"tooltip": "Chain from another Civitai ControlNet"}),
+            },
+        }
+
+    def append(self, preprocessor, weight, start_step, end_step, image=None, control_nets=None):
+        from . import conversions
+
+        stack = list(control_nets or [])
+        entry = {"preprocessor": preprocessor, "weight": weight, "startStep": start_step, "endStep": end_step}
+        if image is not None:
+            entry["image"] = conversions.image_tensor_to_data_url(image)
+        stack.append(entry)
+        return (stack,)
+
+
+class CivitaiCheckpointLoader:
+    """Pass a Civitai checkpoint AIR into a recipe node's `model` input."""
+
+    CATEGORY = "Civitai/Loaders"
+    FUNCTION = "load"
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("model",)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "air": (
+                    "STRING",
+                    {"default": "", "tooltip": "Checkpoint AIR, e.g. urn:air:sdxl:checkpoint:civitai:101055@128078"},
+                ),
+            },
+        }
+
+    def load(self, air):
+        return (air.strip(),)
+
+
 NODE_CLASS_MAPPINGS = {
     "CivitaiAuth": CivitaiAuth,
     "CivitaiChatSimple": CivitaiChatSimple,
+    "CivitaiLoraLoader": CivitaiLoraLoader,
+    "CivitaiControlNet": CivitaiControlNet,
+    "CivitaiCheckpointLoader": CivitaiCheckpointLoader,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiAuth": "Civitai Auth",
     "CivitaiChatSimple": "Civitai Chat (Simple)",
+    "CivitaiLoraLoader": "Civitai LoRA Loader",
+    "CivitaiControlNet": "Civitai ControlNet",
+    "CivitaiCheckpointLoader": "Civitai Checkpoint Loader",
 }

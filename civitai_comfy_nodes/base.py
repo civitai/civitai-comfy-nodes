@@ -91,6 +91,26 @@ class CivitaiRecipeNodeBase:
                 payload[field.api] = client.upload_media(conversions.video_to_bytes(value), "video/mp4")
             elif field.kind == "audio_url":
                 payload[field.api] = client.upload_media(conversions.audio_to_flac_bytes(value), "audio/flac")
+            elif field.kind == "lora_array":
+                # CIVITAI_LORAS list -> [{air, strength}] (the array-shaped `loras` field)
+                entries = [{"air": x["air"], "strength": x.get("strength", 1.0)} for x in value if x.get("air")]
+                if entries:
+                    payload[field.api] = entries
+            elif field.kind == "network_map":
+                # CIVITAI_LORAS list -> {air: {strength, triggerWord}} (the `additionalNetworks` map)
+                networks = {}
+                for x in value:
+                    if not x.get("air"):
+                        continue
+                    params = {"strength": x.get("strength", 1.0)}
+                    if x.get("triggerWord"):
+                        params["triggerWord"] = x["triggerWord"]
+                    networks[x["air"]] = params
+                if networks:
+                    payload[field.api] = networks
+            elif field.kind == "controlnet_array":
+                if value:
+                    payload[field.api] = list(value)
             else:
                 raise CivitaiNodeError(f"Unknown field kind '{field.kind}' for input '{widget_name}'")
         return payload

@@ -39,12 +39,25 @@ Turbo · Create Image`) so each node shows only the inputs that variant actually
 - **Civitai/Analysis** — Media Rating, WD Tagging, XGuard Moderation, Age Classification
 - **Civitai/Training** — Training, Image Resource Training
 - **Civitai/Misc** — Comfy, Custom Comfy (run a raw ComfyUI workflow on Civitai's workers), Echo
+- **Civitai/Loaders** — LoRA Loader, ControlNet, Checkpoint Loader (see below)
 
 Every node returns its media outputs as native Comfy types (IMAGE/VIDEO/AUDIO) plus
 `workflow_id` and `raw_json` for debugging and cost inspection. Models and LoRAs are
 referenced by [AIR URNs](https://developer.civitaic.com/guide/air) (e.g.
-`urn:air:sdxl:checkpoint:civitai:101055@128078`). Complex inputs (LoRA lists, ControlNets,
-chat messages) are JSON text inputs in this version.
+`urn:air:sdxl:checkpoint:civitai:101055@128078`).
+
+### LoRAs, ControlNets & checkpoints
+
+Instead of hand-writing JSON, use the **Civitai/Loaders** helper nodes:
+
+- **Civitai LoRA Loader** — set an AIR + strength (+ optional trigger word) and wire its
+  `loras` output into a recipe node's `loras` / `additional_networks` input. Chain several
+  loaders (`loras` → `loras`) to stack multiple LoRAs.
+- **Civitai ControlNet** — pick a preprocessor, weight, step range, optional control image;
+  chain and wire into a recipe node's `control_nets` input.
+- **Civitai Checkpoint Loader** — outputs a checkpoint AIR you can drop onto a node's `model` input.
+
+`chat messages` and other freeform structures remain JSON text inputs.
 
 ## Development
 

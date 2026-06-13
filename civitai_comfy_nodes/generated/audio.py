@@ -31,7 +31,7 @@ class CivitaiAceStepAudio(CivitaiRecipeNodeBase):
         "language_model": F("languageModel", "value"),
         "steps": F("steps", "value"),
         "cfg": F("cfg", "value"),
-        "loras_json": F("loras", "json"),
+        "loras": F("loras", "lora_array"),
     }
     OUTPUTS = (O("blob", "audio_or_video"),)
 
@@ -217,12 +217,10 @@ class CivitaiAceStepAudio(CivitaiRecipeNodeBase):
                         "step": 0.01,
                     },
                 ),
-                "loras_json": (
-                    "STRING",
+                "loras": (
+                    "CIVITAI_LORAS",
                     {
-                        "tooltip": "Optional LoRAs to apply. Each entry's strength is applied to both the diffusion model (UNET) and the dual CLIP via ComfyUI's LoraLoader. Compatibility with non-default base models is the caller's responsibility.",
-                        "default": "",
-                        "multiline": True,
+                        "tooltip": "Optional LoRAs to apply. Each entry's strength is applied to both the diffusion model (UNET) and the dual CLIP via ComfyUI's LoraLoader. Compatibility with non-default base models is the caller's responsibility."
                     },
                 ),
                 "api_config": (

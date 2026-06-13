@@ -190,6 +190,15 @@ def classify_input_field(name: str, schema: dict, hint: str | None) -> tuple[str
         kind, comfy = hinted[hint]
         return kind, comfy, f"override:{hint}"
 
+    # Network/ControlNet lists get dedicated typed sockets fed by the CivitaiLoraLoader /
+    # CivitaiControlNet helper nodes, instead of a raw JSON text widget.
+    if name in ("loras",):
+        return "lora_array", "CIVITAI_LORAS", "network:loras"
+    if name == "additionalNetworks":
+        return "network_map", "CIVITAI_LORAS", "network:additionalNetworks"
+    if name == "controlNets":
+        return "controlnet_array", "CIVITAI_CONTROLNETS", "network:controlNets"
+
     if type_value == "string" and re.search(r"DataURL|Base64", description):
         if re.search(r"image|mask|cover", lower) or re.search(r"image", description, re.I):
             return "image_inline", "IMAGE", "desc:dataurl-image"
