@@ -37,33 +37,179 @@ class CivitaiImageBackgroundRemoval(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiImageGenOpenai(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (Openai) — imageGen recipe via Civitai Orchestration."""
+class CivitaiImageGenOpenaiGptImage1CreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (openai / gpt-image-1 / createImage) — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
-    DISCRIMINATOR = {"engine": "openai"}
-    CATEGORY = "Civitai/Image"
+    DISCRIMINATOR = {"engine": "openai", "model": "gpt-image-1", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/openai"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
     FIELDS = {
         "output_format": F("outputFormat", "value"),
         "image_metadata": F("imageMetadata", "value"),
-        "model": F("model", "value"),
         "prompt": F("prompt", "value"),
-        "operation": F("operation", "value"),
         "size": F("size", "value"),
         "quantity": F("quantity", "value"),
         "background": F("background", "value"),
         "quality": F("quality", "value"),
-        "width": F("width", "value"),
-        "height": F("height", "value"),
-        "style": F("style", "value"),
-        "image": F("image", "image_inline"),
-        "mask": F("mask", "image_inline"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "size": (["1024x1024", "1536x1024", "1024x1536"], {"default": "1024x1024"}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 10, "step": 1}),
+                "background": (["auto", "transparent", "opaque"], {"default": "opaque"}),
+                "quality": (["auto", "high", "medium", "low"], {"default": "auto"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenOpenaiGptImage1EditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (openai / gpt-image-1 / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "openai", "model": "gpt-image-1", "operation": "editImage"}
+    CATEGORY = "Civitai/Image/openai"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "size": F("size", "value"),
+        "quantity": F("quantity", "value"),
+        "background": F("background", "value"),
+        "quality": F("quality", "value"),
         "images": F("images", "image_list"),
-        "mask_image": F("maskImage", "image_inline"),
+        "mask": F("mask", "image_inline"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "images": ("IMAGE", {}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "size": (["1024x1024", "1536x1024", "1024x1536"], {"default": "1024x1024"}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 10, "step": 1}),
+                "background": (["auto", "transparent", "opaque"], {"default": "opaque"}),
+                "quality": (["auto", "high", "medium", "low"], {"default": "auto"}),
+                "mask": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenOpenaiGptImage15CreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (openai / gpt-image-1.5 / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "openai", "model": "gpt-image-1.5", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/openai"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "size": F("size", "value"),
+        "quantity": F("quantity", "value"),
+        "background": F("background", "value"),
+        "quality": F("quality", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "size": (["1024x1024", "1536x1024", "1024x1536"], {"default": "1024x1024"}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "background": (["auto", "transparent", "opaque"], {"default": "auto"}),
+                "quality": (["low", "medium", "high"], {"default": "high"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenOpenaiGptImage15EditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (openai / gpt-image-1.5 / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "openai", "model": "gpt-image-1.5", "operation": "editImage"}
+    CATEGORY = "Civitai/Image/openai"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "size": F("size", "value"),
+        "quantity": F("quantity", "value"),
+        "background": F("background", "value"),
+        "quality": F("quality", "value"),
+        "images": F("images", "image_list"),
         "input_fidelity": F("inputFidelity", "value"),
     }
     OUTPUTS = (
@@ -75,7 +221,64 @@ class CivitaiImageGenOpenai(CivitaiRecipeNodeBase):
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "model": (["gpt-image-1", "gpt-image-1.5", "gpt-image-2", "dall-e-2", "dall-e-3"], {}),
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "images": ("IMAGE", {}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "size": (
+                    ["1024x1024", "1536x1024", "1024x1536"],
+                    {
+                        "tooltip": "Image size for edit mode: auto, 1024x1024, 1536x1024, or 1024x1536",
+                        "default": "1024x1024",
+                    },
+                ),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "background": (["auto", "transparent", "opaque"], {"default": "auto"}),
+                "quality": (["low", "medium", "high"], {"default": "high"}),
+                "input_fidelity": (["low", "high"], {"tooltip": "Input fidelity: low or high", "default": "high"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenOpenaiGptImage2CreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (openai / gpt-image-2 / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "openai", "model": "gpt-image-2", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/openai"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "quantity": F("quantity", "value"),
+        "quality": F("quality", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
             },
             "optional": {
@@ -84,17 +287,59 @@ class CivitaiImageGenOpenai(CivitaiRecipeNodeBase):
                     "STRING",
                     {"tooltip": "External metadata that will be stored with the image", "default": ""},
                 ),
-                "operation": (["", "createImage", "editImage"], {}),
-                "size": (
-                    ["1024x1024", "1536x1024", "1024x1536"],
+                "width": ("INT", {"default": 1024, "min": 256, "max": 3840, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 256, "max": 3840, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "quality": (["low", "medium", "high"], {"default": "high"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
                     {
-                        "tooltip": "Image size for edit mode: auto, 1024x1024, 1536x1024, or 1024x1536",
-                        "default": "1024x1024",
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
                     },
                 ),
-                "quantity": ("INT", {"default": 1, "min": 1, "max": 10, "step": 1}),
-                "background": (["auto", "transparent", "opaque"], {"default": "opaque"}),
-                "quality": (["auto", "high", "medium", "low"], {"default": "auto"}),
+            },
+        }
+
+
+class CivitaiImageGenOpenaiGptImage2EditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (openai / gpt-image-2 / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "openai", "model": "gpt-image-2", "operation": "editImage"}
+    CATEGORY = "Civitai/Image/openai"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "quantity": F("quantity", "value"),
+        "quality": F("quality", "value"),
+        "images": F("images", "image_list"),
+        "mask_image": F("maskImage", "image_inline"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "images": ("IMAGE", {}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
                 "width": (
                     "INT",
                     {
@@ -115,12 +360,157 @@ class CivitaiImageGenOpenai(CivitaiRecipeNodeBase):
                         "step": 1,
                     },
                 ),
-                "style": (["natural", "vivid"], {"default": "vivid"}),
-                "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
-                "mask": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
-                "images": ("IMAGE", {}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "quality": (["low", "medium", "high"], {"default": "high"}),
                 "mask_image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
-                "input_fidelity": (["low", "high"], {"tooltip": "Input fidelity: low or high", "default": "high"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenOpenaiDallE2CreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (openai / dall-e-2 / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "openai", "model": "dall-e-2", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/openai"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "size": F("size", "value"),
+        "quantity": F("quantity", "value"),
+        "background": F("background", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "size": (["256x256", "512x512", "1024x1024"], {}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 10, "step": 1}),
+                "background": (["auto", "transparent", "opaque"], {"default": "auto"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenOpenaiDallE2EditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (openai / dall-e-2 / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "openai", "model": "dall-e-2", "operation": "editImage"}
+    CATEGORY = "Civitai/Image/openai"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "size": F("size", "value"),
+        "quantity": F("quantity", "value"),
+        "image": F("image", "image_inline"),
+        "mask": F("mask", "image_inline"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "size": (["256x256", "512x512", "1024x1024"], {}),
+                "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 10, "step": 1}),
+                "mask": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenOpenaiDallE3CreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (openai / dall-e-3 / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "openai", "model": "dall-e-3", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/openai"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "size": F("size", "value"),
+        "style": F("style", "value"),
+        "quality": F("quality", "value"),
+        "background": F("background", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "size": (["1024x1024", "1792x1024", "1024x1792"], {}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "style": (["natural", "vivid"], {"default": "vivid"}),
+                "quality": (["auto", "hd", "standard"], {"default": "auto"}),
+                "background": (["auto", "transparent", "opaque"], {"default": "auto"}),
                 "api_config": (
                     "CIVITAI_CONFIG",
                     {
@@ -132,19 +522,19 @@ class CivitaiImageGenOpenai(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFlux1Kontext(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (Flux1Kontext) — imageGen recipe via Civitai Orchestration."""
+    """Civitai Image Gen (flux1-kontext) — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "flux1-kontext"}
-    CATEGORY = "Civitai/Image"
+    CATEGORY = "Civitai/Image/flux1-kontext"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
     FIELDS = {
+        "model": F("model", "value"),
         "output_format": F("outputFormat", "value"),
         "image_metadata": F("imageMetadata", "value"),
-        "model": F("model", "value"),
         "prompt": F("prompt", "value"),
         "images": F("images", "image_list"),
         "aspect_ratio": F("aspectRatio", "value"),
@@ -161,7 +551,7 @@ class CivitaiImageGenFlux1Kontext(CivitaiRecipeNodeBase):
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "model": (["pro", "max", "dev"], {}),
+                "model": (["pro", "max", "dev"], {"default": "pro"}),
                 "prompt": ("STRING", {"default": "", "multiline": True}),
             },
             "optional": {
@@ -188,37 +578,28 @@ class CivitaiImageGenFlux1Kontext(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiImageGenFlux2(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (Flux2) — imageGen recipe via Civitai Orchestration."""
+class CivitaiImageGenFlux2DevCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (flux2 / dev / createImage) — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
-    DISCRIMINATOR = {"engine": "flux2"}
-    CATEGORY = "Civitai/Image"
+    DISCRIMINATOR = {"engine": "flux2", "model": "dev", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/flux2"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
     FIELDS = {
         "output_format": F("outputFormat", "value"),
         "image_metadata": F("imageMetadata", "value"),
-        "model": F("model", "value"),
         "prompt": F("prompt", "value"),
         "width": F("width", "value"),
         "height": F("height", "value"),
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
         "enable_prompt_expansion": F("enablePromptExpansion", "value"),
-        "operation": F("operation", "value"),
         "guidance_scale": F("guidanceScale", "value"),
         "num_inference_steps": F("numInferenceSteps", "value"),
         "loras_json": F("loras", "json"),
-        "cfg_scale": F("cfgScale", "value"),
-        "steps": F("steps", "value"),
-        "sample_method": F("sampleMethod", "value"),
-        "schedule": F("schedule", "value"),
-        "negative_prompt": F("negativePrompt", "value"),
-        "model_version": F("modelVersion", "value"),
-        "images": F("images", "image_list"),
     }
     OUTPUTS = (
         O("images", "image_list"),
@@ -229,7 +610,6 @@ class CivitaiImageGenFlux2(CivitaiRecipeNodeBase):
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "model": (["dev", "flex", "pro", "max", "klein"], {}),
                 "prompt": ("STRING", {"default": "", "multiline": True}),
             },
             "optional": {
@@ -243,10 +623,352 @@ class CivitaiImageGenFlux2(CivitaiRecipeNodeBase):
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
                 "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
-                "operation": (["", "createImage", "editImage"], {}),
-                "guidance_scale": ("FLOAT", {"default": 2.5, "min": 0.0, "max": 100.0, "step": 0.01}),
-                "num_inference_steps": ("INT", {"default": 28, "min": 2, "max": 50, "step": 1}),
+                "guidance_scale": ("FLOAT", {"default": 2.5, "min": 0.0, "max": 20.0, "step": 0.01}),
+                "num_inference_steps": ("INT", {"default": 28, "min": 4, "max": 50, "step": 1}),
                 "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenFlux2DevEditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (flux2 / dev / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "flux2", "model": "dev", "operation": "editImage"}
+    CATEGORY = "Civitai/Image/flux2"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "guidance_scale": F("guidanceScale", "value"),
+        "num_inference_steps": F("numInferenceSteps", "value"),
+        "loras_json": F("loras", "json"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "width": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
+                "guidance_scale": ("FLOAT", {"default": 2.5, "min": 0.0, "max": 20.0, "step": 0.01}),
+                "num_inference_steps": ("INT", {"default": 28, "min": 4, "max": 50, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "images": ("IMAGE", {}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenFlux2FlexCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (flux2 / flex / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "flux2", "model": "flex", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/flux2"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "guidance_scale": F("guidanceScale", "value"),
+        "num_inference_steps": F("numInferenceSteps", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "width": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
+                "guidance_scale": ("FLOAT", {"default": 3.5, "min": 1.5, "max": 100.0, "step": 0.01}),
+                "num_inference_steps": ("INT", {"default": 28, "min": 2, "max": 50, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenFlux2FlexEditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (flux2 / flex / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "flux2", "model": "flex", "operation": "editImage"}
+    CATEGORY = "Civitai/Image/flux2"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "guidance_scale": F("guidanceScale", "value"),
+        "num_inference_steps": F("numInferenceSteps", "value"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "width": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
+                "guidance_scale": ("FLOAT", {"default": 3.5, "min": 1.5, "max": 100.0, "step": 0.01}),
+                "num_inference_steps": ("INT", {"default": 28, "min": 2, "max": 50, "step": 1}),
+                "images": ("IMAGE", {}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenFlux2CreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (flux2 / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "flux2", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/flux2"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "model": F("model", "value"),
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "model": (["pro", "max"], {"default": "pro"}),
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "width": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenFlux2EditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (flux2 / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "flux2", "operation": "editImage"}
+    CATEGORY = "Civitai/Image/flux2"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "model": F("model", "value"),
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "model": (["pro", "max"], {"default": "pro"}),
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "width": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
+                "images": ("IMAGE", {}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenFlux2KleinCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (flux2 / klein / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "flux2", "model": "klein", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/flux2"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "steps": F("steps", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "loras_json": F("loras", "json"),
+        "model_version": F("modelVersion", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "width": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
                 "cfg_scale": ("FLOAT", {"default": 5.0, "min": 1.0, "max": 20.0, "step": 0.01}),
                 "steps": ("INT", {"default": 20, "min": 4, "max": 50, "step": 1}),
                 "sample_method": (
@@ -288,6 +1010,116 @@ class CivitaiImageGenFlux2(CivitaiRecipeNodeBase):
                     {"default": ""},
                 ),
                 "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "model_version": (
+                    ["4b", "4b-base", "9b", "9b-base", "9b-kv"],
+                    {
+                        "tooltip": "The Klein model variant: 4b, 4b-base, 9b, 9b-base, or 9b-kv (ComfyUI)",
+                        "default": "4b",
+                    },
+                ),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenFlux2KleinEditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (flux2 / klein / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "flux2", "model": "klein", "operation": "editImage"}
+    CATEGORY = "Civitai/Image/flux2"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "steps": F("steps", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "loras_json": F("loras", "json"),
+        "model_version": F("modelVersion", "value"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "width": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
+                "cfg_scale": ("FLOAT", {"default": 5.0, "min": 1.0, "max": 20.0, "step": 0.01}),
+                "steps": ("INT", {"default": 20, "min": 4, "max": 50, "step": 1}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
                 "model_version": (
                     ["4b", "4b-base", "9b", "9b-base", "9b-kv"],
                     {
@@ -306,29 +1138,24 @@ class CivitaiImageGenFlux2(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiImageGenGoogle(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (Google) — imageGen recipe via Civitai Orchestration."""
+class CivitaiImageGenGoogleImagen4(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (google / imagen4) — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
-    DISCRIMINATOR = {"engine": "google"}
-    CATEGORY = "Civitai/Image"
+    DISCRIMINATOR = {"engine": "google", "model": "imagen4"}
+    CATEGORY = "Civitai/Image/google"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
     FIELDS = {
         "output_format": F("outputFormat", "value"),
         "image_metadata": F("imageMetadata", "value"),
-        "model": F("model", "value"),
         "prompt": F("prompt", "value"),
         "negative_prompt": F("negativePrompt", "value"),
         "aspect_ratio": F("aspectRatio", "value"),
         "num_images": F("numImages", "value"),
         "seed": F("seed", "value"),
-        "resolution": F("resolution", "value"),
-        "images": F("images", "image_list"),
-        "enable_web_search": F("enableWebSearch", "value"),
-        "enable_google_search": F("enableGoogleSearch", "value"),
     }
     OUTPUTS = (
         O("images", "image_list"),
@@ -339,7 +1166,6 @@ class CivitaiImageGenGoogle(CivitaiRecipeNodeBase):
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "model": (["imagen4", "nano-banana-pro", "nano-banana-2"], {}),
                 "prompt": ("STRING", {"default": "", "multiline": True}),
             },
             "optional": {
@@ -352,8 +1178,116 @@ class CivitaiImageGenGoogle(CivitaiRecipeNodeBase):
                 "aspect_ratio": (["1:1", "16:9", "9:16", "3:4", "4:3"], {"default": "1:1"}),
                 "num_images": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenGoogleNanoBananaPro(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (google / nano-banana-pro) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "google", "model": "nano-banana-pro"}
+    CATEGORY = "Civitai/Image/google"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "aspect_ratio": F("aspectRatio", "value"),
+        "num_images": F("numImages", "value"),
+        "resolution": F("resolution", "value"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "aspect_ratio": (
+                    ["21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"],
+                    {"default": "1:1"},
+                ),
+                "num_images": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
                 "resolution": (["1K", "2K", "4K"], {"default": "1K"}),
                 "images": ("IMAGE", {}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenGoogleNanoBanana2(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (google / nano-banana-2) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "google", "model": "nano-banana-2"}
+    CATEGORY = "Civitai/Image/google"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "aspect_ratio": F("aspectRatio", "value"),
+        "num_images": F("numImages", "value"),
+        "resolution": F("resolution", "value"),
+        "images": F("images", "image_list"),
+        "seed": F("seed", "value"),
+        "enable_web_search": F("enableWebSearch", "value"),
+        "enable_google_search": F("enableGoogleSearch", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "aspect_ratio": (
+                    ["21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"],
+                    {"default": "1:1"},
+                ),
+                "num_images": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "resolution": (["1K", "2K", "4K"], {"default": "1K"}),
+                "images": ("IMAGE", {}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "enable_web_search": ("BOOLEAN", {"default": False}),
                 "enable_google_search": ("BOOLEAN", {"default": False}),
                 "api_config": (
@@ -366,20 +1300,19 @@ class CivitaiImageGenGoogle(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiImageGenWan(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (Wan) — imageGen recipe via Civitai Orchestration."""
+class CivitaiImageGenWanV22Fal(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (wan / v2.2 / fal) — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
-    DISCRIMINATOR = {"engine": "wan"}
-    CATEGORY = "Civitai/Image"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.2", "provider": "fal"}
+    CATEGORY = "Civitai/Image/wan"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
     FIELDS = {
         "output_format": F("outputFormat", "value"),
         "image_metadata": F("imageMetadata", "value"),
-        "version": F("version", "value"),
         "prompt": F("prompt", "value"),
         "negative_prompt": F("negativePrompt", "value"),
         "guidance_scale": F("guidanceScale", "value"),
@@ -389,12 +1322,7 @@ class CivitaiImageGenWan(CivitaiRecipeNodeBase):
         "enable_prompt_expansion": F("enablePromptExpansion", "value"),
         "enable_safety_checker": F("enableSafetyChecker", "value"),
         "loras_json": F("loras", "json"),
-        "provider": F("provider", "value"),
         "steps": F("steps", "value"),
-        "shift": F("shift", "value"),
-        "operation": F("operation", "value"),
-        "use_pro": F("usePro", "value"),
-        "images": F("images", "image_list"),
         "acceleration": F("acceleration", "value"),
     }
     OUTPUTS = (
@@ -406,7 +1334,6 @@ class CivitaiImageGenWan(CivitaiRecipeNodeBase):
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "version": (["v2.2", "v2.2-5b", "v2.5", "v2.7"], {"default": "v2.2"}),
                 "prompt": ("STRING", {"default": "", "multiline": True}),
             },
             "optional": {
@@ -423,15 +1350,7 @@ class CivitaiImageGenWan(CivitaiRecipeNodeBase):
                 "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
                 "enable_safety_checker": ("BOOLEAN", {"default": False}),
                 "loras_json": ("STRING", {"default": "", "multiline": True}),
-                "provider": (["", "fal"], {"default": "fal"}),
-                "steps": ("INT", {"default": 27, "min": 2, "max": 50, "step": 1}),
-                "shift": ("FLOAT", {"default": 2.0, "min": 1.0, "max": 10.0, "step": 0.01}),
-                "operation": (
-                    ["", "createImage", "editImage", "text-to-image", "image-to-image"],
-                    {"default": "createImage"},
-                ),
-                "use_pro": ("BOOLEAN", {"default": False}),
-                "images": ("IMAGE", {"tooltip": "Reference images for editing (1-4 images required)"}),
+                "steps": ("INT", {"default": 27, "min": 2, "max": 40, "step": 1}),
                 "acceleration": (["none", "fast", "faster"], {"default": "none"}),
                 "api_config": (
                     "CIVITAI_CONFIG",
@@ -443,23 +1362,148 @@ class CivitaiImageGenWan(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiImageGenGemini(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (Gemini) — imageGen recipe via Civitai Orchestration."""
+class CivitaiImageGenWanV225bFal(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (wan / v2.2-5b / fal) — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
-    DISCRIMINATOR = {"engine": "gemini"}
-    CATEGORY = "Civitai/Image"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.2-5b", "provider": "fal"}
+    CATEGORY = "Civitai/Image/wan"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
     FIELDS = {
         "output_format": F("outputFormat", "value"),
         "image_metadata": F("imageMetadata", "value"),
-        "model": F("model", "value"),
         "prompt": F("prompt", "value"),
-        "operation": F("operation", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "guidance_scale": F("guidanceScale", "value"),
+        "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
+        "image_size": F("imageSize", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "loras_json": F("loras", "json"),
+        "steps": F("steps", "value"),
+        "shift": F("shift", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "guidance_scale": ("FLOAT", {"default": 3.5, "min": 1.0, "max": 10.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 10, "step": 1}),
+                "image_size": ("STRING", {"default": "square_hd"}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "steps": ("INT", {"default": 40, "min": 2, "max": 50, "step": 1}),
+                "shift": ("FLOAT", {"default": 2.0, "min": 1.0, "max": 10.0, "step": 0.01}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenWanV25FalTextToImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (wan / v2.5 / fal / text-to-image) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.5", "provider": "fal", "operation": "text-to-image"}
+    CATEGORY = "Civitai/Image/wan"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "guidance_scale": F("guidanceScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "image_size": F("imageSize", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "loras_json": F("loras", "json"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "guidance_scale": ("FLOAT", {"default": 3.5, "min": 1.0, "max": 10.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 10, "step": 1}),
+                "image_size": ("STRING", {"default": "square_hd"}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenWanV25FalImageToImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (wan / v2.5 / fal / image-to-image) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.5", "provider": "fal", "operation": "image-to-image"}
+    CATEGORY = "Civitai/Image/wan"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "guidance_scale": F("guidanceScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "image_size": F("imageSize", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "loras_json": F("loras", "json"),
         "images": F("images", "image_list"),
     }
     OUTPUTS = (
@@ -471,7 +1515,6 @@ class CivitaiImageGenGemini(CivitaiRecipeNodeBase):
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "model": (["2.5-flash"], {}),
                 "prompt": ("STRING", {"default": "", "multiline": True}),
             },
             "optional": {
@@ -480,8 +1523,14 @@ class CivitaiImageGenGemini(CivitaiRecipeNodeBase):
                     "STRING",
                     {"tooltip": "External metadata that will be stored with the image", "default": ""},
                 ),
-                "operation": (["", "createImage", "editImage"], {}),
-                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "guidance_scale": ("FLOAT", {"default": 3.5, "min": 1.0, "max": 10.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 10, "step": 1}),
+                "image_size": ("STRING", {"default": "square_hd"}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
                 "images": ("IMAGE", {}),
                 "api_config": (
                     "CIVITAI_CONFIG",
@@ -493,46 +1542,29 @@ class CivitaiImageGenGemini(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiImageGenSdcpp(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (Sdcpp) — imageGen recipe via Civitai Orchestration."""
+class CivitaiImageGenWanV27FalCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (wan / v2.7 / fal / createImage) — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
-    DISCRIMINATOR = {"engine": "sdcpp"}
-    CATEGORY = "Civitai/Image"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.7", "provider": "fal", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/wan"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
     FIELDS = {
         "output_format": F("outputFormat", "value"),
         "image_metadata": F("imageMetadata", "value"),
-        "ecosystem": F("ecosystem", "value"),
-        "model": F("model", "value"),
-        "diffuser_model": F("diffuserModel", "value"),
-        "operation": F("operation", "value"),
         "prompt": F("prompt", "value"),
         "negative_prompt": F("negativePrompt", "value"),
-        "sample_method": F("sampleMethod", "value"),
-        "schedule": F("schedule", "value"),
-        "steps": F("steps", "value"),
-        "cfg_scale": F("cfgScale", "value"),
+        "guidance_scale": F("guidanceScale", "value"),
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
+        "image_size": F("imageSize", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
         "loras_json": F("loras", "json"),
-        "vae_model": F("vaeModel", "value"),
-        "embeddings_json": F("embeddings", "json"),
-        "clip_skip": F("clipSkip", "value"),
-        "u_cache": F("uCache", "value"),
-        "width": F("width", "value"),
-        "height": F("height", "value"),
-        "clip_lmodel": F("clipLModel", "value"),
-        "t5_xxlmodel": F("t5XXLModel", "value"),
-        "model_version": F("modelVersion", "value"),
-        "images": F("images", "image_list"),
-        "image": F("image", "image_inline"),
-        "strength": F("strength", "value"),
-        "control_nets_json": F("controlNets", "json"),
-        "version": F("version", "value"),
+        "use_pro": F("usePro", "value"),
     }
     OUTPUTS = (
         O("images", "image_list"),
@@ -543,7 +1575,7 @@ class CivitaiImageGenSdcpp(CivitaiRecipeNodeBase):
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "ecosystem": (["qwen", "zImage", "anima", "sd1", "sdxl", "flux1", "flux2Dev", "flux2Klein"], {}),
+                "prompt": ("STRING", {"default": "", "multiline": True}),
             },
             "optional": {
                 "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
@@ -551,10 +1583,730 @@ class CivitaiImageGenSdcpp(CivitaiRecipeNodeBase):
                     "STRING",
                     {"tooltip": "External metadata that will be stored with the image", "default": ""},
                 ),
-                "model": (["", "turbo", "base", "20b"], {}),
-                "diffuser_model": ("STRING", {"default": ""}),
-                "operation": (["", "createImage", "editImage", "createVariant"], {}),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "guidance_scale": ("FLOAT", {"default": 3.5, "min": 1.0, "max": 10.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 10, "step": 1}),
+                "image_size": ("STRING", {"default": "square_hd"}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "use_pro": ("BOOLEAN", {"default": False}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenWanV27FalEditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (wan / v2.7 / fal / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.7", "provider": "fal", "operation": "editImage"}
+    CATEGORY = "Civitai/Image/wan"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "guidance_scale": F("guidanceScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "image_size": F("imageSize", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "loras_json": F("loras", "json"),
+        "use_pro": F("usePro", "value"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
+                "images": ("IMAGE", {"tooltip": "Reference images for editing (1-4 images required)"}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "guidance_scale": ("FLOAT", {"default": 3.5, "min": 1.0, "max": 10.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 10, "step": 1}),
+                "image_size": ("STRING", {"default": "square_hd"}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "use_pro": ("BOOLEAN", {"default": False}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenGemini25FlashCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (gemini / 2.5-flash / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "gemini", "model": "2.5-flash", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/gemini"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "quantity": F("quantity", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenGemini25FlashEditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (gemini / 2.5-flash / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "gemini", "model": "2.5-flash", "operation": "editImage"}
+    CATEGORY = "Civitai/Image/gemini"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "quantity": F("quantity", "value"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "images": ("IMAGE", {}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppQwen20bCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / qwen / 20b / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "qwen", "model": "20b", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "loras_json": F("loras", "json"),
+        "version": F("version", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 20, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 2.5, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "version": (["latest", "2509", "2512"], {"default": "latest"}),
+                "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppQwen20bEditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / qwen / 20b / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "qwen", "model": "20b", "operation": "editImage"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "loras_json": F("loras", "json"),
+        "version": F("version", "value"),
+        "images": F("images", "image_list"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "images": ("IMAGE", {}),
+                "width": ("INT", {"default": 0, "min": 0, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 0, "min": 0, "max": 2048, "step": 1}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 20, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 2.5, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "version": (["latest", "2509", "2511"], {"default": "latest"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppQwen20bCreateVariant(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / qwen / 20b / createVariant) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "qwen", "model": "20b", "operation": "createVariant"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "loras_json": F("loras", "json"),
+        "version": F("version", "value"),
+        "image": F("image", "image_inline"),
+        "strength": F("strength", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+                "width": ("INT", {"default": 0, "min": 0, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 0, "min": 0, "max": 2048, "step": 1}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 20, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 2.5, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "version": (["latest", "2509", "2512"], {"default": "latest"}),
+                "strength": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppZImageTurboCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / zImage / turbo / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "zImage", "model": "turbo", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "diffuser_model": F("diffuserModel", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "loras_json": F("loras", "json"),
+        "control_nets_json": F("controlNets", "json"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "diffuser_model": ("STRING", {"default": ""}),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 9, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "control_nets_json": ("STRING", {"default": "", "multiline": True}),
+                "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppZImageBaseCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / zImage / base / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "zImage", "model": "base", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "diffuser_model": F("diffuserModel", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "loras_json": F("loras", "json"),
+        "control_nets_json": F("controlNets", "json"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "diffuser_model": ("STRING", {"default": ""}),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 20, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "control_nets_json": ("STRING", {"default": "", "multiline": True}),
+                "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppAnimaCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / anima / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "anima", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "loras_json": F("loras", "json"),
+        "diffuser_model": F("diffuserModel", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
                 "negative_prompt": ("STRING", {"default": "", "multiline": True}),
                 "sample_method": (
                     [
@@ -599,20 +2351,9 @@ class CivitaiImageGenSdcpp(CivitaiRecipeNodeBase):
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
                 "loras_json": ("STRING", {"default": "", "multiline": True}),
-                "vae_model": ("STRING", {"default": ""}),
-                "embeddings_json": ("STRING", {"default": "", "multiline": True}),
-                "clip_skip": ("INT", {"default": -1, "min": 0, "max": 2147483647, "step": 1}),
-                "u_cache": (["", "off", "normal"], {"default": ""}),
-                "width": ("INT", {"default": 1024, "min": 0, "max": 2048, "step": 1}),
-                "height": ("INT", {"default": 1024, "min": 0, "max": 2048, "step": 1}),
-                "clip_lmodel": ("STRING", {"default": ""}),
-                "t5_xxlmodel": ("STRING", {"default": ""}),
-                "model_version": (["4b", "4b-base", "9b", "9b-base"], {"default": "4b"}),
-                "images": ("IMAGE", {}),
-                "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
-                "strength": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.01}),
-                "control_nets_json": ("STRING", {"default": "", "multiline": True}),
-                "version": (["latest", "2509", "2512"], {"default": "latest"}),
+                "diffuser_model": ("STRING", {"default": ""}),
+                "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "api_config": (
                     "CIVITAI_CONFIG",
                     {
@@ -623,21 +2364,1489 @@ class CivitaiImageGenSdcpp(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiImageGenComfy(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (Comfy) — imageGen recipe via Civitai Orchestration."""
+class CivitaiImageGenSdcppAnimaCreateVariant(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / anima / createVariant) — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
-    DISCRIMINATOR = {"engine": "comfy"}
-    CATEGORY = "Civitai/Image"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "anima", "operation": "createVariant"}
+    CATEGORY = "Civitai/Image/sdcpp"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
     FIELDS = {
         "output_format": F("outputFormat", "value"),
         "image_metadata": F("imageMetadata", "value"),
-        "ecosystem": F("ecosystem", "value"),
-        "operation": F("operation", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "loras_json": F("loras", "json"),
+        "diffuser_model": F("diffuserModel", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "image": F("image", "image_inline"),
+        "strength": F("strength", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 30, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "diffuser_model": ("STRING", {"default": ""}),
+                "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "strength": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppSd1CreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / sd1 / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "sd1", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "model": F("model", "value"),
+        "vae_model": F("vaeModel", "value"),
+        "loras_json": F("loras", "json"),
+        "embeddings_json": F("embeddings", "json"),
+        "clip_skip": F("clipSkip", "value"),
+        "u_cache": F("uCache", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "model": ("STRING", {"default": ""}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 20, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "vae_model": ("STRING", {"default": ""}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "embeddings_json": ("STRING", {"default": "", "multiline": True}),
+                "clip_skip": ("INT", {"default": -1, "min": 0, "max": 2147483647, "step": 1}),
+                "u_cache": (["", "off", "normal"], {"default": ""}),
+                "width": ("INT", {"default": 512, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 512, "min": 64, "max": 2048, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppSd1CreateVariant(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / sd1 / createVariant) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "sd1", "operation": "createVariant"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "model": F("model", "value"),
+        "vae_model": F("vaeModel", "value"),
+        "loras_json": F("loras", "json"),
+        "embeddings_json": F("embeddings", "json"),
+        "clip_skip": F("clipSkip", "value"),
+        "u_cache": F("uCache", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "image": F("image", "image_inline"),
+        "strength": F("strength", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "model": ("STRING", {"default": ""}),
+                "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 20, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "vae_model": ("STRING", {"default": ""}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "embeddings_json": ("STRING", {"default": "", "multiline": True}),
+                "clip_skip": ("INT", {"default": -1, "min": 0, "max": 2147483647, "step": 1}),
+                "u_cache": (["", "off", "normal"], {"default": ""}),
+                "width": ("INT", {"default": 512, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 512, "min": 64, "max": 2048, "step": 1}),
+                "strength": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppSdxlCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / sdxl / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "sdxl", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "model": F("model", "value"),
+        "vae_model": F("vaeModel", "value"),
+        "loras_json": F("loras", "json"),
+        "embeddings_json": F("embeddings", "json"),
+        "u_cache": F("uCache", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "model": ("STRING", {"default": ""}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 20, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "vae_model": ("STRING", {"default": ""}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "embeddings_json": ("STRING", {"default": "", "multiline": True}),
+                "u_cache": (["", "off", "normal"], {"default": ""}),
+                "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppSdxlCreateVariant(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / sdxl / createVariant) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "sdxl", "operation": "createVariant"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "model": F("model", "value"),
+        "vae_model": F("vaeModel", "value"),
+        "loras_json": F("loras", "json"),
+        "embeddings_json": F("embeddings", "json"),
+        "u_cache": F("uCache", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "image": F("image", "image_inline"),
+        "strength": F("strength", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "model": ("STRING", {"default": ""}),
+                "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 20, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "vae_model": ("STRING", {"default": ""}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "embeddings_json": ("STRING", {"default": "", "multiline": True}),
+                "u_cache": (["", "off", "normal"], {"default": ""}),
+                "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "strength": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppFlux1CreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / flux1 / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "flux1", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "steps": F("steps", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "loras_json": F("loras", "json"),
+        "diffuser_model": F("diffuserModel", "value"),
+        "vae_model": F("vaeModel", "value"),
+        "clip_lmodel": F("clipLModel", "value"),
+        "t5_xxlmodel": F("t5XXLModel", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "diffuser_model": ("STRING", {"default": ""}),
+                "vae_model": ("STRING", {"default": ""}),
+                "clip_lmodel": ("STRING", {"default": ""}),
+                "t5_xxlmodel": ("STRING", {"default": ""}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "width": ("INT", {"default": 1024, "min": 832, "max": 1216, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 832, "max": 1216, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 3.5, "min": 1.0, "max": 20.0, "step": 0.01}),
+                "steps": ("INT", {"default": 28, "min": 4, "max": 50, "step": 1}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppFlux1EditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / flux1 / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "flux1", "operation": "editImage"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "steps": F("steps", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "loras_json": F("loras", "json"),
+        "diffuser_model": F("diffuserModel", "value"),
+        "vae_model": F("vaeModel", "value"),
+        "clip_lmodel": F("clipLModel", "value"),
+        "t5_xxlmodel": F("t5XXLModel", "value"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "diffuser_model": ("STRING", {"default": ""}),
+                "vae_model": ("STRING", {"default": ""}),
+                "clip_lmodel": ("STRING", {"default": ""}),
+                "t5_xxlmodel": ("STRING", {"default": ""}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "width": ("INT", {"default": 1024, "min": 832, "max": 1216, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 832, "max": 1216, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 3.5, "min": 1.0, "max": 20.0, "step": 0.01}),
+                "steps": ("INT", {"default": 28, "min": 4, "max": 50, "step": 1}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "images": ("IMAGE", {}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppFlux1CreateVariant(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / flux1 / createVariant) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "flux1", "operation": "createVariant"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "steps": F("steps", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "loras_json": F("loras", "json"),
+        "diffuser_model": F("diffuserModel", "value"),
+        "vae_model": F("vaeModel", "value"),
+        "clip_lmodel": F("clipLModel", "value"),
+        "t5_xxlmodel": F("t5XXLModel", "value"),
+        "image": F("image", "image_inline"),
+        "strength": F("strength", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "diffuser_model": ("STRING", {"default": ""}),
+                "vae_model": ("STRING", {"default": ""}),
+                "clip_lmodel": ("STRING", {"default": ""}),
+                "t5_xxlmodel": ("STRING", {"default": ""}),
+                "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "width": ("INT", {"default": 1024, "min": 832, "max": 1216, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 832, "max": 1216, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 3.5, "min": 1.0, "max": 20.0, "step": 0.01}),
+                "steps": ("INT", {"default": 28, "min": 4, "max": 50, "step": 1}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "strength": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppFlux2DevCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / flux2Dev / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "flux2Dev", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "steps": F("steps", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "loras_json": F("loras", "json"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "width": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 1.0, "min": 1.0, "max": 20.0, "step": 0.01}),
+                "steps": ("INT", {"default": 20, "min": 4, "max": 50, "step": 1}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppFlux2DevEditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / flux2Dev / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "flux2Dev", "operation": "editImage"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "steps": F("steps", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "loras_json": F("loras", "json"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "width": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 1.0, "min": 1.0, "max": 20.0, "step": 0.01}),
+                "steps": ("INT", {"default": 20, "min": 4, "max": 50, "step": 1}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "images": ("IMAGE", {}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppFlux2DevCreateVariant(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / flux2Dev / createVariant) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "flux2Dev", "operation": "createVariant"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "steps": F("steps", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "loras_json": F("loras", "json"),
+        "image": F("image", "image_inline"),
+        "strength": F("strength", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "width": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 1.0, "min": 1.0, "max": 20.0, "step": 0.01}),
+                "steps": ("INT", {"default": 20, "min": 4, "max": 50, "step": 1}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "strength": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppFlux2KleinCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / flux2Klein / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "flux2Klein", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "steps": F("steps", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "loras_json": F("loras", "json"),
+        "model_version": F("modelVersion", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "width": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 5.0, "min": 1.0, "max": 20.0, "step": 0.01}),
+                "steps": ("INT", {"default": 20, "min": 4, "max": 50, "step": 1}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "model_version": (["4b", "4b-base", "9b", "9b-base"], {"default": "4b"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppFlux2KleinEditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / flux2Klein / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "flux2Klein", "operation": "editImage"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "steps": F("steps", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "loras_json": F("loras", "json"),
+        "model_version": F("modelVersion", "value"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "width": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 5.0, "min": 1.0, "max": 20.0, "step": 0.01}),
+                "steps": ("INT", {"default": 20, "min": 4, "max": 50, "step": 1}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "model_version": (["4b", "4b-base", "9b", "9b-base"], {"default": "4b"}),
+                "images": ("IMAGE", {}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenSdcppFlux2KleinCreateVariant(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (sdcpp / flux2Klein / createVariant) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "flux2Klein", "operation": "createVariant"}
+    CATEGORY = "Civitai/Image/sdcpp"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "steps": F("steps", "value"),
+        "sample_method": F("sampleMethod", "value"),
+        "schedule": F("schedule", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "loras_json": F("loras", "json"),
+        "model_version": F("modelVersion", "value"),
+        "image": F("image", "image_inline"),
+        "strength": F("strength", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "width": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 5.0, "min": 1.0, "max": 20.0, "step": 0.01}),
+                "steps": ("INT", {"default": 20, "min": 4, "max": 50, "step": 1}),
+                "sample_method": (
+                    [
+                        "",
+                        "euler",
+                        "heun",
+                        "dpm2",
+                        "dpm++2s_a",
+                        "dpm++2m",
+                        "dpm++2mv2",
+                        "ipndm",
+                        "ipndm_v",
+                        "ddim_trailing",
+                        "euler_a",
+                        "lcm",
+                        "res_multistep",
+                        "res_2s",
+                        "tcd",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "schedule": (
+                    [
+                        "",
+                        "simple",
+                        "discrete",
+                        "karras",
+                        "exponential",
+                        "ays",
+                        "bong_tangent",
+                        "gits",
+                        "sgm_uniform",
+                        "smoothstep",
+                        "kl_optimal",
+                        "lcm",
+                    ],
+                    {"default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "model_version": (["4b", "4b-base", "9b", "9b-base"], {"default": "4b"}),
+                "strength": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenComfySd1CreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / sd1 / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "comfy", "ecosystem": "sd1", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
         "prompt": F("prompt", "value"),
         "negative_prompt": F("negativePrompt", "value"),
         "sampler": F("sampler", "value"),
@@ -653,13 +3862,6 @@ class CivitaiImageGenComfy(CivitaiRecipeNodeBase):
         "control_nets_json": F("controlNets", "json"),
         "width": F("width", "value"),
         "height": F("height", "value"),
-        "diffuser_model": F("diffuserModel", "value"),
-        "diffusion_model": F("diffusionModel", "value"),
-        "unconditional_diffusion_model": F("unconditionalDiffusionModel", "value"),
-        "image": F("image", "image_inline"),
-        "denoise_strength": F("denoiseStrength", "value"),
-        "checkpoint_model": F("checkpointModel", "value"),
-        "images": F("images", "image_list"),
     }
     OUTPUTS = (
         O("images", "image_list"),
@@ -670,10 +3872,8 @@ class CivitaiImageGenComfy(CivitaiRecipeNodeBase):
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "ecosystem": (
-                    ["sd1", "sdxl", "flux1", "flux2Dev", "ernie", "hidream-o1", "anima", "lens", "ideogram4"],
-                    {},
-                ),
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "model": ("STRING", {"default": ""}),
             },
             "optional": {
                 "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
@@ -681,8 +3881,6 @@ class CivitaiImageGenComfy(CivitaiRecipeNodeBase):
                     "STRING",
                     {"tooltip": "External metadata that will be stored with the image", "default": ""},
                 ),
-                "operation": (["", "createImage", "createVariant", "editImage"], {}),
-                "prompt": ("STRING", {"default": "", "multiline": True}),
                 "negative_prompt": ("STRING", {"default": "", "multiline": True}),
                 "sampler": (
                     [
@@ -729,19 +3927,760 @@ class CivitaiImageGenComfy(CivitaiRecipeNodeBase):
                 "cfg_scale": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 30.0, "step": 0.01}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
-                "model": (["", "normal", "turbo", "HiDream-O1-Image", "HiDream-O1-Image-dev", "ernie"], {}),
                 "vae_model": ("STRING", {"default": ""}),
                 "loras_json": ("STRING", {"default": "", "multiline": True}),
                 "clip_skip": ("INT", {"default": 2, "min": 0, "max": 2147483647, "step": 1}),
                 "control_nets_json": ("STRING", {"default": "", "multiline": True}),
+                "width": ("INT", {"default": 512, "min": 64, "max": 1024, "step": 1}),
+                "height": ("INT", {"default": 512, "min": 64, "max": 1024, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenComfySd1CreateVariant(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / sd1 / createVariant) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "comfy", "ecosystem": "sd1", "operation": "createVariant"}
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sampler": F("sampler", "value"),
+        "scheduler": F("scheduler", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "model": F("model", "value"),
+        "vae_model": F("vaeModel", "value"),
+        "loras_json": F("loras", "json"),
+        "clip_skip": F("clipSkip", "value"),
+        "control_nets_json": F("controlNets", "json"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "image": F("image", "image_inline"),
+        "denoise_strength": F("denoiseStrength", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "model": ("STRING", {"default": ""}),
+                "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sampler": (
+                    [
+                        "",
+                        "euler",
+                        "euler_ancestral",
+                        "euler_cfg_pp",
+                        "euler_ancestral_cfg_pp",
+                        "heun",
+                        "heunpp2",
+                        "dpm_2",
+                        "dpm_2_ancestral",
+                        "lms",
+                        "dpm_fast",
+                        "dpm_adaptive",
+                        "dpmpp_2s_ancestral",
+                        "dpmpp_2s_ancestral_cfg_pp",
+                        "dpmpp_sde",
+                        "dpmpp_sde_gpu",
+                        "dpmpp_2m",
+                        "dpmpp_2m_cfg_pp",
+                        "dpmpp_2m_sde",
+                        "dpmpp_2m_sde_gpu",
+                        "dpmpp_3m_sde",
+                        "dpmpp_3m_sde_gpu",
+                        "ddpm",
+                        "lcm",
+                        "ipndm",
+                        "ipndm_v",
+                        "deis",
+                        "ddim",
+                        "uni_pc",
+                        "uni_pc_bh2",
+                        "res_multistep",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "scheduler": (
+                    ["", "normal", "karras", "exponential", "sgm_uniform", "simple", "ddim_uniform", "beta"],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 30, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "vae_model": ("STRING", {"default": ""}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "clip_skip": ("INT", {"default": 2, "min": 0, "max": 2147483647, "step": 1}),
+                "control_nets_json": ("STRING", {"default": "", "multiline": True}),
+                "width": ("INT", {"default": 512, "min": 64, "max": 1024, "step": 1}),
+                "height": ("INT", {"default": 512, "min": 64, "max": 1024, "step": 1}),
+                "denoise_strength": ("FLOAT", {"default": 0.75, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenComfySdxlCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / sdxl / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "comfy", "ecosystem": "sdxl", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sampler": F("sampler", "value"),
+        "scheduler": F("scheduler", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "model": F("model", "value"),
+        "vae_model": F("vaeModel", "value"),
+        "loras_json": F("loras", "json"),
+        "control_nets_json": F("controlNets", "json"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "model": ("STRING", {"default": ""}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sampler": (
+                    [
+                        "",
+                        "euler",
+                        "euler_ancestral",
+                        "euler_cfg_pp",
+                        "euler_ancestral_cfg_pp",
+                        "heun",
+                        "heunpp2",
+                        "dpm_2",
+                        "dpm_2_ancestral",
+                        "lms",
+                        "dpm_fast",
+                        "dpm_adaptive",
+                        "dpmpp_2s_ancestral",
+                        "dpmpp_2s_ancestral_cfg_pp",
+                        "dpmpp_sde",
+                        "dpmpp_sde_gpu",
+                        "dpmpp_2m",
+                        "dpmpp_2m_cfg_pp",
+                        "dpmpp_2m_sde",
+                        "dpmpp_2m_sde_gpu",
+                        "dpmpp_3m_sde",
+                        "dpmpp_3m_sde_gpu",
+                        "ddpm",
+                        "lcm",
+                        "ipndm",
+                        "ipndm_v",
+                        "deis",
+                        "ddim",
+                        "uni_pc",
+                        "uni_pc_bh2",
+                        "res_multistep",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "scheduler": (
+                    ["", "normal", "karras", "exponential", "sgm_uniform", "simple", "ddim_uniform", "beta"],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 30, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "vae_model": ("STRING", {"default": ""}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "control_nets_json": ("STRING", {"default": "", "multiline": True}),
                 "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
-                "diffuser_model": ("STRING", {"default": ""}),
-                "diffusion_model": ("STRING", {"default": ""}),
-                "unconditional_diffusion_model": ("STRING", {"default": ""}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenComfySdxlCreateVariant(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / sdxl / createVariant) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "comfy", "ecosystem": "sdxl", "operation": "createVariant"}
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sampler": F("sampler", "value"),
+        "scheduler": F("scheduler", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "model": F("model", "value"),
+        "vae_model": F("vaeModel", "value"),
+        "loras_json": F("loras", "json"),
+        "control_nets_json": F("controlNets", "json"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "image": F("image", "image_inline"),
+        "denoise_strength": F("denoiseStrength", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "model": ("STRING", {"default": ""}),
                 "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sampler": (
+                    [
+                        "",
+                        "euler",
+                        "euler_ancestral",
+                        "euler_cfg_pp",
+                        "euler_ancestral_cfg_pp",
+                        "heun",
+                        "heunpp2",
+                        "dpm_2",
+                        "dpm_2_ancestral",
+                        "lms",
+                        "dpm_fast",
+                        "dpm_adaptive",
+                        "dpmpp_2s_ancestral",
+                        "dpmpp_2s_ancestral_cfg_pp",
+                        "dpmpp_sde",
+                        "dpmpp_sde_gpu",
+                        "dpmpp_2m",
+                        "dpmpp_2m_cfg_pp",
+                        "dpmpp_2m_sde",
+                        "dpmpp_2m_sde_gpu",
+                        "dpmpp_3m_sde",
+                        "dpmpp_3m_sde_gpu",
+                        "ddpm",
+                        "lcm",
+                        "ipndm",
+                        "ipndm_v",
+                        "deis",
+                        "ddim",
+                        "uni_pc",
+                        "uni_pc_bh2",
+                        "res_multistep",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "scheduler": (
+                    ["", "normal", "karras", "exponential", "sgm_uniform", "simple", "ddim_uniform", "beta"],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 30, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "vae_model": ("STRING", {"default": ""}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "control_nets_json": ("STRING", {"default": "", "multiline": True}),
+                "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "denoise_strength": ("FLOAT", {"default": 0.75, "min": 0.0, "max": 1.0, "step": 0.01}),
-                "checkpoint_model": ("STRING", {"default": "urn:air:hidream-o1:checkpoint:civitai:2618495@2939946"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenComfyFlux1CreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / flux1 / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "comfy", "ecosystem": "flux1", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "sampler": F("sampler", "value"),
+        "scheduler": F("scheduler", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "model": F("model", "value"),
+        "vae_model": F("vaeModel", "value"),
+        "loras_json": F("loras", "json"),
+        "control_nets_json": F("controlNets", "json"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "model": ("STRING", {"default": ""}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "sampler": (
+                    [
+                        "",
+                        "euler",
+                        "euler_ancestral",
+                        "euler_cfg_pp",
+                        "euler_ancestral_cfg_pp",
+                        "heun",
+                        "heunpp2",
+                        "dpm_2",
+                        "dpm_2_ancestral",
+                        "lms",
+                        "dpm_fast",
+                        "dpm_adaptive",
+                        "dpmpp_2s_ancestral",
+                        "dpmpp_2s_ancestral_cfg_pp",
+                        "dpmpp_sde",
+                        "dpmpp_sde_gpu",
+                        "dpmpp_2m",
+                        "dpmpp_2m_cfg_pp",
+                        "dpmpp_2m_sde",
+                        "dpmpp_2m_sde_gpu",
+                        "dpmpp_3m_sde",
+                        "dpmpp_3m_sde_gpu",
+                        "ddpm",
+                        "lcm",
+                        "ipndm",
+                        "ipndm_v",
+                        "deis",
+                        "ddim",
+                        "uni_pc",
+                        "uni_pc_bh2",
+                        "res_multistep",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "scheduler": (
+                    ["", "normal", "karras", "exponential", "sgm_uniform", "simple", "ddim_uniform", "beta"],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 20, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 3.5, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "vae_model": ("STRING", {"default": ""}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "control_nets_json": ("STRING", {"default": "", "multiline": True}),
+                "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenComfyFlux1CreateVariant(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / flux1 / createVariant) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "comfy", "ecosystem": "flux1", "operation": "createVariant"}
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "sampler": F("sampler", "value"),
+        "scheduler": F("scheduler", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "model": F("model", "value"),
+        "vae_model": F("vaeModel", "value"),
+        "loras_json": F("loras", "json"),
+        "control_nets_json": F("controlNets", "json"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "image": F("image", "image_inline"),
+        "denoise_strength": F("denoiseStrength", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "model": ("STRING", {"default": ""}),
+                "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "sampler": (
+                    [
+                        "",
+                        "euler",
+                        "euler_ancestral",
+                        "euler_cfg_pp",
+                        "euler_ancestral_cfg_pp",
+                        "heun",
+                        "heunpp2",
+                        "dpm_2",
+                        "dpm_2_ancestral",
+                        "lms",
+                        "dpm_fast",
+                        "dpm_adaptive",
+                        "dpmpp_2s_ancestral",
+                        "dpmpp_2s_ancestral_cfg_pp",
+                        "dpmpp_sde",
+                        "dpmpp_sde_gpu",
+                        "dpmpp_2m",
+                        "dpmpp_2m_cfg_pp",
+                        "dpmpp_2m_sde",
+                        "dpmpp_2m_sde_gpu",
+                        "dpmpp_3m_sde",
+                        "dpmpp_3m_sde_gpu",
+                        "ddpm",
+                        "lcm",
+                        "ipndm",
+                        "ipndm_v",
+                        "deis",
+                        "ddim",
+                        "uni_pc",
+                        "uni_pc_bh2",
+                        "res_multistep",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "scheduler": (
+                    ["", "normal", "karras", "exponential", "sgm_uniform", "simple", "ddim_uniform", "beta"],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 20, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 3.5, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "vae_model": ("STRING", {"default": ""}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "control_nets_json": ("STRING", {"default": "", "multiline": True}),
+                "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "denoise_strength": ("FLOAT", {"default": 0.75, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenComfyFlux2DevCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / flux2Dev / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "comfy", "ecosystem": "flux2Dev", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "steps": F("steps", "value"),
+        "sampler": F("sampler", "value"),
+        "scheduler": F("scheduler", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "loras_json": F("loras", "json"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "width": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 1.0, "min": 1.0, "max": 20.0, "step": 0.01}),
+                "steps": ("INT", {"default": 20, "min": 4, "max": 50, "step": 1}),
+                "sampler": (
+                    [
+                        "",
+                        "euler",
+                        "euler_ancestral",
+                        "euler_cfg_pp",
+                        "euler_ancestral_cfg_pp",
+                        "heun",
+                        "heunpp2",
+                        "dpm_2",
+                        "dpm_2_ancestral",
+                        "lms",
+                        "dpm_fast",
+                        "dpm_adaptive",
+                        "dpmpp_2s_ancestral",
+                        "dpmpp_2s_ancestral_cfg_pp",
+                        "dpmpp_sde",
+                        "dpmpp_sde_gpu",
+                        "dpmpp_2m",
+                        "dpmpp_2m_cfg_pp",
+                        "dpmpp_2m_sde",
+                        "dpmpp_2m_sde_gpu",
+                        "dpmpp_3m_sde",
+                        "dpmpp_3m_sde_gpu",
+                        "ddpm",
+                        "lcm",
+                        "ipndm",
+                        "ipndm_v",
+                        "deis",
+                        "ddim",
+                        "uni_pc",
+                        "uni_pc_bh2",
+                        "res_multistep",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "scheduler": (
+                    ["", "normal", "karras", "exponential", "sgm_uniform", "simple", "ddim_uniform", "beta"],
+                    {"default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenComfyFlux2DevEditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / flux2Dev / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "comfy", "ecosystem": "flux2Dev", "operation": "editImage"}
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "steps": F("steps", "value"),
+        "sampler": F("sampler", "value"),
+        "scheduler": F("scheduler", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "loras_json": F("loras", "json"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "width": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 512, "max": 2048, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 1.0, "min": 1.0, "max": 20.0, "step": 0.01}),
+                "steps": ("INT", {"default": 20, "min": 4, "max": 50, "step": 1}),
+                "sampler": (
+                    [
+                        "",
+                        "euler",
+                        "euler_ancestral",
+                        "euler_cfg_pp",
+                        "euler_ancestral_cfg_pp",
+                        "heun",
+                        "heunpp2",
+                        "dpm_2",
+                        "dpm_2_ancestral",
+                        "lms",
+                        "dpm_fast",
+                        "dpm_adaptive",
+                        "dpmpp_2s_ancestral",
+                        "dpmpp_2s_ancestral_cfg_pp",
+                        "dpmpp_sde",
+                        "dpmpp_sde_gpu",
+                        "dpmpp_2m",
+                        "dpmpp_2m_cfg_pp",
+                        "dpmpp_2m_sde",
+                        "dpmpp_2m_sde_gpu",
+                        "dpmpp_3m_sde",
+                        "dpmpp_3m_sde_gpu",
+                        "ddpm",
+                        "lcm",
+                        "ipndm",
+                        "ipndm_v",
+                        "deis",
+                        "ddim",
+                        "uni_pc",
+                        "uni_pc_bh2",
+                        "res_multistep",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "scheduler": (
+                    ["", "normal", "karras", "exponential", "sgm_uniform", "simple", "ddim_uniform", "beta"],
+                    {"default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
                 "images": ("IMAGE", {}),
                 "api_config": (
                     "CIVITAI_CONFIG",
@@ -753,13 +4692,1001 @@ class CivitaiImageGenComfy(CivitaiRecipeNodeBase):
         }
 
 
+class CivitaiImageGenComfyErnieErnieCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / ernie / ernie / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "comfy", "ecosystem": "ernie", "model": "ernie", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sampler": F("sampler", "value"),
+        "scheduler": F("scheduler", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "loras_json": F("loras", "json"),
+        "diffusion_model": F("diffusionModel", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sampler": (
+                    [
+                        "",
+                        "euler",
+                        "euler_ancestral",
+                        "euler_cfg_pp",
+                        "euler_ancestral_cfg_pp",
+                        "heun",
+                        "heunpp2",
+                        "dpm_2",
+                        "dpm_2_ancestral",
+                        "lms",
+                        "dpm_fast",
+                        "dpm_adaptive",
+                        "dpmpp_2s_ancestral",
+                        "dpmpp_2s_ancestral_cfg_pp",
+                        "dpmpp_sde",
+                        "dpmpp_sde_gpu",
+                        "dpmpp_2m",
+                        "dpmpp_2m_cfg_pp",
+                        "dpmpp_2m_sde",
+                        "dpmpp_2m_sde_gpu",
+                        "dpmpp_3m_sde",
+                        "dpmpp_3m_sde_gpu",
+                        "ddpm",
+                        "lcm",
+                        "ipndm",
+                        "ipndm_v",
+                        "deis",
+                        "ddim",
+                        "uni_pc",
+                        "uni_pc_bh2",
+                        "res_multistep",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "scheduler": (
+                    ["", "normal", "karras", "exponential", "sgm_uniform", "simple", "ddim_uniform", "beta"],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 20, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "diffusion_model": ("STRING", {"default": ""}),
+                "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenComfyErnieTurboCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / ernie / turbo / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "comfy", "ecosystem": "ernie", "model": "turbo", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sampler": F("sampler", "value"),
+        "scheduler": F("scheduler", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "loras_json": F("loras", "json"),
+        "diffusion_model": F("diffusionModel", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sampler": (
+                    [
+                        "",
+                        "euler",
+                        "euler_ancestral",
+                        "euler_cfg_pp",
+                        "euler_ancestral_cfg_pp",
+                        "heun",
+                        "heunpp2",
+                        "dpm_2",
+                        "dpm_2_ancestral",
+                        "lms",
+                        "dpm_fast",
+                        "dpm_adaptive",
+                        "dpmpp_2s_ancestral",
+                        "dpmpp_2s_ancestral_cfg_pp",
+                        "dpmpp_sde",
+                        "dpmpp_sde_gpu",
+                        "dpmpp_2m",
+                        "dpmpp_2m_cfg_pp",
+                        "dpmpp_2m_sde",
+                        "dpmpp_2m_sde_gpu",
+                        "dpmpp_3m_sde",
+                        "dpmpp_3m_sde_gpu",
+                        "ddpm",
+                        "lcm",
+                        "ipndm",
+                        "ipndm_v",
+                        "deis",
+                        "ddim",
+                        "uni_pc",
+                        "uni_pc_bh2",
+                        "res_multistep",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "scheduler": (
+                    ["", "normal", "karras", "exponential", "sgm_uniform", "simple", "ddim_uniform", "beta"],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 8, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "diffusion_model": ("STRING", {"default": ""}),
+                "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenComfyHidreamO1HiDreamO1ImageCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / hidream-o1 / HiDream-O1-Image / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {
+        "engine": "comfy",
+        "ecosystem": "hidream-o1",
+        "model": "HiDream-O1-Image",
+        "operation": "createImage",
+    }
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "checkpoint_model": F("checkpointModel", "value"),
+        "loras_json": F("loras", "json"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "width": ("INT", {"default": 2048, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 2048, "min": 64, "max": 2048, "step": 1}),
+                "steps": ("INT", {"default": 40, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 5.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "checkpoint_model": ("STRING", {"default": "urn:air:hidream-o1:checkpoint:civitai:2618495@2939946"}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenComfyHidreamO1HiDreamO1ImageEditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / hidream-o1 / HiDream-O1-Image / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {
+        "engine": "comfy",
+        "ecosystem": "hidream-o1",
+        "model": "HiDream-O1-Image",
+        "operation": "editImage",
+    }
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "checkpoint_model": F("checkpointModel", "value"),
+        "loras_json": F("loras", "json"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "width": ("INT", {"default": 2048, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 2048, "min": 64, "max": 2048, "step": 1}),
+                "steps": ("INT", {"default": 40, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 5.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "checkpoint_model": ("STRING", {"default": "urn:air:hidream-o1:checkpoint:civitai:2618495@2939946"}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "images": ("IMAGE", {}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / hidream-o1 / HiDream-O1-Image-dev / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {
+        "engine": "comfy",
+        "ecosystem": "hidream-o1",
+        "model": "HiDream-O1-Image-dev",
+        "operation": "createImage",
+    }
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "checkpoint_model": F("checkpointModel", "value"),
+        "loras_json": F("loras", "json"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "width": ("INT", {"default": 2048, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 2048, "min": 64, "max": 2048, "step": 1}),
+                "steps": ("INT", {"default": 28, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "checkpoint_model": ("STRING", {"default": "urn:air:hidream-o1:checkpoint:civitai:2618495@2939964"}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevEditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / hidream-o1 / HiDream-O1-Image-dev / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {
+        "engine": "comfy",
+        "ecosystem": "hidream-o1",
+        "model": "HiDream-O1-Image-dev",
+        "operation": "editImage",
+    }
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "checkpoint_model": F("checkpointModel", "value"),
+        "loras_json": F("loras", "json"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "width": ("INT", {"default": 2048, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 2048, "min": 64, "max": 2048, "step": 1}),
+                "steps": ("INT", {"default": 28, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "checkpoint_model": ("STRING", {"default": "urn:air:hidream-o1:checkpoint:civitai:2618495@2939964"}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "images": ("IMAGE", {}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenComfyAnimaCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / anima / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "comfy", "ecosystem": "anima", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sampler": F("sampler", "value"),
+        "scheduler": F("scheduler", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "loras_json": F("loras", "json"),
+        "diffuser_model": F("diffuserModel", "value"),
+        "control_nets_json": F("controlNets", "json"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sampler": (
+                    [
+                        "",
+                        "euler",
+                        "euler_ancestral",
+                        "euler_cfg_pp",
+                        "euler_ancestral_cfg_pp",
+                        "heun",
+                        "heunpp2",
+                        "dpm_2",
+                        "dpm_2_ancestral",
+                        "lms",
+                        "dpm_fast",
+                        "dpm_adaptive",
+                        "dpmpp_2s_ancestral",
+                        "dpmpp_2s_ancestral_cfg_pp",
+                        "dpmpp_sde",
+                        "dpmpp_sde_gpu",
+                        "dpmpp_2m",
+                        "dpmpp_2m_cfg_pp",
+                        "dpmpp_2m_sde",
+                        "dpmpp_2m_sde_gpu",
+                        "dpmpp_3m_sde",
+                        "dpmpp_3m_sde_gpu",
+                        "ddpm",
+                        "lcm",
+                        "ipndm",
+                        "ipndm_v",
+                        "deis",
+                        "ddim",
+                        "uni_pc",
+                        "uni_pc_bh2",
+                        "res_multistep",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "scheduler": (
+                    ["", "normal", "karras", "exponential", "sgm_uniform", "simple", "ddim_uniform", "beta"],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 30, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "diffuser_model": ("STRING", {"default": ""}),
+                "control_nets_json": ("STRING", {"default": "", "multiline": True}),
+                "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenComfyAnimaCreateVariant(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / anima / createVariant) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "comfy", "ecosystem": "anima", "operation": "createVariant"}
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sampler": F("sampler", "value"),
+        "scheduler": F("scheduler", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "loras_json": F("loras", "json"),
+        "diffuser_model": F("diffuserModel", "value"),
+        "control_nets_json": F("controlNets", "json"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "image": F("image", "image_inline"),
+        "denoise_strength": F("denoiseStrength", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sampler": (
+                    [
+                        "",
+                        "euler",
+                        "euler_ancestral",
+                        "euler_cfg_pp",
+                        "euler_ancestral_cfg_pp",
+                        "heun",
+                        "heunpp2",
+                        "dpm_2",
+                        "dpm_2_ancestral",
+                        "lms",
+                        "dpm_fast",
+                        "dpm_adaptive",
+                        "dpmpp_2s_ancestral",
+                        "dpmpp_2s_ancestral_cfg_pp",
+                        "dpmpp_sde",
+                        "dpmpp_sde_gpu",
+                        "dpmpp_2m",
+                        "dpmpp_2m_cfg_pp",
+                        "dpmpp_2m_sde",
+                        "dpmpp_2m_sde_gpu",
+                        "dpmpp_3m_sde",
+                        "dpmpp_3m_sde_gpu",
+                        "ddpm",
+                        "lcm",
+                        "ipndm",
+                        "ipndm_v",
+                        "deis",
+                        "ddim",
+                        "uni_pc",
+                        "uni_pc_bh2",
+                        "res_multistep",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "scheduler": (
+                    ["", "normal", "karras", "exponential", "sgm_uniform", "simple", "ddim_uniform", "beta"],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 30, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "diffuser_model": ("STRING", {"default": ""}),
+                "control_nets_json": ("STRING", {"default": "", "multiline": True}),
+                "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "denoise_strength": ("FLOAT", {"default": 0.75, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenComfyLensNormalCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / lens / normal / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "comfy", "ecosystem": "lens", "model": "normal", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sampler": F("sampler", "value"),
+        "scheduler": F("scheduler", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "loras_json": F("loras", "json"),
+        "diffusion_model": F("diffusionModel", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sampler": (
+                    [
+                        "",
+                        "euler",
+                        "euler_ancestral",
+                        "euler_cfg_pp",
+                        "euler_ancestral_cfg_pp",
+                        "heun",
+                        "heunpp2",
+                        "dpm_2",
+                        "dpm_2_ancestral",
+                        "lms",
+                        "dpm_fast",
+                        "dpm_adaptive",
+                        "dpmpp_2s_ancestral",
+                        "dpmpp_2s_ancestral_cfg_pp",
+                        "dpmpp_sde",
+                        "dpmpp_sde_gpu",
+                        "dpmpp_2m",
+                        "dpmpp_2m_cfg_pp",
+                        "dpmpp_2m_sde",
+                        "dpmpp_2m_sde_gpu",
+                        "dpmpp_3m_sde",
+                        "dpmpp_3m_sde_gpu",
+                        "ddpm",
+                        "lcm",
+                        "ipndm",
+                        "ipndm_v",
+                        "deis",
+                        "ddim",
+                        "uni_pc",
+                        "uni_pc_bh2",
+                        "res_multistep",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "scheduler": (
+                    ["", "normal", "karras", "exponential", "sgm_uniform", "simple", "ddim_uniform", "beta"],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 20, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "diffusion_model": ("STRING", {"default": ""}),
+                "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenComfyLensTurboCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / lens / turbo / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "comfy", "ecosystem": "lens", "model": "turbo", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sampler": F("sampler", "value"),
+        "scheduler": F("scheduler", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "loras_json": F("loras", "json"),
+        "diffusion_model": F("diffusionModel", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "sampler": (
+                    [
+                        "",
+                        "euler",
+                        "euler_ancestral",
+                        "euler_cfg_pp",
+                        "euler_ancestral_cfg_pp",
+                        "heun",
+                        "heunpp2",
+                        "dpm_2",
+                        "dpm_2_ancestral",
+                        "lms",
+                        "dpm_fast",
+                        "dpm_adaptive",
+                        "dpmpp_2s_ancestral",
+                        "dpmpp_2s_ancestral_cfg_pp",
+                        "dpmpp_sde",
+                        "dpmpp_sde_gpu",
+                        "dpmpp_2m",
+                        "dpmpp_2m_cfg_pp",
+                        "dpmpp_2m_sde",
+                        "dpmpp_2m_sde_gpu",
+                        "dpmpp_3m_sde",
+                        "dpmpp_3m_sde_gpu",
+                        "ddpm",
+                        "lcm",
+                        "ipndm",
+                        "ipndm_v",
+                        "deis",
+                        "ddim",
+                        "uni_pc",
+                        "uni_pc_bh2",
+                        "res_multistep",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "scheduler": (
+                    ["", "normal", "karras", "exponential", "sgm_uniform", "simple", "ddim_uniform", "beta"],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 4, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "diffusion_model": ("STRING", {"default": ""}),
+                "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenComfyIdeogram4CreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (comfy / ideogram4 / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "comfy", "ecosystem": "ideogram4", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "sampler": F("sampler", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "loras_json": F("loras", "json"),
+        "diffusion_model": F("diffusionModel", "value"),
+        "unconditional_diffusion_model": F("unconditionalDiffusionModel", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "sampler": (
+                    [
+                        "",
+                        "euler",
+                        "euler_ancestral",
+                        "euler_cfg_pp",
+                        "euler_ancestral_cfg_pp",
+                        "heun",
+                        "heunpp2",
+                        "dpm_2",
+                        "dpm_2_ancestral",
+                        "lms",
+                        "dpm_fast",
+                        "dpm_adaptive",
+                        "dpmpp_2s_ancestral",
+                        "dpmpp_2s_ancestral_cfg_pp",
+                        "dpmpp_sde",
+                        "dpmpp_sde_gpu",
+                        "dpmpp_2m",
+                        "dpmpp_2m_cfg_pp",
+                        "dpmpp_2m_sde",
+                        "dpmpp_2m_sde_gpu",
+                        "dpmpp_3m_sde",
+                        "dpmpp_3m_sde_gpu",
+                        "ddpm",
+                        "lcm",
+                        "ipndm",
+                        "ipndm_v",
+                        "deis",
+                        "ddim",
+                        "uni_pc",
+                        "uni_pc_bh2",
+                        "res_multistep",
+                        "er_sde",
+                    ],
+                    {"default": ""},
+                ),
+                "steps": ("INT", {"default": 12, "min": 1, "max": 150, "step": 1}),
+                "cfg_scale": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 30.0, "step": 0.01}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "diffusion_model": ("STRING", {"default": ""}),
+                "unconditional_diffusion_model": ("STRING", {"default": ""}),
+                "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
 class CivitaiImageGenSeedream(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (Seedream) — imageGen recipe via Civitai Orchestration."""
+    """Civitai Image Gen (seedream) — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "seedream"}
-    CATEGORY = "Civitai/Image"
+    CATEGORY = "Civitai/Image/seedream"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -811,24 +5738,22 @@ class CivitaiImageGenSeedream(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiImageGenGrok(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (Grok) — imageGen recipe via Civitai Orchestration."""
+class CivitaiImageGenGrokCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (grok / createImage) — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
-    DISCRIMINATOR = {"engine": "grok"}
-    CATEGORY = "Civitai/Image"
+    DISCRIMINATOR = {"engine": "grok", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/grok"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
     FIELDS = {
         "output_format": F("outputFormat", "value"),
         "image_metadata": F("imageMetadata", "value"),
-        "operation": F("operation", "value"),
         "prompt": F("prompt", "value"),
         "quantity": F("quantity", "value"),
         "aspect_ratio": F("aspectRatio", "value"),
-        "images": F("images", "image_list"),
     }
     OUTPUTS = (
         O("images", "image_list"),
@@ -839,7 +5764,6 @@ class CivitaiImageGenGrok(CivitaiRecipeNodeBase):
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "operation": (["createImage", "editImage"], {}),
                 "prompt": ("STRING", {"default": "", "multiline": True}),
             },
             "optional": {
@@ -870,7 +5794,6 @@ class CivitaiImageGenGrok(CivitaiRecipeNodeBase):
                         "default": "1:1",
                     },
                 ),
-                "images": ("IMAGE", {}),
                 "api_config": (
                     "CIVITAI_CONFIG",
                     {
@@ -881,32 +5804,21 @@ class CivitaiImageGenGrok(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiImageGenFal(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (Fal) — imageGen recipe via Civitai Orchestration."""
+class CivitaiImageGenGrokEditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (grok / editImage) — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
-    DISCRIMINATOR = {"engine": "fal"}
-    CATEGORY = "Civitai/Image"
+    DISCRIMINATOR = {"engine": "grok", "operation": "editImage"}
+    CATEGORY = "Civitai/Image/grok"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
     FIELDS = {
         "output_format": F("outputFormat", "value"),
         "image_metadata": F("imageMetadata", "value"),
-        "model": F("model", "value"),
-        "operation": F("operation", "value"),
         "prompt": F("prompt", "value"),
-        "negative_prompt": F("negativePrompt", "value"),
         "quantity": F("quantity", "value"),
-        "image_size": F("imageSize", "value"),
-        "seed": F("seed", "value"),
-        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
-        "enable_safety_checker": F("enableSafetyChecker", "value"),
-        "size": F("size", "value"),
-        "aspect_ratio": F("aspectRatio", "value"),
-        "creativity": F("creativity", "value"),
-        "image_style_references_json": F("imageStyleReferences", "json"),
         "images": F("images", "image_list"),
     }
     OUTPUTS = (
@@ -918,7 +5830,8 @@ class CivitaiImageGenFal(CivitaiRecipeNodeBase):
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "model": (["qwen2", "krea2", "maiImage"], {}),
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "images": ("IMAGE", {}),
             },
             "optional": {
                 "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
@@ -926,8 +5839,57 @@ class CivitaiImageGenFal(CivitaiRecipeNodeBase):
                     "STRING",
                     {"tooltip": "External metadata that will be stored with the image", "default": ""},
                 ),
-                "operation": (["", "createImage", "editImage", "proCreateImage", "proEditImage"], {}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenFalQwen2CreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (fal / qwen2 / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "fal", "model": "qwen2"}
+    CATEGORY = "Civitai/Image/fal"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "operation": F("operation", "value"),
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "quantity": F("quantity", "value"),
+        "image_size": F("imageSize", "value"),
+        "seed": F("seed", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "operation": (["createImage", "proCreateImage"], {"default": "createImage"}),
                 "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
                 "negative_prompt": ("STRING", {"default": "", "multiline": True}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 10, "step": 1}),
                 "image_size": (
@@ -937,11 +5899,221 @@ class CivitaiImageGenFal(CivitaiRecipeNodeBase):
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "enable_prompt_expansion": ("BOOLEAN", {"default": True}),
                 "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenFalQwen2EditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (fal / qwen2 / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "fal", "model": "qwen2"}
+    CATEGORY = "Civitai/Image/fal"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "operation": F("operation", "value"),
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "quantity": F("quantity", "value"),
+        "image_size": F("imageSize", "value"),
+        "seed": F("seed", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "operation": (["editImage", "proEditImage"], {"default": "editImage"}),
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "images": ("IMAGE", {}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 10, "step": 1}),
+                "image_size": (
+                    ["square_hd", "square", "portrait_4_3", "portrait_16_9", "landscape_4_3", "landscape_16_9"],
+                    {"default": "square_hd"},
+                ),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": True}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenFalKrea2CreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (fal / krea2 / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "fal", "model": "krea2", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/fal"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "size": F("size", "value"),
+        "aspect_ratio": F("aspectRatio", "value"),
+        "creativity": F("creativity", "value"),
+        "quantity": F("quantity", "value"),
+        "seed": F("seed", "value"),
+        "image_style_references_json": F("imageStyleReferences", "json"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "image_style_references_json": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
                 "size": (["medium", "large"], {"default": "medium"}),
                 "aspect_ratio": (["1:1", "4:3", "3:2", "16:9", "2.35:1", "4:5", "2:3", "9:16"], {"default": "1:1"}),
                 "creativity": (["raw", "low", "medium", "high"], {"default": "medium"}),
-                "image_style_references_json": ("STRING", {"default": "", "multiline": True}),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 10, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenFalMaiImageCreateImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (fal / maiImage / createImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "fal", "model": "maiImage", "operation": "createImage"}
+    CATEGORY = "Civitai/Image/fal"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "aspect_ratio": F("aspectRatio", "value"),
+        "quantity": F("quantity", "value"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "aspect_ratio": (
+                    ["auto", "21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"],
+                    {"default": "auto"},
+                ),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiImageGenFalMaiImageEditImage(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (fal / maiImage / editImage) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {"engine": "fal", "model": "maiImage", "operation": "editImage"}
+    CATEGORY = "Civitai/Image/fal"
+    FUNCTION = "run"
+    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "aspect_ratio": F("aspectRatio", "value"),
+        "quantity": F("quantity", "value"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (
+        O("images", "image_list"),
+        O("errors", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
                 "images": ("IMAGE", {}),
+            },
+            "optional": {
+                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
+                "image_metadata": (
+                    "STRING",
+                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
+                ),
+                "aspect_ratio": (
+                    ["auto", "21:9", "16:9", "3:2", "4:3", "5:4", "1:1", "4:5", "3:4", "2:3", "9:16"],
+                    {"default": "auto"},
+                ),
+                "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
                 "api_config": (
                     "CIVITAI_CONFIG",
                     {
@@ -1187,34 +6359,164 @@ class CivitaiTextToImage(CivitaiRecipeNodeBase):
 
 NODE_CLASS_MAPPINGS = {
     "CivitaiImageBackgroundRemoval": CivitaiImageBackgroundRemoval,
-    "CivitaiImageGenOpenai": CivitaiImageGenOpenai,
+    "CivitaiImageGenOpenaiGptImage1CreateImage": CivitaiImageGenOpenaiGptImage1CreateImage,
+    "CivitaiImageGenOpenaiGptImage1EditImage": CivitaiImageGenOpenaiGptImage1EditImage,
+    "CivitaiImageGenOpenaiGptImage15CreateImage": CivitaiImageGenOpenaiGptImage15CreateImage,
+    "CivitaiImageGenOpenaiGptImage15EditImage": CivitaiImageGenOpenaiGptImage15EditImage,
+    "CivitaiImageGenOpenaiGptImage2CreateImage": CivitaiImageGenOpenaiGptImage2CreateImage,
+    "CivitaiImageGenOpenaiGptImage2EditImage": CivitaiImageGenOpenaiGptImage2EditImage,
+    "CivitaiImageGenOpenaiDallE2CreateImage": CivitaiImageGenOpenaiDallE2CreateImage,
+    "CivitaiImageGenOpenaiDallE2EditImage": CivitaiImageGenOpenaiDallE2EditImage,
+    "CivitaiImageGenOpenaiDallE3CreateImage": CivitaiImageGenOpenaiDallE3CreateImage,
     "CivitaiImageGenFlux1Kontext": CivitaiImageGenFlux1Kontext,
-    "CivitaiImageGenFlux2": CivitaiImageGenFlux2,
-    "CivitaiImageGenGoogle": CivitaiImageGenGoogle,
-    "CivitaiImageGenWan": CivitaiImageGenWan,
-    "CivitaiImageGenGemini": CivitaiImageGenGemini,
-    "CivitaiImageGenSdcpp": CivitaiImageGenSdcpp,
-    "CivitaiImageGenComfy": CivitaiImageGenComfy,
+    "CivitaiImageGenFlux2DevCreateImage": CivitaiImageGenFlux2DevCreateImage,
+    "CivitaiImageGenFlux2DevEditImage": CivitaiImageGenFlux2DevEditImage,
+    "CivitaiImageGenFlux2FlexCreateImage": CivitaiImageGenFlux2FlexCreateImage,
+    "CivitaiImageGenFlux2FlexEditImage": CivitaiImageGenFlux2FlexEditImage,
+    "CivitaiImageGenFlux2CreateImage": CivitaiImageGenFlux2CreateImage,
+    "CivitaiImageGenFlux2EditImage": CivitaiImageGenFlux2EditImage,
+    "CivitaiImageGenFlux2KleinCreateImage": CivitaiImageGenFlux2KleinCreateImage,
+    "CivitaiImageGenFlux2KleinEditImage": CivitaiImageGenFlux2KleinEditImage,
+    "CivitaiImageGenGoogleImagen4": CivitaiImageGenGoogleImagen4,
+    "CivitaiImageGenGoogleNanoBananaPro": CivitaiImageGenGoogleNanoBananaPro,
+    "CivitaiImageGenGoogleNanoBanana2": CivitaiImageGenGoogleNanoBanana2,
+    "CivitaiImageGenWanV22Fal": CivitaiImageGenWanV22Fal,
+    "CivitaiImageGenWanV225bFal": CivitaiImageGenWanV225bFal,
+    "CivitaiImageGenWanV25FalTextToImage": CivitaiImageGenWanV25FalTextToImage,
+    "CivitaiImageGenWanV25FalImageToImage": CivitaiImageGenWanV25FalImageToImage,
+    "CivitaiImageGenWanV27FalCreateImage": CivitaiImageGenWanV27FalCreateImage,
+    "CivitaiImageGenWanV27FalEditImage": CivitaiImageGenWanV27FalEditImage,
+    "CivitaiImageGenGemini25FlashCreateImage": CivitaiImageGenGemini25FlashCreateImage,
+    "CivitaiImageGenGemini25FlashEditImage": CivitaiImageGenGemini25FlashEditImage,
+    "CivitaiImageGenSdcppQwen20bCreateImage": CivitaiImageGenSdcppQwen20bCreateImage,
+    "CivitaiImageGenSdcppQwen20bEditImage": CivitaiImageGenSdcppQwen20bEditImage,
+    "CivitaiImageGenSdcppQwen20bCreateVariant": CivitaiImageGenSdcppQwen20bCreateVariant,
+    "CivitaiImageGenSdcppZImageTurboCreateImage": CivitaiImageGenSdcppZImageTurboCreateImage,
+    "CivitaiImageGenSdcppZImageBaseCreateImage": CivitaiImageGenSdcppZImageBaseCreateImage,
+    "CivitaiImageGenSdcppAnimaCreateImage": CivitaiImageGenSdcppAnimaCreateImage,
+    "CivitaiImageGenSdcppAnimaCreateVariant": CivitaiImageGenSdcppAnimaCreateVariant,
+    "CivitaiImageGenSdcppSd1CreateImage": CivitaiImageGenSdcppSd1CreateImage,
+    "CivitaiImageGenSdcppSd1CreateVariant": CivitaiImageGenSdcppSd1CreateVariant,
+    "CivitaiImageGenSdcppSdxlCreateImage": CivitaiImageGenSdcppSdxlCreateImage,
+    "CivitaiImageGenSdcppSdxlCreateVariant": CivitaiImageGenSdcppSdxlCreateVariant,
+    "CivitaiImageGenSdcppFlux1CreateImage": CivitaiImageGenSdcppFlux1CreateImage,
+    "CivitaiImageGenSdcppFlux1EditImage": CivitaiImageGenSdcppFlux1EditImage,
+    "CivitaiImageGenSdcppFlux1CreateVariant": CivitaiImageGenSdcppFlux1CreateVariant,
+    "CivitaiImageGenSdcppFlux2DevCreateImage": CivitaiImageGenSdcppFlux2DevCreateImage,
+    "CivitaiImageGenSdcppFlux2DevEditImage": CivitaiImageGenSdcppFlux2DevEditImage,
+    "CivitaiImageGenSdcppFlux2DevCreateVariant": CivitaiImageGenSdcppFlux2DevCreateVariant,
+    "CivitaiImageGenSdcppFlux2KleinCreateImage": CivitaiImageGenSdcppFlux2KleinCreateImage,
+    "CivitaiImageGenSdcppFlux2KleinEditImage": CivitaiImageGenSdcppFlux2KleinEditImage,
+    "CivitaiImageGenSdcppFlux2KleinCreateVariant": CivitaiImageGenSdcppFlux2KleinCreateVariant,
+    "CivitaiImageGenComfySd1CreateImage": CivitaiImageGenComfySd1CreateImage,
+    "CivitaiImageGenComfySd1CreateVariant": CivitaiImageGenComfySd1CreateVariant,
+    "CivitaiImageGenComfySdxlCreateImage": CivitaiImageGenComfySdxlCreateImage,
+    "CivitaiImageGenComfySdxlCreateVariant": CivitaiImageGenComfySdxlCreateVariant,
+    "CivitaiImageGenComfyFlux1CreateImage": CivitaiImageGenComfyFlux1CreateImage,
+    "CivitaiImageGenComfyFlux1CreateVariant": CivitaiImageGenComfyFlux1CreateVariant,
+    "CivitaiImageGenComfyFlux2DevCreateImage": CivitaiImageGenComfyFlux2DevCreateImage,
+    "CivitaiImageGenComfyFlux2DevEditImage": CivitaiImageGenComfyFlux2DevEditImage,
+    "CivitaiImageGenComfyErnieErnieCreateImage": CivitaiImageGenComfyErnieErnieCreateImage,
+    "CivitaiImageGenComfyErnieTurboCreateImage": CivitaiImageGenComfyErnieTurboCreateImage,
+    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageCreateImage": CivitaiImageGenComfyHidreamO1HiDreamO1ImageCreateImage,
+    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageEditImage": CivitaiImageGenComfyHidreamO1HiDreamO1ImageEditImage,
+    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevCreateImage": CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevCreateImage,
+    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevEditImage": CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevEditImage,
+    "CivitaiImageGenComfyAnimaCreateImage": CivitaiImageGenComfyAnimaCreateImage,
+    "CivitaiImageGenComfyAnimaCreateVariant": CivitaiImageGenComfyAnimaCreateVariant,
+    "CivitaiImageGenComfyLensNormalCreateImage": CivitaiImageGenComfyLensNormalCreateImage,
+    "CivitaiImageGenComfyLensTurboCreateImage": CivitaiImageGenComfyLensTurboCreateImage,
+    "CivitaiImageGenComfyIdeogram4CreateImage": CivitaiImageGenComfyIdeogram4CreateImage,
     "CivitaiImageGenSeedream": CivitaiImageGenSeedream,
-    "CivitaiImageGenGrok": CivitaiImageGenGrok,
-    "CivitaiImageGenFal": CivitaiImageGenFal,
+    "CivitaiImageGenGrokCreateImage": CivitaiImageGenGrokCreateImage,
+    "CivitaiImageGenGrokEditImage": CivitaiImageGenGrokEditImage,
+    "CivitaiImageGenFalQwen2CreateImage": CivitaiImageGenFalQwen2CreateImage,
+    "CivitaiImageGenFalQwen2EditImage": CivitaiImageGenFalQwen2EditImage,
+    "CivitaiImageGenFalKrea2CreateImage": CivitaiImageGenFalKrea2CreateImage,
+    "CivitaiImageGenFalMaiImageCreateImage": CivitaiImageGenFalMaiImageCreateImage,
+    "CivitaiImageGenFalMaiImageEditImage": CivitaiImageGenFalMaiImageEditImage,
     "CivitaiImageUpscaler": CivitaiImageUpscaler,
     "CivitaiTextToImage": CivitaiTextToImage,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiImageBackgroundRemoval": "Civitai Image Background Removal",
-    "CivitaiImageGenOpenai": "Civitai Image Gen (Openai)",
-    "CivitaiImageGenFlux1Kontext": "Civitai Image Gen (Flux1Kontext)",
-    "CivitaiImageGenFlux2": "Civitai Image Gen (Flux2)",
-    "CivitaiImageGenGoogle": "Civitai Image Gen (Google)",
-    "CivitaiImageGenWan": "Civitai Image Gen (Wan)",
-    "CivitaiImageGenGemini": "Civitai Image Gen (Gemini)",
-    "CivitaiImageGenSdcpp": "Civitai Image Gen (Sdcpp)",
-    "CivitaiImageGenComfy": "Civitai Image Gen (Comfy)",
-    "CivitaiImageGenSeedream": "Civitai Image Gen (Seedream)",
-    "CivitaiImageGenGrok": "Civitai Image Gen (Grok)",
-    "CivitaiImageGenFal": "Civitai Image Gen (Fal)",
+    "CivitaiImageGenOpenaiGptImage1CreateImage": "Civitai Image Gen (openai / gpt-image-1 / createImage)",
+    "CivitaiImageGenOpenaiGptImage1EditImage": "Civitai Image Gen (openai / gpt-image-1 / editImage)",
+    "CivitaiImageGenOpenaiGptImage15CreateImage": "Civitai Image Gen (openai / gpt-image-1.5 / createImage)",
+    "CivitaiImageGenOpenaiGptImage15EditImage": "Civitai Image Gen (openai / gpt-image-1.5 / editImage)",
+    "CivitaiImageGenOpenaiGptImage2CreateImage": "Civitai Image Gen (openai / gpt-image-2 / createImage)",
+    "CivitaiImageGenOpenaiGptImage2EditImage": "Civitai Image Gen (openai / gpt-image-2 / editImage)",
+    "CivitaiImageGenOpenaiDallE2CreateImage": "Civitai Image Gen (openai / dall-e-2 / createImage)",
+    "CivitaiImageGenOpenaiDallE2EditImage": "Civitai Image Gen (openai / dall-e-2 / editImage)",
+    "CivitaiImageGenOpenaiDallE3CreateImage": "Civitai Image Gen (openai / dall-e-3 / createImage)",
+    "CivitaiImageGenFlux1Kontext": "Civitai Image Gen (flux1-kontext)",
+    "CivitaiImageGenFlux2DevCreateImage": "Civitai Image Gen (flux2 / dev / createImage)",
+    "CivitaiImageGenFlux2DevEditImage": "Civitai Image Gen (flux2 / dev / editImage)",
+    "CivitaiImageGenFlux2FlexCreateImage": "Civitai Image Gen (flux2 / flex / createImage)",
+    "CivitaiImageGenFlux2FlexEditImage": "Civitai Image Gen (flux2 / flex / editImage)",
+    "CivitaiImageGenFlux2CreateImage": "Civitai Image Gen (flux2 / createImage)",
+    "CivitaiImageGenFlux2EditImage": "Civitai Image Gen (flux2 / editImage)",
+    "CivitaiImageGenFlux2KleinCreateImage": "Civitai Image Gen (flux2 / klein / createImage)",
+    "CivitaiImageGenFlux2KleinEditImage": "Civitai Image Gen (flux2 / klein / editImage)",
+    "CivitaiImageGenGoogleImagen4": "Civitai Image Gen (google / imagen4)",
+    "CivitaiImageGenGoogleNanoBananaPro": "Civitai Image Gen (google / nano-banana-pro)",
+    "CivitaiImageGenGoogleNanoBanana2": "Civitai Image Gen (google / nano-banana-2)",
+    "CivitaiImageGenWanV22Fal": "Civitai Image Gen (wan / v2.2 / fal)",
+    "CivitaiImageGenWanV225bFal": "Civitai Image Gen (wan / v2.2-5b / fal)",
+    "CivitaiImageGenWanV25FalTextToImage": "Civitai Image Gen (wan / v2.5 / fal / text-to-image)",
+    "CivitaiImageGenWanV25FalImageToImage": "Civitai Image Gen (wan / v2.5 / fal / image-to-image)",
+    "CivitaiImageGenWanV27FalCreateImage": "Civitai Image Gen (wan / v2.7 / fal / createImage)",
+    "CivitaiImageGenWanV27FalEditImage": "Civitai Image Gen (wan / v2.7 / fal / editImage)",
+    "CivitaiImageGenGemini25FlashCreateImage": "Civitai Image Gen (gemini / 2.5-flash / createImage)",
+    "CivitaiImageGenGemini25FlashEditImage": "Civitai Image Gen (gemini / 2.5-flash / editImage)",
+    "CivitaiImageGenSdcppQwen20bCreateImage": "Civitai Image Gen (sdcpp / qwen / 20b / createImage)",
+    "CivitaiImageGenSdcppQwen20bEditImage": "Civitai Image Gen (sdcpp / qwen / 20b / editImage)",
+    "CivitaiImageGenSdcppQwen20bCreateVariant": "Civitai Image Gen (sdcpp / qwen / 20b / createVariant)",
+    "CivitaiImageGenSdcppZImageTurboCreateImage": "Civitai Image Gen (sdcpp / zImage / turbo / createImage)",
+    "CivitaiImageGenSdcppZImageBaseCreateImage": "Civitai Image Gen (sdcpp / zImage / base / createImage)",
+    "CivitaiImageGenSdcppAnimaCreateImage": "Civitai Image Gen (sdcpp / anima / createImage)",
+    "CivitaiImageGenSdcppAnimaCreateVariant": "Civitai Image Gen (sdcpp / anima / createVariant)",
+    "CivitaiImageGenSdcppSd1CreateImage": "Civitai Image Gen (sdcpp / sd1 / createImage)",
+    "CivitaiImageGenSdcppSd1CreateVariant": "Civitai Image Gen (sdcpp / sd1 / createVariant)",
+    "CivitaiImageGenSdcppSdxlCreateImage": "Civitai Image Gen (sdcpp / sdxl / createImage)",
+    "CivitaiImageGenSdcppSdxlCreateVariant": "Civitai Image Gen (sdcpp / sdxl / createVariant)",
+    "CivitaiImageGenSdcppFlux1CreateImage": "Civitai Image Gen (sdcpp / flux1 / createImage)",
+    "CivitaiImageGenSdcppFlux1EditImage": "Civitai Image Gen (sdcpp / flux1 / editImage)",
+    "CivitaiImageGenSdcppFlux1CreateVariant": "Civitai Image Gen (sdcpp / flux1 / createVariant)",
+    "CivitaiImageGenSdcppFlux2DevCreateImage": "Civitai Image Gen (sdcpp / flux2Dev / createImage)",
+    "CivitaiImageGenSdcppFlux2DevEditImage": "Civitai Image Gen (sdcpp / flux2Dev / editImage)",
+    "CivitaiImageGenSdcppFlux2DevCreateVariant": "Civitai Image Gen (sdcpp / flux2Dev / createVariant)",
+    "CivitaiImageGenSdcppFlux2KleinCreateImage": "Civitai Image Gen (sdcpp / flux2Klein / createImage)",
+    "CivitaiImageGenSdcppFlux2KleinEditImage": "Civitai Image Gen (sdcpp / flux2Klein / editImage)",
+    "CivitaiImageGenSdcppFlux2KleinCreateVariant": "Civitai Image Gen (sdcpp / flux2Klein / createVariant)",
+    "CivitaiImageGenComfySd1CreateImage": "Civitai Image Gen (comfy / sd1 / createImage)",
+    "CivitaiImageGenComfySd1CreateVariant": "Civitai Image Gen (comfy / sd1 / createVariant)",
+    "CivitaiImageGenComfySdxlCreateImage": "Civitai Image Gen (comfy / sdxl / createImage)",
+    "CivitaiImageGenComfySdxlCreateVariant": "Civitai Image Gen (comfy / sdxl / createVariant)",
+    "CivitaiImageGenComfyFlux1CreateImage": "Civitai Image Gen (comfy / flux1 / createImage)",
+    "CivitaiImageGenComfyFlux1CreateVariant": "Civitai Image Gen (comfy / flux1 / createVariant)",
+    "CivitaiImageGenComfyFlux2DevCreateImage": "Civitai Image Gen (comfy / flux2Dev / createImage)",
+    "CivitaiImageGenComfyFlux2DevEditImage": "Civitai Image Gen (comfy / flux2Dev / editImage)",
+    "CivitaiImageGenComfyErnieErnieCreateImage": "Civitai Image Gen (comfy / ernie / ernie / createImage)",
+    "CivitaiImageGenComfyErnieTurboCreateImage": "Civitai Image Gen (comfy / ernie / turbo / createImage)",
+    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageCreateImage": "Civitai Image Gen (comfy / hidream-o1 / HiDream-O1-Image / createImage)",
+    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageEditImage": "Civitai Image Gen (comfy / hidream-o1 / HiDream-O1-Image / editImage)",
+    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevCreateImage": "Civitai Image Gen (comfy / hidream-o1 / HiDream-O1-Image-dev / createImage)",
+    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevEditImage": "Civitai Image Gen (comfy / hidream-o1 / HiDream-O1-Image-dev / editImage)",
+    "CivitaiImageGenComfyAnimaCreateImage": "Civitai Image Gen (comfy / anima / createImage)",
+    "CivitaiImageGenComfyAnimaCreateVariant": "Civitai Image Gen (comfy / anima / createVariant)",
+    "CivitaiImageGenComfyLensNormalCreateImage": "Civitai Image Gen (comfy / lens / normal / createImage)",
+    "CivitaiImageGenComfyLensTurboCreateImage": "Civitai Image Gen (comfy / lens / turbo / createImage)",
+    "CivitaiImageGenComfyIdeogram4CreateImage": "Civitai Image Gen (comfy / ideogram4 / createImage)",
+    "CivitaiImageGenSeedream": "Civitai Image Gen (seedream)",
+    "CivitaiImageGenGrokCreateImage": "Civitai Image Gen (grok / createImage)",
+    "CivitaiImageGenGrokEditImage": "Civitai Image Gen (grok / editImage)",
+    "CivitaiImageGenFalQwen2CreateImage": "Civitai Image Gen (fal / qwen2 / createImage)",
+    "CivitaiImageGenFalQwen2EditImage": "Civitai Image Gen (fal / qwen2 / editImage)",
+    "CivitaiImageGenFalKrea2CreateImage": "Civitai Image Gen (fal / krea2 / createImage)",
+    "CivitaiImageGenFalMaiImageCreateImage": "Civitai Image Gen (fal / maiImage / createImage)",
+    "CivitaiImageGenFalMaiImageEditImage": "Civitai Image Gen (fal / maiImage / editImage)",
     "CivitaiImageUpscaler": "Civitai Image Upscaler",
     "CivitaiTextToImage": "Civitai Text To Image",
 }

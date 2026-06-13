@@ -7,7 +7,7 @@ converts blob outputs to native Comfy types.
 ## Architecture
 
 - `civitai_comfy_nodes/generated/` — **AUTO-GENERATED, never hand-edit.** One module per
-  category (image/video/audio/text/analysis/training/misc), ~57 declarative node classes.
+  category (image/video/audio/text/analysis/training/misc), ~160 declarative node classes.
 - `civitai_comfy_nodes/base.py` — all runtime behavior: payload building from `FIELDS`,
   submit → poll loop (interrupt-aware, ProgressBar), output conversion per `OUTPUTS`.
 - `civitai_comfy_nodes/client.py` — `OrchestrationClient`: workflows submit/get/cancel,
@@ -29,9 +29,14 @@ converts blob outputs to native Comfy types.
   client-side sleeps (the base class slices sleeps for Comfy interrupt handling).
 - Cancel = `PUT /v2/consumer/workflows/{id}` with `{"status": "canceled"}`.
 - Blob signed URLs expire; refresh via `POST /v2/consumer/blobs/{blobId}/refresh`.
-- Discriminated inputs are recursive (`engine` → `version` → `provider` → `operation`).
-  Codegen expands the top level into one node per variant and flattens nested levels
-  into COMBO widgets (optional combos get a `""` omit choice so the server default wins).
+- Discriminated inputs are recursive (`engine` → `model`/`ecosystem`/`version` → `operation`).
+  Codegen fully expands every discriminator into a separate node, then **collapses a level
+  back into a dropdown only when all its sibling subtrees are structurally identical**
+  (`generate.py:expand_collapse` + `_subtree_signature`). So each node shows exactly its
+  variant's fields (no irrelevant inputs, no image/images overlap), while true duplicates
+  like openai gpt-image-1/1.5/2 — where they ARE identical — stay one node with a dropdown.
+  `engine` never collapses. When a collapsed group splits a fixed path (e.g. fal/qwen2
+  create-ops vs edit-ops) the node is disambiguated by the group's lead operation.
 - OAuth: PKCE at `civitai.com/api/auth/oauth/*`, `scope` is a decimal bitmask
   (114689 = UserRead|AIServicesRead|AIServicesWrite|BuzzRead), access 1h / refresh 30d.
   Interactive login needs `CIVITAI_OAUTH_CLIENT_ID` (registered app with

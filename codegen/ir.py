@@ -168,39 +168,6 @@ def _merge_property(existing: dict | None, new: dict) -> dict:
     return merged
 
 
-def flatten_variant(spec: dict, variant_schema: dict, top_disc_prop: str) -> tuple[dict, set, dict, list]:
-    """Merge a variant's full subtree (nested discriminators included).
-
-    Returns (properties, required, combo_options_by_prop, warnings). Required only
-    reflects the variant's own chain — fields contributed by deeper nested variants
-    are always optional.
-    """
-    properties, required, discriminators = merge_allof_chain(spec, variant_schema)
-    combos: dict[str, list] = {}
-    warnings: list[str] = []
-    visited: set[str] = set()
-
-    def absorb(discs: list, top: bool) -> None:
-        for prop_name, mapping in discs:
-            if prop_name == top_disc_prop:
-                continue
-            options = combos.setdefault(prop_name, [])
-            for key in mapping:
-                if key not in options:
-                    options.append(key)
-            for sub_ref in mapping.values():
-                if sub_ref in visited:
-                    continue
-                visited.add(sub_ref)
-                sub_props, _sub_required, sub_discs = merge_allof_chain(spec, resolve_ref(spec, sub_ref))
-                for name, prop in sub_props.items():
-                    properties[name] = _merge_property(properties.get(name), prop)
-                absorb(sub_discs, top=False)
-
-    absorb(discriminators, top=True)
-    return properties, required, combos, warnings
-
-
 def classify_input_field(name: str, schema: dict, hint: str | None) -> tuple[str, str | list, str]:
     """Map a property schema to (field_kind, comfy_type, detection_note)."""
     schema, _ = unwrap_nullable(schema)

@@ -41,23 +41,38 @@ def test_skipped_recipes_produce_no_nodes(nodes, overrides):
     assert generated_recipes.isdisjoint(set(overrides["_skip"]))
 
 
-def test_wan_node_flattens_nested_discriminators(nodes):
-    wan = node_by_name(nodes, "CivitaiVideoGenWan")
+def test_wan_nested_discriminators_become_separate_nodes(nodes):
+    # engine/version/provider/operation are all expanded into distinct nodes (fixed discriminators),
+    # not collapsed into dropdowns on one node.
+    wan = node_by_name(nodes, "CivitaiVideoGenWanV21Fal")
+    assert wan.discriminator == {"engine": "wan", "version": "v2.1", "provider": "fal"}
     fields = {f.api: f for f in wan.fields}
-    assert wan.discriminator == {"engine": "wan"}
-    assert "engine" not in fields
-
-    version = fields["version"]
-    assert isinstance(version.comfy_type, list)
-    assert {"v2.1", "v2.2", "v2.5", "v2.6", "v2.7"} <= set(version.comfy_type)
-    assert version.options.get("default") == "v2.1"
-
-    # provider/operation come from deeper nested discriminators
-    assert isinstance(fields["provider"].comfy_type, list)
-    assert {"civitai", "fal"} <= set(fields["provider"].comfy_type)
-
-    assert fields["sourceImage"].kind == "image_inline"
+    assert "version" not in fields and "provider" not in fields and "engine" not in fields
     assert fields["prompt"].required
+    assert fields["sourceImage"].kind == "image_inline"
+    # the operation axis also splits into its own nodes
+    assert any(n.discriminator.get("operation") == "editVideo" for n in nodes if n.recipe == "videoGen")
+
+
+def test_identical_siblings_collapse_to_dropdown(nodes):
+    # flux1-kontext pro/max/dev share an identical field set -> one node with a `model` dropdown.
+    kontext = node_by_name(nodes, "CivitaiImageGenFlux1Kontext")
+    model = {f.api: f for f in kontext.fields}["model"]
+    assert model.detected_as == "discriminator-combo"
+    assert {"pro", "max", "dev"} <= set(model.comfy_type)
+    assert "model" not in kontext.discriminator  # collapsed, not fixed
+
+
+def test_operation_split_removes_image_overlap(nodes):
+    # createImage and editImage are separate nodes; only the edit node carries a source-image input.
+    create = node_by_name(nodes, "CivitaiImageGenSdcppFlux1CreateImage")
+    edit = node_by_name(nodes, "CivitaiImageGenSdcppFlux1EditImage")
+    create_imgs = {f.api for f in create.fields if f.kind in ("image_inline", "image_list", "image_url")}
+    edit_imgs = {f.api for f in edit.fields if f.kind in ("image_inline", "image_list", "image_url")}
+    assert create_imgs == set()
+    assert edit_imgs  # edit has at least one image input
+    assert create.discriminator["operation"] == "createImage"
+    assert edit.discriminator["operation"] == "editImage"
 
 
 def test_texttoimage_widget_bounds(nodes):
@@ -107,6 +122,11 @@ def test_enum_refs_resolve_to_combos(nodes):
     fields = {f.api: f for f in kling.fields}
     assert isinstance(fields["duration"].comfy_type, list)
     assert isinstance(fields["model"].comfy_type, list)
+
+
+def test_node_names_and_displays_unique(nodes):
+    assert len({n.class_name for n in nodes}) == len(nodes)
+    assert len({n.display_name for n in nodes}) == len(nodes)
 
 
 def test_all_recipes_have_module_assignment(spec, overrides):

@@ -149,19 +149,17 @@ class CivitaiEcho(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiPolyGenFal(CivitaiRecipeNodeBase):
-    """Civitai Poly Gen (Fal) — polyGen recipe via Civitai Orchestration."""
+class CivitaiPolyGenFalMeshyTextTo3D(CivitaiRecipeNodeBase):
+    """Civitai Poly Gen (fal / meshy / textTo3D) — polyGen recipe via Civitai Orchestration."""
 
     RECIPE = "polyGen"
     STEP_TYPE = "polyGen"
-    DISCRIMINATOR = {"engine": "fal"}
-    CATEGORY = "Civitai/Misc"
+    DISCRIMINATOR = {"engine": "fal", "model": "meshy", "operation": "textTo3D"}
+    CATEGORY = "Civitai/Misc/fal"
     FUNCTION = "run"
     RETURN_TYPES = ("STRING", "STRING", "IMAGE", "STRING", "STRING")
     RETURN_NAMES = ("model", "fbx_model", "thumbnail", "workflow_id", "raw_json")
     FIELDS = {
-        "model": F("model", "value"),
-        "operation": F("operation", "value"),
         "target_polycount": F("targetPolycount", "value"),
         "topology": F("topology", "value"),
         "symmetry_mode": F("symmetryMode", "value"),
@@ -174,6 +172,61 @@ class CivitaiPolyGenFal(CivitaiRecipeNodeBase):
         "prompt": F("prompt", "value"),
         "mode": F("mode", "value"),
         "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+    }
+    OUTPUTS = (
+        O("model", "json"),
+        O("fbxModel", "json"),
+        O("thumbnail", "image"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "target_polycount": ("INT", {"default": 30000, "min": 100, "max": 300000, "step": 1}),
+                "topology": (["quad", "triangle"], {"default": "triangle"}),
+                "symmetry_mode": (["off", "auto", "on"], {"default": "auto"}),
+                "should_remesh": ("BOOLEAN", {"default": True}),
+                "enable_pbr": ("BOOLEAN", {"default": False}),
+                "texture_prompt": ("STRING", {"default": ""}),
+                "enable_rigging": ("BOOLEAN", {"default": False}),
+                "enable_animation": ("BOOLEAN", {"default": False}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "mode": (["preview", "full"], {"default": "full"}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiPolyGenFalMeshyImageTo3D(CivitaiRecipeNodeBase):
+    """Civitai Poly Gen (fal / meshy / imageTo3D) — polyGen recipe via Civitai Orchestration."""
+
+    RECIPE = "polyGen"
+    STEP_TYPE = "polyGen"
+    DISCRIMINATOR = {"engine": "fal", "model": "meshy", "operation": "imageTo3D"}
+    CATEGORY = "Civitai/Misc/fal"
+    FUNCTION = "run"
+    RETURN_TYPES = ("STRING", "STRING", "IMAGE", "STRING", "STRING")
+    RETURN_NAMES = ("model", "fbx_model", "thumbnail", "workflow_id", "raw_json")
+    FIELDS = {
+        "target_polycount": F("targetPolycount", "value"),
+        "topology": F("topology", "value"),
+        "symmetry_mode": F("symmetryMode", "value"),
+        "should_remesh": F("shouldRemesh", "value"),
+        "enable_pbr": F("enablePbr", "value"),
+        "texture_prompt": F("texturePrompt", "value"),
+        "enable_rigging": F("enableRigging", "value"),
+        "enable_animation": F("enableAnimation", "value"),
+        "seed": F("seed", "value"),
         "image_url": F("imageUrl", "value"),
         "should_texture": F("shouldTexture", "value"),
     }
@@ -187,10 +240,9 @@ class CivitaiPolyGenFal(CivitaiRecipeNodeBase):
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "model": (["meshy"], {}),
+                "image_url": ("STRING", {"default": ""}),
             },
             "optional": {
-                "operation": (["", "textTo3D", "imageTo3D"], {}),
                 "target_polycount": ("INT", {"default": 30000, "min": 100, "max": 300000, "step": 1}),
                 "topology": (["quad", "triangle"], {"default": "triangle"}),
                 "symmetry_mode": (["off", "auto", "on"], {"default": "auto"}),
@@ -200,10 +252,6 @@ class CivitaiPolyGenFal(CivitaiRecipeNodeBase):
                 "enable_rigging": ("BOOLEAN", {"default": False}),
                 "enable_animation": ("BOOLEAN", {"default": False}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
-                "prompt": ("STRING", {"default": "", "multiline": True}),
-                "mode": (["preview", "full"], {"default": "full"}),
-                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
-                "image_url": ("STRING", {"default": ""}),
                 "should_texture": ("BOOLEAN", {"default": True}),
                 "api_config": (
                     "CIVITAI_CONFIG",
@@ -219,12 +267,14 @@ NODE_CLASS_MAPPINGS = {
     "CivitaiComfy": CivitaiComfy,
     "CivitaiCustomComfy": CivitaiCustomComfy,
     "CivitaiEcho": CivitaiEcho,
-    "CivitaiPolyGenFal": CivitaiPolyGenFal,
+    "CivitaiPolyGenFalMeshyTextTo3D": CivitaiPolyGenFalMeshyTextTo3D,
+    "CivitaiPolyGenFalMeshyImageTo3D": CivitaiPolyGenFalMeshyImageTo3D,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiComfy": "Civitai Comfy",
     "CivitaiCustomComfy": "Civitai Custom Comfy",
     "CivitaiEcho": "Civitai Echo",
-    "CivitaiPolyGenFal": "Civitai Poly Gen (Fal)",
+    "CivitaiPolyGenFalMeshyTextTo3D": "Civitai Poly Gen (fal / meshy / textTo3D)",
+    "CivitaiPolyGenFalMeshyImageTo3D": "Civitai Poly Gen (fal / meshy / imageTo3D)",
 }

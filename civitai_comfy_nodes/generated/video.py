@@ -40,12 +40,12 @@ class CivitaiVideoEnhancement(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenHaiper(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Haiper) — videoGen recipe via Civitai Orchestration."""
+    """Civitai Video Gen (haiper) — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
     DISCRIMINATOR = {"engine": "haiper"}
-    CATEGORY = "Civitai/Video"
+    CATEGORY = "Civitai/Video/haiper"
     FUNCTION = "run"
     RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "workflow_id", "raw_json")
@@ -96,12 +96,12 @@ class CivitaiVideoGenHaiper(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenMochi(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Mochi) — videoGen recipe via Civitai Orchestration."""
+    """Civitai Video Gen (mochi) — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
     DISCRIMINATOR = {"engine": "mochi"}
-    CATEGORY = "Civitai/Video"
+    CATEGORY = "Civitai/Video/mochi"
     FUNCTION = "run"
     RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "workflow_id", "raw_json")
@@ -135,12 +135,12 @@ class CivitaiVideoGenMochi(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenKling(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Kling) — videoGen recipe via Civitai Orchestration."""
+    """Civitai Video Gen (kling) — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
     DISCRIMINATOR = {"engine": "kling"}
-    CATEGORY = "Civitai/Video"
+    CATEGORY = "Civitai/Video/kling"
     FUNCTION = "run"
     RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "workflow_id", "raw_json")
@@ -185,12 +185,12 @@ class CivitaiVideoGenKling(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenMinimax(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Minimax) — videoGen recipe via Civitai Orchestration."""
+    """Civitai Video Gen (minimax) — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
     DISCRIMINATOR = {"engine": "minimax"}
-    CATEGORY = "Civitai/Video"
+    CATEGORY = "Civitai/Video/minimax"
     FUNCTION = "run"
     RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "workflow_id", "raw_json")
@@ -223,12 +223,12 @@ class CivitaiVideoGenMinimax(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenLightricks(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Lightricks) — videoGen recipe via Civitai Orchestration."""
+    """Civitai Video Gen (lightricks) — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
     DISCRIMINATOR = {"engine": "lightricks"}
-    CATEGORY = "Civitai/Video"
+    CATEGORY = "Civitai/Video/lightricks"
     FUNCTION = "run"
     RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "workflow_id", "raw_json")
@@ -272,19 +272,18 @@ class CivitaiVideoGenLightricks(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiVideoGenLtx2(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (LTX 2) — videoGen recipe via Civitai Orchestration."""
+class CivitaiVideoGenLtx2CreateVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (LTX 2 / createVideo) — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
-    DISCRIMINATOR = {"engine": "ltx2"}
-    CATEGORY = "Civitai/Video"
+    DISCRIMINATOR = {"engine": "ltx2", "operation": "createVideo"}
+    CATEGORY = "Civitai/Video/LTX 2"
     FUNCTION = "run"
     RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "workflow_id", "raw_json")
     FIELDS = {
         "prompt": F("prompt", "value"),
-        "operation": F("operation", "value"),
         "negative_prompt": F("negativePrompt", "value"),
         "seed": F("seed", "value"),
         "duration": F("duration", "value"),
@@ -297,14 +296,6 @@ class CivitaiVideoGenLtx2(CivitaiRecipeNodeBase):
         "model": F("model", "value"),
         "loras_json": F("loras", "json"),
         "images": F("images", "image_list"),
-        "source_video": F("sourceVideo", "video_url"),
-        "num_frames": F("numFrames", "value"),
-        "canny_low_threshold": F("cannyLowThreshold", "value"),
-        "canny_high_threshold": F("cannyHighThreshold", "value"),
-        "guide_strength": F("guideStrength", "value"),
-        "first_frame": F("firstFrame", "value"),
-        "last_frame": F("lastFrame", "value"),
-        "frame_guide_strength": F("frameGuideStrength", "value"),
     }
     OUTPUTS = (O("video", "video"),)
 
@@ -313,10 +304,6 @@ class CivitaiVideoGenLtx2(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "operation": (
-                    ["createVideo", "extendVideo", "editVideo", "firstLastFrameToVideo"],
-                    {"default": "createVideo"},
-                ),
             },
             "optional": {
                 "negative_prompt": ("STRING", {"default": "", "multiline": True}),
@@ -331,11 +318,183 @@ class CivitaiVideoGenLtx2(CivitaiRecipeNodeBase):
                 "model": (["19b-dev", "19b-distilled"], {"default": "19b-dev"}),
                 "loras_json": ("STRING", {"default": "", "multiline": True}),
                 "images": ("IMAGE", {"tooltip": "Optional source image for image-to-video generation"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenLtx2ExtendVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (LTX 2 / extendVideo) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "ltx2", "operation": "extendVideo"}
+    CATEGORY = "Civitai/Video/LTX 2"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "seed": F("seed", "value"),
+        "duration": F("duration", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "fps": F("fps", "value"),
+        "generate_audio": F("generateAudio", "value"),
+        "guidance_scale": F("guidanceScale", "value"),
+        "steps": F("steps", "value"),
+        "model": F("model", "value"),
+        "loras_json": F("loras", "json"),
+        "source_video": F("sourceVideo", "video_url"),
+        "num_frames": F("numFrames", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
                 "source_video": ("VIDEO", {}),
+            },
+            "optional": {
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "duration": ([3, 5], {"tooltip": "Duration in seconds (3 or 5)", "default": 5}),
+                "width": ("INT", {"default": 1280, "min": 0, "max": 2147483647, "step": 1}),
+                "height": ("INT", {"default": 720, "min": 0, "max": 2147483647, "step": 1}),
+                "fps": ("FLOAT", {"default": 24.0, "min": 1.0, "max": 60.0, "step": 0.01}),
+                "generate_audio": ("BOOLEAN", {"default": True}),
+                "guidance_scale": ("FLOAT", {"default": 4.0, "min": 1.0, "max": 10.0, "step": 0.01}),
+                "steps": ("INT", {"default": 20, "min": 8, "max": 50, "step": 1}),
+                "model": (["19b-dev", "19b-distilled"], {"default": "19b-dev"}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
                 "num_frames": ("INT", {"default": 121, "min": 9, "max": 481, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenLtx2EditVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (LTX 2 / editVideo) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "ltx2", "operation": "editVideo"}
+    CATEGORY = "Civitai/Video/LTX 2"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "seed": F("seed", "value"),
+        "duration": F("duration", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "fps": F("fps", "value"),
+        "generate_audio": F("generateAudio", "value"),
+        "guidance_scale": F("guidanceScale", "value"),
+        "steps": F("steps", "value"),
+        "model": F("model", "value"),
+        "loras_json": F("loras", "json"),
+        "source_video": F("sourceVideo", "video_url"),
+        "canny_low_threshold": F("cannyLowThreshold", "value"),
+        "canny_high_threshold": F("cannyHighThreshold", "value"),
+        "guide_strength": F("guideStrength", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "source_video": ("VIDEO", {}),
+            },
+            "optional": {
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "duration": ([3, 5], {"tooltip": "Duration in seconds (3 or 5)", "default": 5}),
+                "width": ("INT", {"default": 1280, "min": 0, "max": 2147483647, "step": 1}),
+                "height": ("INT", {"default": 720, "min": 0, "max": 2147483647, "step": 1}),
+                "fps": ("FLOAT", {"default": 24.0, "min": 1.0, "max": 60.0, "step": 0.01}),
+                "generate_audio": ("BOOLEAN", {"default": True}),
+                "guidance_scale": ("FLOAT", {"default": 4.0, "min": 1.0, "max": 10.0, "step": 0.01}),
+                "steps": ("INT", {"default": 20, "min": 8, "max": 50, "step": 1}),
+                "model": (["19b-dev", "19b-distilled"], {"default": "19b-dev"}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
                 "canny_low_threshold": ("FLOAT", {"default": 0.4, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "canny_high_threshold": ("FLOAT", {"default": 0.8, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "guide_strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenLtx2FirstLastFrameToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (LTX 2 / firstLastFrameToVideo) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "ltx2", "operation": "firstLastFrameToVideo"}
+    CATEGORY = "Civitai/Video/LTX 2"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "seed": F("seed", "value"),
+        "duration": F("duration", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "fps": F("fps", "value"),
+        "generate_audio": F("generateAudio", "value"),
+        "guidance_scale": F("guidanceScale", "value"),
+        "steps": F("steps", "value"),
+        "model": F("model", "value"),
+        "loras_json": F("loras", "json"),
+        "first_frame": F("firstFrame", "value"),
+        "last_frame": F("lastFrame", "value"),
+        "frame_guide_strength": F("frameGuideStrength", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "duration": ([3, 5], {"tooltip": "Duration in seconds (3 or 5)", "default": 5}),
+                "width": ("INT", {"default": 1280, "min": 0, "max": 2147483647, "step": 1}),
+                "height": ("INT", {"default": 720, "min": 0, "max": 2147483647, "step": 1}),
+                "fps": ("FLOAT", {"default": 24.0, "min": 1.0, "max": 60.0, "step": 0.01}),
+                "generate_audio": ("BOOLEAN", {"default": True}),
+                "guidance_scale": ("FLOAT", {"default": 4.0, "min": 1.0, "max": 10.0, "step": 0.01}),
+                "steps": ("INT", {"default": 20, "min": 8, "max": 50, "step": 1}),
+                "model": (["19b-dev", "19b-distilled"], {"default": "19b-dev"}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
                 "first_frame": (
                     "STRING",
                     {
@@ -370,19 +529,18 @@ class CivitaiVideoGenLtx2(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiVideoGenLtx23(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (LTX 2.3) — videoGen recipe via Civitai Orchestration."""
+class CivitaiVideoGenLtx23CreateVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (LTX 2.3 / createVideo) — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
-    DISCRIMINATOR = {"engine": "ltx2.3"}
-    CATEGORY = "Civitai/Video"
+    DISCRIMINATOR = {"engine": "ltx2.3", "operation": "createVideo"}
+    CATEGORY = "Civitai/Video/LTX 2.3"
     FUNCTION = "run"
     RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "workflow_id", "raw_json")
     FIELDS = {
         "prompt": F("prompt", "value"),
-        "operation": F("operation", "value"),
         "negative_prompt": F("negativePrompt", "value"),
         "seed": F("seed", "value"),
         "duration": F("duration", "value"),
@@ -397,18 +555,6 @@ class CivitaiVideoGenLtx23(CivitaiRecipeNodeBase):
         "diffusion_model": F("diffusionModel", "value"),
         "quantity": F("quantity", "value"),
         "images": F("images", "image_list"),
-        "source_video": F("sourceVideo", "video_url"),
-        "num_frames": F("numFrames", "value"),
-        "canny_low_threshold": F("cannyLowThreshold", "value"),
-        "canny_high_threshold": F("cannyHighThreshold", "value"),
-        "guide_strength": F("guideStrength", "value"),
-        "first_frame": F("firstFrame", "value"),
-        "last_frame": F("lastFrame", "value"),
-        "frame_guide_strength": F("frameGuideStrength", "value"),
-        "reference_image": F("referenceImage", "value"),
-        "source_audio": F("sourceAudio", "audio_url"),
-        "image_guide_strength": F("imageGuideStrength", "value"),
-        "audio_to_video_attention_scale": F("audioToVideoAttentionScale", "value"),
     }
     OUTPUTS = (O("video", "video"),)
 
@@ -417,17 +563,6 @@ class CivitaiVideoGenLtx23(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "operation": (
-                    [
-                        "createVideo",
-                        "extendVideo",
-                        "editVideo",
-                        "firstLastFrameToVideo",
-                        "videoToVideo",
-                        "audioToVideo",
-                    ],
-                    {"default": "createVideo"},
-                ),
             },
             "optional": {
                 "negative_prompt": ("STRING", {"default": "", "multiline": True}),
@@ -459,11 +594,240 @@ class CivitaiVideoGenLtx23(CivitaiRecipeNodeBase):
                     },
                 ),
                 "images": ("IMAGE", {"tooltip": "Optional source image for image-to-video generation"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenLtx23ExtendVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (LTX 2.3 / extendVideo) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "ltx2.3", "operation": "extendVideo"}
+    CATEGORY = "Civitai/Video/LTX 2.3"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "seed": F("seed", "value"),
+        "duration": F("duration", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "fps": F("fps", "value"),
+        "generate_audio": F("generateAudio", "value"),
+        "guidance_scale": F("guidanceScale", "value"),
+        "steps": F("steps", "value"),
+        "model": F("model", "value"),
+        "loras_json": F("loras", "json"),
+        "diffusion_model": F("diffusionModel", "value"),
+        "quantity": F("quantity", "value"),
+        "source_video": F("sourceVideo", "video_url"),
+        "num_frames": F("numFrames", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
                 "source_video": ("VIDEO", {}),
+            },
+            "optional": {
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "duration": (["", 3, 20], {"tooltip": "Duration in seconds (3 or 5)", "default": ""}),
+                "width": ("INT", {"default": 1280, "min": 0, "max": 2147483647, "step": 1}),
+                "height": ("INT", {"default": 720, "min": 0, "max": 2147483647, "step": 1}),
+                "fps": ("FLOAT", {"default": 24.0, "min": 1.0, "max": 60.0, "step": 0.01}),
+                "generate_audio": ("BOOLEAN", {"default": True}),
+                "guidance_scale": ("FLOAT", {"default": 4.0, "min": 1.0, "max": 10.0, "step": 0.01}),
+                "steps": ("INT", {"default": 20, "min": 8, "max": 50, "step": 1}),
+                "model": (["22b-dev", "22b-distilled"], {"default": "22b-dev"}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "diffusion_model": (
+                    "STRING",
+                    {
+                        "tooltip": "Optional override for the LTX 2.3 diffusion-model checkpoint. When set, replaces the transformer file selected by Civitai.Orchestration.Grains.Workflows.Steps.VideoGen.ComfyLtx23VideoGenInput.Model while leaving the CLIPs, VAEs, and upscale-LoRA behavior unchanged. Use to point at a community fine-tune (e.g. SulphurAI/Sulphur-2-base).",
+                        "default": "",
+                    },
+                ),
+                "quantity": (
+                    "INT",
+                    {
+                        "tooltip": "Number of videos to generate in this single job. Each video uses a distinct seed (Seed + slotIndex) and is produced by re-running the Comfy workflow.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 10,
+                        "step": 1,
+                    },
+                ),
                 "num_frames": ("INT", {"default": 121, "min": 9, "max": 481, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenLtx23EditVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (LTX 2.3 / editVideo) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "ltx2.3", "operation": "editVideo"}
+    CATEGORY = "Civitai/Video/LTX 2.3"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "seed": F("seed", "value"),
+        "duration": F("duration", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "fps": F("fps", "value"),
+        "generate_audio": F("generateAudio", "value"),
+        "guidance_scale": F("guidanceScale", "value"),
+        "steps": F("steps", "value"),
+        "model": F("model", "value"),
+        "loras_json": F("loras", "json"),
+        "diffusion_model": F("diffusionModel", "value"),
+        "quantity": F("quantity", "value"),
+        "source_video": F("sourceVideo", "video_url"),
+        "canny_low_threshold": F("cannyLowThreshold", "value"),
+        "canny_high_threshold": F("cannyHighThreshold", "value"),
+        "guide_strength": F("guideStrength", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "source_video": ("VIDEO", {}),
+            },
+            "optional": {
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "duration": (["", 3, 20], {"tooltip": "Duration in seconds (3 or 5)", "default": ""}),
+                "width": ("INT", {"default": 1280, "min": 0, "max": 2147483647, "step": 1}),
+                "height": ("INT", {"default": 720, "min": 0, "max": 2147483647, "step": 1}),
+                "fps": ("FLOAT", {"default": 24.0, "min": 1.0, "max": 60.0, "step": 0.01}),
+                "generate_audio": ("BOOLEAN", {"default": True}),
+                "guidance_scale": ("FLOAT", {"default": 4.0, "min": 1.0, "max": 10.0, "step": 0.01}),
+                "steps": ("INT", {"default": 20, "min": 8, "max": 50, "step": 1}),
+                "model": (["22b-dev", "22b-distilled"], {"default": "22b-dev"}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "diffusion_model": (
+                    "STRING",
+                    {
+                        "tooltip": "Optional override for the LTX 2.3 diffusion-model checkpoint. When set, replaces the transformer file selected by Civitai.Orchestration.Grains.Workflows.Steps.VideoGen.ComfyLtx23VideoGenInput.Model while leaving the CLIPs, VAEs, and upscale-LoRA behavior unchanged. Use to point at a community fine-tune (e.g. SulphurAI/Sulphur-2-base).",
+                        "default": "",
+                    },
+                ),
+                "quantity": (
+                    "INT",
+                    {
+                        "tooltip": "Number of videos to generate in this single job. Each video uses a distinct seed (Seed + slotIndex) and is produced by re-running the Comfy workflow.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 10,
+                        "step": 1,
+                    },
+                ),
                 "canny_low_threshold": ("FLOAT", {"default": 0.4, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "canny_high_threshold": ("FLOAT", {"default": 0.8, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "guide_strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenLtx23FirstLastFrameToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (LTX 2.3 / firstLastFrameToVideo) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "ltx2.3", "operation": "firstLastFrameToVideo"}
+    CATEGORY = "Civitai/Video/LTX 2.3"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "seed": F("seed", "value"),
+        "duration": F("duration", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "fps": F("fps", "value"),
+        "generate_audio": F("generateAudio", "value"),
+        "guidance_scale": F("guidanceScale", "value"),
+        "steps": F("steps", "value"),
+        "model": F("model", "value"),
+        "loras_json": F("loras", "json"),
+        "diffusion_model": F("diffusionModel", "value"),
+        "quantity": F("quantity", "value"),
+        "first_frame": F("firstFrame", "value"),
+        "last_frame": F("lastFrame", "value"),
+        "frame_guide_strength": F("frameGuideStrength", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "duration": (["", 3, 20], {"tooltip": "Duration in seconds (3 or 5)", "default": ""}),
+                "width": ("INT", {"default": 1280, "min": 0, "max": 2147483647, "step": 1}),
+                "height": ("INT", {"default": 720, "min": 0, "max": 2147483647, "step": 1}),
+                "fps": ("FLOAT", {"default": 24.0, "min": 1.0, "max": 60.0, "step": 0.01}),
+                "generate_audio": ("BOOLEAN", {"default": True}),
+                "guidance_scale": ("FLOAT", {"default": 4.0, "min": 1.0, "max": 10.0, "step": 0.01}),
+                "steps": ("INT", {"default": 20, "min": 8, "max": 50, "step": 1}),
+                "model": (["22b-dev", "22b-distilled"], {"default": "22b-dev"}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "diffusion_model": (
+                    "STRING",
+                    {
+                        "tooltip": "Optional override for the LTX 2.3 diffusion-model checkpoint. When set, replaces the transformer file selected by Civitai.Orchestration.Grains.Workflows.Steps.VideoGen.ComfyLtx23VideoGenInput.Model while leaving the CLIPs, VAEs, and upscale-LoRA behavior unchanged. Use to point at a community fine-tune (e.g. SulphurAI/Sulphur-2-base).",
+                        "default": "",
+                    },
+                ),
+                "quantity": (
+                    "INT",
+                    {
+                        "tooltip": "Number of videos to generate in this single job. Each video uses a distinct seed (Seed + slotIndex) and is produced by re-running the Comfy workflow.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 10,
+                        "step": 1,
+                    },
+                ),
                 "first_frame": (
                     "STRING",
                     {
@@ -488,6 +852,161 @@ class CivitaiVideoGenLtx23(CivitaiRecipeNodeBase):
                         "step": 0.01,
                     },
                 ),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenLtx23VideoToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (LTX 2.3 / videoToVideo) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "ltx2.3", "operation": "videoToVideo"}
+    CATEGORY = "Civitai/Video/LTX 2.3"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "seed": F("seed", "value"),
+        "duration": F("duration", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "fps": F("fps", "value"),
+        "generate_audio": F("generateAudio", "value"),
+        "guidance_scale": F("guidanceScale", "value"),
+        "steps": F("steps", "value"),
+        "model": F("model", "value"),
+        "loras_json": F("loras", "json"),
+        "diffusion_model": F("diffusionModel", "value"),
+        "quantity": F("quantity", "value"),
+        "source_video": F("sourceVideo", "video_url"),
+        "guide_strength": F("guideStrength", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "source_video": ("VIDEO", {}),
+            },
+            "optional": {
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "duration": (["", 3, 20], {"tooltip": "Duration in seconds (3 or 5)", "default": ""}),
+                "width": ("INT", {"default": 1280, "min": 0, "max": 2147483647, "step": 1}),
+                "height": ("INT", {"default": 720, "min": 0, "max": 2147483647, "step": 1}),
+                "fps": ("FLOAT", {"default": 24.0, "min": 1.0, "max": 60.0, "step": 0.01}),
+                "generate_audio": ("BOOLEAN", {"default": True}),
+                "guidance_scale": ("FLOAT", {"default": 4.0, "min": 1.0, "max": 10.0, "step": 0.01}),
+                "steps": ("INT", {"default": 20, "min": 8, "max": 50, "step": 1}),
+                "model": (["22b-dev", "22b-distilled"], {"default": "22b-dev"}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "diffusion_model": (
+                    "STRING",
+                    {
+                        "tooltip": "Optional override for the LTX 2.3 diffusion-model checkpoint. When set, replaces the transformer file selected by Civitai.Orchestration.Grains.Workflows.Steps.VideoGen.ComfyLtx23VideoGenInput.Model while leaving the CLIPs, VAEs, and upscale-LoRA behavior unchanged. Use to point at a community fine-tune (e.g. SulphurAI/Sulphur-2-base).",
+                        "default": "",
+                    },
+                ),
+                "quantity": (
+                    "INT",
+                    {
+                        "tooltip": "Number of videos to generate in this single job. Each video uses a distinct seed (Seed + slotIndex) and is produced by re-running the Comfy workflow.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 10,
+                        "step": 1,
+                    },
+                ),
+                "guide_strength": ("FLOAT", {"default": 0.2, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenLtx23AudioToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (LTX 2.3 / audioToVideo) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "ltx2.3", "operation": "audioToVideo"}
+    CATEGORY = "Civitai/Video/LTX 2.3"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "seed": F("seed", "value"),
+        "duration": F("duration", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "fps": F("fps", "value"),
+        "generate_audio": F("generateAudio", "value"),
+        "guidance_scale": F("guidanceScale", "value"),
+        "steps": F("steps", "value"),
+        "model": F("model", "value"),
+        "loras_json": F("loras", "json"),
+        "diffusion_model": F("diffusionModel", "value"),
+        "quantity": F("quantity", "value"),
+        "reference_image": F("referenceImage", "value"),
+        "source_audio": F("sourceAudio", "audio_url"),
+        "image_guide_strength": F("imageGuideStrength", "value"),
+        "audio_to_video_attention_scale": F("audioToVideoAttentionScale", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "source_audio": ("AUDIO", {}),
+            },
+            "optional": {
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "duration": (["", 3, 20], {"tooltip": "Duration in seconds (3 or 5)", "default": ""}),
+                "width": ("INT", {"default": 1280, "min": 0, "max": 2147483647, "step": 1}),
+                "height": ("INT", {"default": 720, "min": 0, "max": 2147483647, "step": 1}),
+                "fps": ("FLOAT", {"default": 24.0, "min": 1.0, "max": 60.0, "step": 0.01}),
+                "generate_audio": ("BOOLEAN", {"default": True}),
+                "guidance_scale": ("FLOAT", {"default": 4.0, "min": 1.0, "max": 10.0, "step": 0.01}),
+                "steps": ("INT", {"default": 20, "min": 8, "max": 50, "step": 1}),
+                "model": (["22b-dev", "22b-distilled"], {"default": "22b-dev"}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "diffusion_model": (
+                    "STRING",
+                    {
+                        "tooltip": "Optional override for the LTX 2.3 diffusion-model checkpoint. When set, replaces the transformer file selected by Civitai.Orchestration.Grains.Workflows.Steps.VideoGen.ComfyLtx23VideoGenInput.Model while leaving the CLIPs, VAEs, and upscale-LoRA behavior unchanged. Use to point at a community fine-tune (e.g. SulphurAI/Sulphur-2-base).",
+                        "default": "",
+                    },
+                ),
+                "quantity": (
+                    "INT",
+                    {
+                        "tooltip": "Number of videos to generate in this single job. Each video uses a distinct seed (Seed + slotIndex) and is produced by re-running the Comfy workflow.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 10,
+                        "step": 1,
+                    },
+                ),
                 "reference_image": (
                     "STRING",
                     {
@@ -495,7 +1014,6 @@ class CivitaiVideoGenLtx23(CivitaiRecipeNodeBase):
                         "default": "",
                     },
                 ),
-                "source_audio": ("AUDIO", {}),
                 "image_guide_strength": (
                     "FLOAT",
                     {
@@ -527,12 +1045,12 @@ class CivitaiVideoGenLtx23(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenHunyuan(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Hunyuan) — videoGen recipe via Civitai Orchestration."""
+    """Civitai Video Gen (hunyuan) — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
     DISCRIMINATOR = {"engine": "hunyuan"}
-    CATEGORY = "Civitai/Video"
+    CATEGORY = "Civitai/Video/hunyuan"
     FUNCTION = "run"
     RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "workflow_id", "raw_json")
@@ -576,19 +1094,18 @@ class CivitaiVideoGenHunyuan(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiVideoGenWan(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Wan) — videoGen recipe via Civitai Orchestration."""
+class CivitaiVideoGenWanV21Civitai(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (wan / v2.1 / civitai) — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
-    DISCRIMINATOR = {"engine": "wan"}
-    CATEGORY = "Civitai/Video"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.1", "provider": "civitai"}
+    CATEGORY = "Civitai/Video/wan"
     FUNCTION = "run"
     RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "workflow_id", "raw_json")
     FIELDS = {
         "prompt": F("prompt", "value"),
-        "version": F("version", "value"),
         "source_image": F("sourceImage", "image_inline"),
         "cfg_scale": F("cfgScale", "value"),
         "frame_rate": F("frameRate", "value"),
@@ -596,34 +1113,10 @@ class CivitaiVideoGenWan(CivitaiRecipeNodeBase):
         "seed": F("seed", "value"),
         "steps": F("steps", "value"),
         "loras_json": F("loras", "json"),
-        "provider": F("provider", "value"),
-        "operation": F("operation", "value"),
-        "resolution": F("resolution", "value"),
-        "enable_safety_checker": F("enableSafetyChecker", "value"),
-        "aspect_ratio": F("aspectRatio", "value"),
-        "negative_prompt": F("negativePrompt", "value"),
-        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
-        "audio_url": F("audioUrl", "value"),
-        "start_image": F("startImage", "image_inline"),
-        "end_image": F("endImage", "image_inline"),
-        "video_url": F("videoUrl", "value"),
-        "reference_images": F("referenceImages", "image_list"),
-        "reference_video_urls_json": F("referenceVideoUrls", "json"),
-        "multi_shots": F("multiShots", "value"),
-        "reference_image": F("referenceImage", "value"),
-        "audio_setting": F("audioSetting", "value"),
-        "images": F("images", "image_list"),
-        "use_distill": F("useDistill", "value"),
-        "use_fast_wan": F("useFastWan", "value"),
-        "interpolator_model": F("interpolatorModel", "value"),
-        "num_inference_steps": F("numInferenceSteps", "value"),
-        "shift": F("shift", "value"),
-        "use_turbo": F("useTurbo", "value"),
         "width": F("width", "value"),
         "height": F("height", "value"),
         "model": F("model", "value"),
-        "sampler": F("sampler", "value"),
-        "scheduler": F("scheduler", "value"),
+        "images": F("images", "image_list"),
     }
     OUTPUTS = (O("video", "video"),)
 
@@ -632,82 +1125,254 @@ class CivitaiVideoGenWan(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "version": (["v2.1", "v2.2", "v2.2-5b", "v2.5", "v2.6", "v2.7"], {"default": "v2.1"}),
                 "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 100.0, "step": 0.01}),
             },
             "optional": {
                 "source_image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
                 "frame_rate": ("INT", {"default": 24, "min": 0, "max": 2147483647, "step": 1}),
-                "duration": (
-                    "INT",
-                    {
-                        "tooltip": "Duration for reference-to-video is limited to 5 or 10 seconds",
-                        "default": 5,
-                        "min": 1,
-                        "max": 30,
-                        "step": 1,
-                    },
-                ),
+                "duration": ("INT", {"default": 5, "min": 1, "max": 30, "step": 1}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "steps": ("INT", {"default": 20, "min": 10, "max": 50, "step": 1}),
                 "loras_json": ("STRING", {"default": "", "multiline": True}),
-                "provider": (["", "fal", "comfy", "civitai"], {"default": "civitai"}),
-                "operation": (
-                    ["", "text-to-video", "image-to-video", "reference-to-video", "edit-video"],
-                    {"default": "text-to-video"},
-                ),
-                "resolution": (["720p", "1080p"], {"default": "1080p"}),
-                "enable_safety_checker": ("BOOLEAN", {"default": False}),
-                "aspect_ratio": (
-                    ["16:9", "9:16", "1:1", "4:3", "3:4"],
-                    {
-                        "tooltip": "Aspect ratio of the generated video. If not provided, uses the input video's aspect ratio.",
-                        "default": "16:9",
-                    },
-                ),
-                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
-                "enable_prompt_expansion": ("BOOLEAN", {"default": True}),
-                "audio_url": (
-                    "STRING",
-                    {"tooltip": "URL of audio file (WAV/MP3, 3-30 seconds, up to 15 MB)", "default": ""},
-                ),
-                "start_image": ("IMAGE", {"tooltip": "First frame image URL"}),
-                "end_image": ("IMAGE", {"tooltip": "Last frame image for first-and-last-frame-to-video"}),
-                "video_url": (
-                    "STRING",
-                    {"tooltip": "URL of a video clip to continue from (MP4/MOV, 2-10s, max 100 MB)", "default": ""},
-                ),
-                "reference_images": (
-                    "IMAGE",
-                    {"tooltip": "Reference images for character/object appearance (max 20 MB each)"},
-                ),
-                "reference_video_urls_json": (
-                    "STRING",
-                    {
-                        "tooltip": "Reference videos for character/object appearance and motion (max 100 MB each) Use @Video1, @Video2, @Video3 in the prompt to reference subjects",
-                        "default": "",
-                        "multiline": True,
-                    },
-                ),
-                "multi_shots": ("BOOLEAN", {"default": False}),
-                "reference_image": (
-                    "STRING",
-                    {"tooltip": "Reference image for reference-based editing", "default": ""},
-                ),
-                "audio_setting": (
-                    ["auto", "origin"],
-                    {"tooltip": 'Audio handling: "auto" or "origin" (keep original audio)', "default": "auto"},
-                ),
+                "width": ("INT", {"default": 480, "min": 0, "max": 2147483647, "step": 1}),
+                "height": ("INT", {"default": 480, "min": 0, "max": 2147483647, "step": 1}),
+                "model": ("STRING", {"default": ""}),
                 "images": ("IMAGE", {}),
-                "use_distill": ("BOOLEAN", {"default": False}),
-                "use_fast_wan": ("BOOLEAN", {"default": False}),
-                "interpolator_model": (["none", "film", "rife"], {"default": "film"}),
-                "num_inference_steps": ("INT", {"default": 20, "min": 2, "max": 50, "step": 1}),
-                "shift": ("FLOAT", {"default": 5.0, "min": 1.0, "max": 20.0, "step": 0.01}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenWanV21Fal(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (wan / v2.1 / fal) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.1", "provider": "fal"}
+    CATEGORY = "Civitai/Video/wan"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "source_image": F("sourceImage", "image_inline"),
+        "cfg_scale": F("cfgScale", "value"),
+        "frame_rate": F("frameRate", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "steps": F("steps", "value"),
+        "loras_json": F("loras", "json"),
+        "aspect_ratio": F("aspectRatio", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 100.0, "step": 0.01}),
+            },
+            "optional": {
+                "source_image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+                "frame_rate": ("INT", {"default": 24, "min": 0, "max": 2147483647, "step": 1}),
+                "duration": ("INT", {"default": 5, "min": 1, "max": 30, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "steps": ("INT", {"default": 20, "min": 10, "max": 50, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "aspect_ratio": (["1:1", "16:9", "9:16"], {"default": "16:9"}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenWanV22FalTextToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (wan / v2.2 / fal / text-to-video) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.2", "provider": "fal", "operation": "text-to-video"}
+    CATEGORY = "Civitai/Video/wan"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "source_image": F("sourceImage", "image_inline"),
+        "cfg_scale": F("cfgScale", "value"),
+        "frame_rate": F("frameRate", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "steps": F("steps", "value"),
+        "loras_json": F("loras", "json"),
+        "resolution": F("resolution", "value"),
+        "aspect_ratio": F("aspectRatio", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "shift": F("shift", "value"),
+        "interpolator_model": F("interpolatorModel", "value"),
+        "use_turbo": F("useTurbo", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 100.0, "step": 0.01}),
+            },
+            "optional": {
+                "source_image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+                "frame_rate": ("INT", {"default": 24, "min": 0, "max": 2147483647, "step": 1}),
+                "duration": ("INT", {"default": 5, "min": 1, "max": 30, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "steps": ("INT", {"default": 20, "min": 10, "max": 50, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "resolution": (["480p", "720p"], {"default": "720p"}),
+                "aspect_ratio": (["1:1", "16:9", "9:16", "4:3", "3:4", "4:5", "5:4"], {"default": "16:9"}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
+                "shift": ("FLOAT", {"default": 5.0, "min": 1.0, "max": 10.0, "step": 0.01}),
+                "interpolator_model": (["film", "rife"], {"default": "film"}),
                 "use_turbo": ("BOOLEAN", {"default": False}),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenWanV22FalImageToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (wan / v2.2 / fal / image-to-video) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.2", "provider": "fal", "operation": "image-to-video"}
+    CATEGORY = "Civitai/Video/wan"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "source_image": F("sourceImage", "image_inline"),
+        "cfg_scale": F("cfgScale", "value"),
+        "frame_rate": F("frameRate", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "steps": F("steps", "value"),
+        "loras_json": F("loras", "json"),
+        "resolution": F("resolution", "value"),
+        "aspect_ratio": F("aspectRatio", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "shift": F("shift", "value"),
+        "interpolator_model": F("interpolatorModel", "value"),
+        "use_turbo": F("useTurbo", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 100.0, "step": 0.01}),
+            },
+            "optional": {
+                "source_image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+                "frame_rate": ("INT", {"default": 24, "min": 0, "max": 2147483647, "step": 1}),
+                "duration": ("INT", {"default": 5, "min": 1, "max": 30, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "steps": ("INT", {"default": 20, "min": 10, "max": 50, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "resolution": (["480p", "720p"], {"default": "720p"}),
+                "aspect_ratio": (["1:1", "16:9", "9:16", "4:3", "3:4", "4:5", "5:4"], {"default": "16:9"}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
+                "shift": ("FLOAT", {"default": 5.0, "min": 1.0, "max": 10.0, "step": 0.01}),
+                "interpolator_model": (["film", "rife"], {"default": "film"}),
+                "use_turbo": ("BOOLEAN", {"default": False}),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "images": ("IMAGE", {}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenWanV22Comfy(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (wan / v2.2 / comfy) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.2", "provider": "comfy"}
+    CATEGORY = "Civitai/Video/wan"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "source_image": F("sourceImage", "image_inline"),
+        "cfg_scale": F("cfgScale", "value"),
+        "frame_rate": F("frameRate", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "steps": F("steps", "value"),
+        "loras_json": F("loras", "json"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "model": F("model", "value"),
+        "images": F("images", "image_list"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sampler": F("sampler", "value"),
+        "scheduler": F("scheduler", "value"),
+        "shift": F("shift", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 100.0, "step": 0.01}),
+            },
+            "optional": {
+                "source_image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+                "frame_rate": ("INT", {"default": 24, "min": 0, "max": 2147483647, "step": 1}),
+                "duration": ("INT", {"default": 5, "min": 1, "max": 30, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "steps": ("INT", {"default": 20, "min": 10, "max": 50, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
                 "width": ("INT", {"default": 1280, "min": 64, "max": 2048, "step": 1}),
                 "height": ("INT", {"default": 720, "min": 64, "max": 2048, "step": 1}),
                 "model": ("STRING", {"default": ""}),
+                "images": ("IMAGE", {}),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
                 "sampler": (
                     [
                         "euler",
@@ -735,6 +1400,735 @@ class CivitaiVideoGenWan(CivitaiRecipeNodeBase):
                     ["normal", "karras", "exponential", "sgm_uniform", "simple", "ddim_uniform", "beta"],
                     {"default": "simple"},
                 ),
+                "shift": ("FLOAT", {"default": 8.0, "min": 1.0, "max": 20.0, "step": 0.01}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenWanV225bFalTextToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (wan / v2.2-5b / fal / text-to-video) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.2-5b", "provider": "fal", "operation": "text-to-video"}
+    CATEGORY = "Civitai/Video/wan"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "source_image": F("sourceImage", "image_inline"),
+        "cfg_scale": F("cfgScale", "value"),
+        "frame_rate": F("frameRate", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "steps": F("steps", "value"),
+        "loras_json": F("loras", "json"),
+        "resolution": F("resolution", "value"),
+        "aspect_ratio": F("aspectRatio", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "use_distill": F("useDistill", "value"),
+        "use_fast_wan": F("useFastWan", "value"),
+        "interpolator_model": F("interpolatorModel", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "num_inference_steps": F("numInferenceSteps", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 100.0, "step": 0.01}),
+            },
+            "optional": {
+                "source_image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+                "frame_rate": ("INT", {"default": 24, "min": 0, "max": 2147483647, "step": 1}),
+                "duration": ("INT", {"default": 5, "min": 1, "max": 30, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "steps": ("INT", {"default": 20, "min": 10, "max": 50, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "resolution": (["480p", "580p", "720p"], {"default": "720p"}),
+                "aspect_ratio": (["1:1", "16:9", "9:16", "auto"], {"default": "16:9"}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
+                "use_distill": ("BOOLEAN", {"default": False}),
+                "use_fast_wan": ("BOOLEAN", {"default": False}),
+                "interpolator_model": (["none", "film", "rife"], {"default": "film"}),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "num_inference_steps": ("INT", {"default": 20, "min": 2, "max": 50, "step": 1}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenWanV225bFalImageToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (wan / v2.2-5b / fal / image-to-video) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.2-5b", "provider": "fal", "operation": "image-to-video"}
+    CATEGORY = "Civitai/Video/wan"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "source_image": F("sourceImage", "image_inline"),
+        "cfg_scale": F("cfgScale", "value"),
+        "frame_rate": F("frameRate", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "steps": F("steps", "value"),
+        "loras_json": F("loras", "json"),
+        "resolution": F("resolution", "value"),
+        "aspect_ratio": F("aspectRatio", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "use_distill": F("useDistill", "value"),
+        "use_fast_wan": F("useFastWan", "value"),
+        "interpolator_model": F("interpolatorModel", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "num_inference_steps": F("numInferenceSteps", "value"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 100.0, "step": 0.01}),
+            },
+            "optional": {
+                "source_image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+                "frame_rate": ("INT", {"default": 24, "min": 0, "max": 2147483647, "step": 1}),
+                "duration": ("INT", {"default": 5, "min": 1, "max": 30, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "steps": ("INT", {"default": 20, "min": 10, "max": 50, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "resolution": (["480p", "580p", "720p"], {"default": "720p"}),
+                "aspect_ratio": (["1:1", "16:9", "9:16", "auto"], {"default": "16:9"}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": False}),
+                "use_distill": ("BOOLEAN", {"default": False}),
+                "use_fast_wan": ("BOOLEAN", {"default": False}),
+                "interpolator_model": (["none", "film", "rife"], {"default": "film"}),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "num_inference_steps": ("INT", {"default": 20, "min": 2, "max": 50, "step": 1}),
+                "images": ("IMAGE", {}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenWanV25FalTextToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (wan / v2.5 / fal / text-to-video) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.5", "provider": "fal", "operation": "text-to-video"}
+    CATEGORY = "Civitai/Video/wan"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "source_image": F("sourceImage", "image_inline"),
+        "cfg_scale": F("cfgScale", "value"),
+        "frame_rate": F("frameRate", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "steps": F("steps", "value"),
+        "loras_json": F("loras", "json"),
+        "resolution": F("resolution", "value"),
+        "aspect_ratio": F("aspectRatio", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 100.0, "step": 0.01}),
+            },
+            "optional": {
+                "source_image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+                "frame_rate": ("INT", {"default": 24, "min": 0, "max": 2147483647, "step": 1}),
+                "duration": ("INT", {"default": 5, "min": 1, "max": 30, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "steps": ("INT", {"default": 20, "min": 10, "max": 50, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "resolution": (["480p", "720p", "1080p"], {"default": "1080p"}),
+                "aspect_ratio": (["16:9", "9:16", "1:1"], {"default": "16:9"}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": True}),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenWanV25FalImageToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (wan / v2.5 / fal / image-to-video) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.5", "provider": "fal", "operation": "image-to-video"}
+    CATEGORY = "Civitai/Video/wan"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "source_image": F("sourceImage", "image_inline"),
+        "cfg_scale": F("cfgScale", "value"),
+        "frame_rate": F("frameRate", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "steps": F("steps", "value"),
+        "loras_json": F("loras", "json"),
+        "resolution": F("resolution", "value"),
+        "aspect_ratio": F("aspectRatio", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 100.0, "step": 0.01}),
+            },
+            "optional": {
+                "source_image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+                "frame_rate": ("INT", {"default": 24, "min": 0, "max": 2147483647, "step": 1}),
+                "duration": ("INT", {"default": 5, "min": 1, "max": 30, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "steps": ("INT", {"default": 20, "min": 10, "max": 50, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "resolution": (["480p", "720p", "1080p"], {"default": "1080p"}),
+                "aspect_ratio": (["16:9", "9:16", "1:1"], {"default": "16:9"}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": True}),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "images": ("IMAGE", {}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenWanV26FalTextToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (wan / v2.6 / fal / text-to-video) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.6", "provider": "fal", "operation": "text-to-video"}
+    CATEGORY = "Civitai/Video/wan"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "source_image": F("sourceImage", "image_inline"),
+        "cfg_scale": F("cfgScale", "value"),
+        "frame_rate": F("frameRate", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "steps": F("steps", "value"),
+        "loras_json": F("loras", "json"),
+        "resolution": F("resolution", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "multi_shots": F("multiShots", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "audio_url": F("audioUrl", "value"),
+        "aspect_ratio": F("aspectRatio", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 100.0, "step": 0.01}),
+            },
+            "optional": {
+                "source_image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+                "frame_rate": ("INT", {"default": 24, "min": 0, "max": 2147483647, "step": 1}),
+                "duration": ("INT", {"default": 5, "min": 1, "max": 30, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "steps": ("INT", {"default": 20, "min": 10, "max": 50, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "resolution": (["720p", "1080p"], {"default": "1080p"}),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": True}),
+                "multi_shots": ("BOOLEAN", {"default": False}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "audio_url": (
+                    "STRING",
+                    {
+                        "tooltip": "URL of audio file for background music (3-30 seconds, up to 15 MB) Supported for text-to-video and image-to-video only",
+                        "default": "",
+                    },
+                ),
+                "aspect_ratio": (["16:9", "9:16", "1:1", "4:3", "3:4"], {"default": "16:9"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenWanV26FalImageToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (wan / v2.6 / fal / image-to-video) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.6", "provider": "fal", "operation": "image-to-video"}
+    CATEGORY = "Civitai/Video/wan"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "source_image": F("sourceImage", "image_inline"),
+        "cfg_scale": F("cfgScale", "value"),
+        "frame_rate": F("frameRate", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "steps": F("steps", "value"),
+        "loras_json": F("loras", "json"),
+        "resolution": F("resolution", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "multi_shots": F("multiShots", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "audio_url": F("audioUrl", "value"),
+        "images": F("images", "image_list"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 100.0, "step": 0.01}),
+            },
+            "optional": {
+                "source_image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+                "frame_rate": ("INT", {"default": 24, "min": 0, "max": 2147483647, "step": 1}),
+                "duration": ("INT", {"default": 5, "min": 1, "max": 30, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "steps": ("INT", {"default": 20, "min": 10, "max": 50, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "resolution": (["720p", "1080p"], {"default": "1080p"}),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": True}),
+                "multi_shots": ("BOOLEAN", {"default": False}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "audio_url": (
+                    "STRING",
+                    {
+                        "tooltip": "URL of audio file for background music (3-30 seconds, up to 15 MB) Supported for text-to-video and image-to-video only",
+                        "default": "",
+                    },
+                ),
+                "images": ("IMAGE", {}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenWanV26FalReferenceToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (wan / v2.6 / fal / reference-to-video) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.6", "provider": "fal", "operation": "reference-to-video"}
+    CATEGORY = "Civitai/Video/wan"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "source_image": F("sourceImage", "image_inline"),
+        "cfg_scale": F("cfgScale", "value"),
+        "frame_rate": F("frameRate", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "steps": F("steps", "value"),
+        "loras_json": F("loras", "json"),
+        "resolution": F("resolution", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "multi_shots": F("multiShots", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "audio_url": F("audioUrl", "value"),
+        "reference_video_urls_json": F("referenceVideoUrls", "json"),
+        "aspect_ratio": F("aspectRatio", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 100.0, "step": 0.01}),
+            },
+            "optional": {
+                "source_image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+                "frame_rate": ("INT", {"default": 24, "min": 0, "max": 2147483647, "step": 1}),
+                "duration": (
+                    "INT",
+                    {
+                        "tooltip": "Duration for reference-to-video is limited to 5 or 10 seconds",
+                        "default": 5,
+                        "min": 1,
+                        "max": 30,
+                        "step": 1,
+                    },
+                ),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "steps": ("INT", {"default": 20, "min": 10, "max": 50, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "resolution": (["720p", "1080p"], {"default": "1080p"}),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": True}),
+                "multi_shots": ("BOOLEAN", {"default": False}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "audio_url": (
+                    "STRING",
+                    {
+                        "tooltip": "URL of audio file for background music (3-30 seconds, up to 15 MB) Supported for text-to-video and image-to-video only",
+                        "default": "",
+                    },
+                ),
+                "reference_video_urls_json": (
+                    "STRING",
+                    {
+                        "tooltip": "Reference videos for subject consistency (1-3 videos with minimum 16 FPS) Use @Video1, @Video2, @Video3 in the prompt to reference these subjects",
+                        "default": "",
+                        "multiline": True,
+                    },
+                ),
+                "aspect_ratio": (["16:9", "9:16", "1:1", "4:3", "3:4"], {"default": "16:9"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenWanV27FalTextToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (wan / v2.7 / fal / text-to-video) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.7", "provider": "fal", "operation": "text-to-video"}
+    CATEGORY = "Civitai/Video/wan"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "source_image": F("sourceImage", "image_inline"),
+        "cfg_scale": F("cfgScale", "value"),
+        "frame_rate": F("frameRate", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "steps": F("steps", "value"),
+        "loras_json": F("loras", "json"),
+        "resolution": F("resolution", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "aspect_ratio": F("aspectRatio", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "audio_url": F("audioUrl", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 100.0, "step": 0.01}),
+            },
+            "optional": {
+                "source_image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+                "frame_rate": ("INT", {"default": 24, "min": 0, "max": 2147483647, "step": 1}),
+                "duration": ("INT", {"default": 5, "min": 1, "max": 30, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "steps": ("INT", {"default": 20, "min": 10, "max": 50, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "resolution": (["720p", "1080p"], {"default": "1080p"}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "aspect_ratio": (["16:9", "9:16", "1:1", "4:3", "3:4"], {"default": "16:9"}),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": True}),
+                "audio_url": (
+                    "STRING",
+                    {"tooltip": "URL of audio file (WAV/MP3, 3-30 seconds, up to 15 MB)", "default": ""},
+                ),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenWanV27FalImageToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (wan / v2.7 / fal / image-to-video) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.7", "provider": "fal", "operation": "image-to-video"}
+    CATEGORY = "Civitai/Video/wan"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "source_image": F("sourceImage", "image_inline"),
+        "cfg_scale": F("cfgScale", "value"),
+        "frame_rate": F("frameRate", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "steps": F("steps", "value"),
+        "loras_json": F("loras", "json"),
+        "resolution": F("resolution", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "start_image": F("startImage", "image_inline"),
+        "end_image": F("endImage", "image_inline"),
+        "video_url": F("videoUrl", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "audio_url": F("audioUrl", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 100.0, "step": 0.01}),
+            },
+            "optional": {
+                "source_image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+                "frame_rate": ("INT", {"default": 24, "min": 0, "max": 2147483647, "step": 1}),
+                "duration": ("INT", {"default": 5, "min": 1, "max": 30, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "steps": ("INT", {"default": 20, "min": 10, "max": 50, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "resolution": (["720p", "1080p"], {"default": "1080p"}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "start_image": ("IMAGE", {"tooltip": "First frame image URL"}),
+                "end_image": ("IMAGE", {"tooltip": "Last frame image for first-and-last-frame-to-video"}),
+                "video_url": (
+                    "STRING",
+                    {"tooltip": "URL of a video clip to continue from (MP4/MOV, 2-10s, max 100 MB)", "default": ""},
+                ),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "enable_prompt_expansion": ("BOOLEAN", {"default": True}),
+                "audio_url": (
+                    "STRING",
+                    {"tooltip": "URL of audio file (WAV/MP3, 3-30 seconds, up to 15 MB)", "default": ""},
+                ),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenWanV27FalReferenceToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (wan / v2.7 / fal / reference-to-video) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.7", "provider": "fal", "operation": "reference-to-video"}
+    CATEGORY = "Civitai/Video/wan"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "source_image": F("sourceImage", "image_inline"),
+        "cfg_scale": F("cfgScale", "value"),
+        "frame_rate": F("frameRate", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "steps": F("steps", "value"),
+        "loras_json": F("loras", "json"),
+        "resolution": F("resolution", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "reference_images": F("referenceImages", "image_list"),
+        "reference_video_urls_json": F("referenceVideoUrls", "json"),
+        "aspect_ratio": F("aspectRatio", "value"),
+        "multi_shots": F("multiShots", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 100.0, "step": 0.01}),
+            },
+            "optional": {
+                "source_image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+                "frame_rate": ("INT", {"default": 24, "min": 0, "max": 2147483647, "step": 1}),
+                "duration": ("INT", {"default": 5, "min": 1, "max": 30, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "steps": ("INT", {"default": 20, "min": 10, "max": 50, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "resolution": (["720p", "1080p"], {"default": "1080p"}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "reference_images": (
+                    "IMAGE",
+                    {"tooltip": "Reference images for character/object appearance (max 20 MB each)"},
+                ),
+                "reference_video_urls_json": (
+                    "STRING",
+                    {
+                        "tooltip": "Reference videos for character/object appearance and motion (max 100 MB each) Use @Video1, @Video2, @Video3 in the prompt to reference subjects",
+                        "default": "",
+                        "multiline": True,
+                    },
+                ),
+                "aspect_ratio": (["16:9", "9:16", "1:1", "4:3", "3:4"], {"default": "16:9"}),
+                "multi_shots": ("BOOLEAN", {"default": False}),
+                "negative_prompt": ("STRING", {"default": "", "multiline": True}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenWanV27FalEditVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (wan / v2.7 / fal / edit-video) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "wan", "version": "v2.7", "provider": "fal", "operation": "edit-video"}
+    CATEGORY = "Civitai/Video/wan"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "source_image": F("sourceImage", "image_inline"),
+        "cfg_scale": F("cfgScale", "value"),
+        "frame_rate": F("frameRate", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "steps": F("steps", "value"),
+        "loras_json": F("loras", "json"),
+        "resolution": F("resolution", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "video_url": F("videoUrl", "value"),
+        "reference_image": F("referenceImage", "value"),
+        "aspect_ratio": F("aspectRatio", "value"),
+        "audio_setting": F("audioSetting", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+                "cfg_scale": ("FLOAT", {"default": 4.0, "min": 0.0, "max": 100.0, "step": 0.01}),
+                "video_url": (
+                    "STRING",
+                    {"tooltip": "URL of the input video to edit (MP4/MOV, 2-10s, max 100 MB)", "default": ""},
+                ),
+            },
+            "optional": {
+                "source_image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+                "frame_rate": ("INT", {"default": 24, "min": 0, "max": 2147483647, "step": 1}),
+                "duration": ("INT", {"default": 5, "min": 1, "max": 30, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "steps": ("INT", {"default": 20, "min": 10, "max": 50, "step": 1}),
+                "loras_json": ("STRING", {"default": "", "multiline": True}),
+                "resolution": (["720p", "1080p"], {"default": "1080p"}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "reference_image": (
+                    "STRING",
+                    {"tooltip": "Reference image for reference-based editing", "default": ""},
+                ),
+                "aspect_ratio": (
+                    ["", "16:9", "9:16", "1:1", "4:3", "3:4"],
+                    {
+                        "tooltip": "Aspect ratio of the generated video. If not provided, uses the input video's aspect ratio.",
+                        "default": "",
+                    },
+                ),
+                "audio_setting": (
+                    ["auto", "origin"],
+                    {"tooltip": 'Audio handling: "auto" or "origin" (keep original audio)', "default": "auto"},
+                ),
                 "api_config": (
                     "CIVITAI_CONFIG",
                     {
@@ -746,12 +2140,12 @@ class CivitaiVideoGenWan(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenVidu(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Vidu) — videoGen recipe via Civitai Orchestration."""
+    """Civitai Video Gen (vidu) — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
     DISCRIMINATOR = {"engine": "vidu"}
-    CATEGORY = "Civitai/Video"
+    CATEGORY = "Civitai/Video/vidu"
     FUNCTION = "run"
     RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "workflow_id", "raw_json")
@@ -805,7 +2199,7 @@ class CivitaiVideoGenViduQ3(CivitaiRecipeNodeBase):
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
     DISCRIMINATOR = {"engine": "vidu-q3"}
-    CATEGORY = "Civitai/Video"
+    CATEGORY = "Civitai/Video/Vidu Q3"
     FUNCTION = "run"
     RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "workflow_id", "raw_json")
@@ -846,12 +2240,12 @@ class CivitaiVideoGenViduQ3(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenVeo3(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Veo3) — videoGen recipe via Civitai Orchestration."""
+    """Civitai Video Gen (veo3) — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
     DISCRIMINATOR = {"engine": "veo3"}
-    CATEGORY = "Civitai/Video"
+    CATEGORY = "Civitai/Video/veo3"
     FUNCTION = "run"
     RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "workflow_id", "raw_json")
@@ -897,19 +2291,60 @@ class CivitaiVideoGenVeo3(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiVideoGenSora(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Sora) — videoGen recipe via Civitai Orchestration."""
+class CivitaiVideoGenSoraTextToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (sora / text-to-video) — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
-    DISCRIMINATOR = {"engine": "sora"}
-    CATEGORY = "Civitai/Video"
+    DISCRIMINATOR = {"engine": "sora", "operation": "text-to-video"}
+    CATEGORY = "Civitai/Video/sora"
     FUNCTION = "run"
     RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "workflow_id", "raw_json")
     FIELDS = {
         "prompt": F("prompt", "value"),
-        "operation": F("operation", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "resolution": F("resolution", "value"),
+        "aspect_ratio": F("aspectRatio", "value"),
+        "use_pro": F("usePro", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "duration": ("INT", {"default": 4, "min": 4, "max": 12, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "resolution": (["720p", "1080p"], {"default": "720p"}),
+                "aspect_ratio": (["auto", "16:9", "9:16"], {"default": "auto"}),
+                "use_pro": ("BOOLEAN", {"default": False}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenSoraImageToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (sora / image-to-video) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "sora", "operation": "image-to-video"}
+    CATEGORY = "Civitai/Video/sora"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
         "duration": F("duration", "value"),
         "seed": F("seed", "value"),
         "resolution": F("resolution", "value"),
@@ -924,7 +2359,6 @@ class CivitaiVideoGenSora(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "operation": (["text-to-video", "image-to-video"], {"default": "text-to-video"}),
             },
             "optional": {
                 "duration": ("INT", {"default": 4, "min": 4, "max": 12, "step": 1}),
@@ -949,7 +2383,7 @@ class CivitaiVideoGenKlingV3(CivitaiRecipeNodeBase):
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
     DISCRIMINATOR = {"engine": "kling-v3"}
-    CATEGORY = "Civitai/Video"
+    CATEGORY = "Civitai/Video/Kling V3"
     FUNCTION = "run"
     RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "workflow_id", "raw_json")
@@ -1011,23 +2445,98 @@ class CivitaiVideoGenKlingV3(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiVideoGenGrok(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Grok) — videoGen recipe via Civitai Orchestration."""
+class CivitaiVideoGenGrokTextToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (grok / text-to-video) — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
-    DISCRIMINATOR = {"engine": "grok"}
-    CATEGORY = "Civitai/Video"
+    DISCRIMINATOR = {"engine": "grok", "operation": "text-to-video"}
+    CATEGORY = "Civitai/Video/grok"
     FUNCTION = "run"
     RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "workflow_id", "raw_json")
     FIELDS = {
         "prompt": F("prompt", "value"),
-        "operation": F("operation", "value"),
+        "duration": F("duration", "value"),
+        "resolution": F("resolution", "value"),
+        "aspect_ratio": F("aspectRatio", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "duration": ("INT", {"default": 6, "min": 1, "max": 15, "step": 1}),
+                "resolution": (["480p", "720p"], {"default": "720p"}),
+                "aspect_ratio": (["16:9", "4:3", "3:2", "1:1", "2:3", "3:4", "9:16"], {"default": "16:9"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenGrokImageToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (grok / image-to-video) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "grok", "operation": "image-to-video"}
+    CATEGORY = "Civitai/Video/grok"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
         "duration": F("duration", "value"),
         "resolution": F("resolution", "value"),
         "aspect_ratio": F("aspectRatio", "value"),
         "images": F("images", "image_list"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
+            },
+            "optional": {
+                "duration": ("INT", {"default": 6, "min": 1, "max": 15, "step": 1}),
+                "resolution": (["480p", "720p"], {"default": "720p"}),
+                "aspect_ratio": (["auto", "16:9", "4:3", "3:2", "1:1", "2:3", "3:4", "9:16"], {"default": "auto"}),
+                "images": ("IMAGE", {}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenGrokEditVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (grok / edit-video) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "grok", "operation": "edit-video"}
+    CATEGORY = "Civitai/Video/grok"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "duration": F("duration", "value"),
+        "resolution": F("resolution", "value"),
         "video_url": F("videoUrl", "video_url"),
         "analyzed_duration": F("analyzedDuration", "value"),
     }
@@ -1038,14 +2547,11 @@ class CivitaiVideoGenGrok(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "operation": (["text-to-video", "image-to-video", "edit-video"], {"default": "text-to-video"}),
+                "video_url": ("VIDEO", {}),
             },
             "optional": {
                 "duration": ("INT", {"default": 6, "min": 1, "max": 15, "step": 1}),
                 "resolution": (["480p", "720p"], {"default": "720p"}),
-                "aspect_ratio": (["16:9", "4:3", "3:2", "1:1", "2:3", "3:4", "9:16"], {"default": "16:9"}),
-                "images": ("IMAGE", {}),
-                "video_url": ("VIDEO", {}),
                 "analyzed_duration": ("INT", {"default": 0, "min": 0, "max": 2147483647, "step": 1}),
                 "api_config": (
                     "CIVITAI_CONFIG",
@@ -1058,12 +2564,12 @@ class CivitaiVideoGenGrok(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenSeedance(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Seedance) — videoGen recipe via Civitai Orchestration."""
+    """Civitai Video Gen (seedance) — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
     DISCRIMINATOR = {"engine": "seedance"}
-    CATEGORY = "Civitai/Video"
+    CATEGORY = "Civitai/Video/seedance"
     FUNCTION = "run"
     RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "workflow_id", "raw_json")
@@ -1103,30 +2609,23 @@ class CivitaiVideoGenSeedance(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiVideoGenHappyHorse(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Happy Horse) — videoGen recipe via Civitai Orchestration."""
+class CivitaiVideoGenHappyHorseV10TextToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (Happy Horse / v1.0 / textToVideo) — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
-    DISCRIMINATOR = {"engine": "happyHorse"}
-    CATEGORY = "Civitai/Video"
+    DISCRIMINATOR = {"engine": "happyHorse", "version": "v1.0", "operation": "textToVideo"}
+    CATEGORY = "Civitai/Video/Happy Horse"
     FUNCTION = "run"
     RETURN_TYPES = ("VIDEO", "STRING", "STRING")
     RETURN_NAMES = ("video", "workflow_id", "raw_json")
     FIELDS = {
         "prompt": F("prompt", "value"),
-        "version": F("version", "value"),
-        "operation": F("operation", "value"),
         "resolution": F("resolution", "value"),
         "duration": F("duration", "value"),
         "seed": F("seed", "value"),
         "enable_safety_checker": F("enableSafetyChecker", "value"),
         "aspect_ratio": F("aspectRatio", "value"),
-        "image": F("image", "image_inline"),
-        "source_video": F("sourceVideo", "video_url"),
-        "reference_images": F("referenceImages", "image_list"),
-        "audio_setting": F("audioSetting", "value"),
-        "images": F("images", "image_list"),
     }
     OUTPUTS = (O("video", "video"),)
 
@@ -1135,20 +2634,145 @@ class CivitaiVideoGenHappyHorse(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "version": (["v1.0"], {}),
             },
             "optional": {
-                "operation": (["", "textToVideo", "imageToVideo", "videoEdit", "referenceToVideo"], {}),
                 "resolution": (["720p", "1080p"], {"default": "1080p"}),
                 "duration": ("INT", {"default": 5, "min": 3, "max": 15, "step": 1}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "enable_safety_checker": ("BOOLEAN", {"default": False}),
                 "aspect_ratio": (["16:9", "9:16", "1:1", "4:3", "3:4"], {"default": "16:9"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenHappyHorseV10ImageToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (Happy Horse / v1.0 / imageToVideo) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "happyHorse", "version": "v1.0", "operation": "imageToVideo"}
+    CATEGORY = "Civitai/Video/Happy Horse"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "resolution": F("resolution", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "image": F("image", "image_inline"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
                 "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
+            },
+            "optional": {
+                "resolution": (["720p", "1080p"], {"default": "1080p"}),
+                "duration": ("INT", {"default": 5, "min": 3, "max": 15, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenHappyHorseV10VideoEdit(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (Happy Horse / v1.0 / videoEdit) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "happyHorse", "version": "v1.0", "operation": "videoEdit"}
+    CATEGORY = "Civitai/Video/Happy Horse"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "resolution": F("resolution", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "source_video": F("sourceVideo", "video_url"),
+        "reference_images": F("referenceImages", "image_list"),
+        "audio_setting": F("audioSetting", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
                 "source_video": ("VIDEO", {}),
+            },
+            "optional": {
+                "resolution": (["720p", "1080p"], {"default": "1080p"}),
+                "duration": ("INT", {"default": 5, "min": 3, "max": 15, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
                 "reference_images": ("IMAGE", {}),
                 "audio_setting": (["auto", "origin"], {"default": "auto"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiVideoGenHappyHorseV10ReferenceToVideo(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (Happy Horse / v1.0 / referenceToVideo) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {"engine": "happyHorse", "version": "v1.0", "operation": "referenceToVideo"}
+    CATEGORY = "Civitai/Video/Happy Horse"
+    FUNCTION = "run"
+    RETURN_TYPES = ("VIDEO", "STRING", "STRING")
+    RETURN_NAMES = ("video", "workflow_id", "raw_json")
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "resolution": F("resolution", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "images": F("images", "image_list"),
+        "aspect_ratio": F("aspectRatio", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {"default": "", "multiline": True}),
                 "images": ("IMAGE", {}),
+            },
+            "optional": {
+                "resolution": (["720p", "1080p"], {"default": "1080p"}),
+                "duration": ("INT", {"default": 5, "min": 3, "max": 15, "step": 1}),
+                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
+                "enable_safety_checker": ("BOOLEAN", {"default": False}),
+                "aspect_ratio": (["16:9", "9:16", "1:1", "4:3", "3:4"], {"default": "16:9"}),
                 "api_config": (
                     "CIVITAI_CONFIG",
                     {
@@ -1234,41 +2858,99 @@ NODE_CLASS_MAPPINGS = {
     "CivitaiVideoGenKling": CivitaiVideoGenKling,
     "CivitaiVideoGenMinimax": CivitaiVideoGenMinimax,
     "CivitaiVideoGenLightricks": CivitaiVideoGenLightricks,
-    "CivitaiVideoGenLtx2": CivitaiVideoGenLtx2,
-    "CivitaiVideoGenLtx23": CivitaiVideoGenLtx23,
+    "CivitaiVideoGenLtx2CreateVideo": CivitaiVideoGenLtx2CreateVideo,
+    "CivitaiVideoGenLtx2ExtendVideo": CivitaiVideoGenLtx2ExtendVideo,
+    "CivitaiVideoGenLtx2EditVideo": CivitaiVideoGenLtx2EditVideo,
+    "CivitaiVideoGenLtx2FirstLastFrameToVideo": CivitaiVideoGenLtx2FirstLastFrameToVideo,
+    "CivitaiVideoGenLtx23CreateVideo": CivitaiVideoGenLtx23CreateVideo,
+    "CivitaiVideoGenLtx23ExtendVideo": CivitaiVideoGenLtx23ExtendVideo,
+    "CivitaiVideoGenLtx23EditVideo": CivitaiVideoGenLtx23EditVideo,
+    "CivitaiVideoGenLtx23FirstLastFrameToVideo": CivitaiVideoGenLtx23FirstLastFrameToVideo,
+    "CivitaiVideoGenLtx23VideoToVideo": CivitaiVideoGenLtx23VideoToVideo,
+    "CivitaiVideoGenLtx23AudioToVideo": CivitaiVideoGenLtx23AudioToVideo,
     "CivitaiVideoGenHunyuan": CivitaiVideoGenHunyuan,
-    "CivitaiVideoGenWan": CivitaiVideoGenWan,
+    "CivitaiVideoGenWanV21Civitai": CivitaiVideoGenWanV21Civitai,
+    "CivitaiVideoGenWanV21Fal": CivitaiVideoGenWanV21Fal,
+    "CivitaiVideoGenWanV22FalTextToVideo": CivitaiVideoGenWanV22FalTextToVideo,
+    "CivitaiVideoGenWanV22FalImageToVideo": CivitaiVideoGenWanV22FalImageToVideo,
+    "CivitaiVideoGenWanV22Comfy": CivitaiVideoGenWanV22Comfy,
+    "CivitaiVideoGenWanV225bFalTextToVideo": CivitaiVideoGenWanV225bFalTextToVideo,
+    "CivitaiVideoGenWanV225bFalImageToVideo": CivitaiVideoGenWanV225bFalImageToVideo,
+    "CivitaiVideoGenWanV25FalTextToVideo": CivitaiVideoGenWanV25FalTextToVideo,
+    "CivitaiVideoGenWanV25FalImageToVideo": CivitaiVideoGenWanV25FalImageToVideo,
+    "CivitaiVideoGenWanV26FalTextToVideo": CivitaiVideoGenWanV26FalTextToVideo,
+    "CivitaiVideoGenWanV26FalImageToVideo": CivitaiVideoGenWanV26FalImageToVideo,
+    "CivitaiVideoGenWanV26FalReferenceToVideo": CivitaiVideoGenWanV26FalReferenceToVideo,
+    "CivitaiVideoGenWanV27FalTextToVideo": CivitaiVideoGenWanV27FalTextToVideo,
+    "CivitaiVideoGenWanV27FalImageToVideo": CivitaiVideoGenWanV27FalImageToVideo,
+    "CivitaiVideoGenWanV27FalReferenceToVideo": CivitaiVideoGenWanV27FalReferenceToVideo,
+    "CivitaiVideoGenWanV27FalEditVideo": CivitaiVideoGenWanV27FalEditVideo,
     "CivitaiVideoGenVidu": CivitaiVideoGenVidu,
     "CivitaiVideoGenViduQ3": CivitaiVideoGenViduQ3,
     "CivitaiVideoGenVeo3": CivitaiVideoGenVeo3,
-    "CivitaiVideoGenSora": CivitaiVideoGenSora,
+    "CivitaiVideoGenSoraTextToVideo": CivitaiVideoGenSoraTextToVideo,
+    "CivitaiVideoGenSoraImageToVideo": CivitaiVideoGenSoraImageToVideo,
     "CivitaiVideoGenKlingV3": CivitaiVideoGenKlingV3,
-    "CivitaiVideoGenGrok": CivitaiVideoGenGrok,
+    "CivitaiVideoGenGrokTextToVideo": CivitaiVideoGenGrokTextToVideo,
+    "CivitaiVideoGenGrokImageToVideo": CivitaiVideoGenGrokImageToVideo,
+    "CivitaiVideoGenGrokEditVideo": CivitaiVideoGenGrokEditVideo,
     "CivitaiVideoGenSeedance": CivitaiVideoGenSeedance,
-    "CivitaiVideoGenHappyHorse": CivitaiVideoGenHappyHorse,
+    "CivitaiVideoGenHappyHorseV10TextToVideo": CivitaiVideoGenHappyHorseV10TextToVideo,
+    "CivitaiVideoGenHappyHorseV10ImageToVideo": CivitaiVideoGenHappyHorseV10ImageToVideo,
+    "CivitaiVideoGenHappyHorseV10VideoEdit": CivitaiVideoGenHappyHorseV10VideoEdit,
+    "CivitaiVideoGenHappyHorseV10ReferenceToVideo": CivitaiVideoGenHappyHorseV10ReferenceToVideo,
     "CivitaiVideoInterpolation": CivitaiVideoInterpolation,
     "CivitaiVideoUpscaler": CivitaiVideoUpscaler,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiVideoEnhancement": "Civitai Video Enhancement",
-    "CivitaiVideoGenHaiper": "Civitai Video Gen (Haiper)",
-    "CivitaiVideoGenMochi": "Civitai Video Gen (Mochi)",
-    "CivitaiVideoGenKling": "Civitai Video Gen (Kling)",
-    "CivitaiVideoGenMinimax": "Civitai Video Gen (Minimax)",
-    "CivitaiVideoGenLightricks": "Civitai Video Gen (Lightricks)",
-    "CivitaiVideoGenLtx2": "Civitai Video Gen (LTX 2)",
-    "CivitaiVideoGenLtx23": "Civitai Video Gen (LTX 2.3)",
-    "CivitaiVideoGenHunyuan": "Civitai Video Gen (Hunyuan)",
-    "CivitaiVideoGenWan": "Civitai Video Gen (Wan)",
-    "CivitaiVideoGenVidu": "Civitai Video Gen (Vidu)",
+    "CivitaiVideoGenHaiper": "Civitai Video Gen (haiper)",
+    "CivitaiVideoGenMochi": "Civitai Video Gen (mochi)",
+    "CivitaiVideoGenKling": "Civitai Video Gen (kling)",
+    "CivitaiVideoGenMinimax": "Civitai Video Gen (minimax)",
+    "CivitaiVideoGenLightricks": "Civitai Video Gen (lightricks)",
+    "CivitaiVideoGenLtx2CreateVideo": "Civitai Video Gen (LTX 2 / createVideo)",
+    "CivitaiVideoGenLtx2ExtendVideo": "Civitai Video Gen (LTX 2 / extendVideo)",
+    "CivitaiVideoGenLtx2EditVideo": "Civitai Video Gen (LTX 2 / editVideo)",
+    "CivitaiVideoGenLtx2FirstLastFrameToVideo": "Civitai Video Gen (LTX 2 / firstLastFrameToVideo)",
+    "CivitaiVideoGenLtx23CreateVideo": "Civitai Video Gen (LTX 2.3 / createVideo)",
+    "CivitaiVideoGenLtx23ExtendVideo": "Civitai Video Gen (LTX 2.3 / extendVideo)",
+    "CivitaiVideoGenLtx23EditVideo": "Civitai Video Gen (LTX 2.3 / editVideo)",
+    "CivitaiVideoGenLtx23FirstLastFrameToVideo": "Civitai Video Gen (LTX 2.3 / firstLastFrameToVideo)",
+    "CivitaiVideoGenLtx23VideoToVideo": "Civitai Video Gen (LTX 2.3 / videoToVideo)",
+    "CivitaiVideoGenLtx23AudioToVideo": "Civitai Video Gen (LTX 2.3 / audioToVideo)",
+    "CivitaiVideoGenHunyuan": "Civitai Video Gen (hunyuan)",
+    "CivitaiVideoGenWanV21Civitai": "Civitai Video Gen (wan / v2.1 / civitai)",
+    "CivitaiVideoGenWanV21Fal": "Civitai Video Gen (wan / v2.1 / fal)",
+    "CivitaiVideoGenWanV22FalTextToVideo": "Civitai Video Gen (wan / v2.2 / fal / text-to-video)",
+    "CivitaiVideoGenWanV22FalImageToVideo": "Civitai Video Gen (wan / v2.2 / fal / image-to-video)",
+    "CivitaiVideoGenWanV22Comfy": "Civitai Video Gen (wan / v2.2 / comfy)",
+    "CivitaiVideoGenWanV225bFalTextToVideo": "Civitai Video Gen (wan / v2.2-5b / fal / text-to-video)",
+    "CivitaiVideoGenWanV225bFalImageToVideo": "Civitai Video Gen (wan / v2.2-5b / fal / image-to-video)",
+    "CivitaiVideoGenWanV25FalTextToVideo": "Civitai Video Gen (wan / v2.5 / fal / text-to-video)",
+    "CivitaiVideoGenWanV25FalImageToVideo": "Civitai Video Gen (wan / v2.5 / fal / image-to-video)",
+    "CivitaiVideoGenWanV26FalTextToVideo": "Civitai Video Gen (wan / v2.6 / fal / text-to-video)",
+    "CivitaiVideoGenWanV26FalImageToVideo": "Civitai Video Gen (wan / v2.6 / fal / image-to-video)",
+    "CivitaiVideoGenWanV26FalReferenceToVideo": "Civitai Video Gen (wan / v2.6 / fal / reference-to-video)",
+    "CivitaiVideoGenWanV27FalTextToVideo": "Civitai Video Gen (wan / v2.7 / fal / text-to-video)",
+    "CivitaiVideoGenWanV27FalImageToVideo": "Civitai Video Gen (wan / v2.7 / fal / image-to-video)",
+    "CivitaiVideoGenWanV27FalReferenceToVideo": "Civitai Video Gen (wan / v2.7 / fal / reference-to-video)",
+    "CivitaiVideoGenWanV27FalEditVideo": "Civitai Video Gen (wan / v2.7 / fal / edit-video)",
+    "CivitaiVideoGenVidu": "Civitai Video Gen (vidu)",
     "CivitaiVideoGenViduQ3": "Civitai Video Gen (Vidu Q3)",
-    "CivitaiVideoGenVeo3": "Civitai Video Gen (Veo3)",
-    "CivitaiVideoGenSora": "Civitai Video Gen (Sora)",
+    "CivitaiVideoGenVeo3": "Civitai Video Gen (veo3)",
+    "CivitaiVideoGenSoraTextToVideo": "Civitai Video Gen (sora / text-to-video)",
+    "CivitaiVideoGenSoraImageToVideo": "Civitai Video Gen (sora / image-to-video)",
     "CivitaiVideoGenKlingV3": "Civitai Video Gen (Kling V3)",
-    "CivitaiVideoGenGrok": "Civitai Video Gen (Grok)",
-    "CivitaiVideoGenSeedance": "Civitai Video Gen (Seedance)",
-    "CivitaiVideoGenHappyHorse": "Civitai Video Gen (Happy Horse)",
+    "CivitaiVideoGenGrokTextToVideo": "Civitai Video Gen (grok / text-to-video)",
+    "CivitaiVideoGenGrokImageToVideo": "Civitai Video Gen (grok / image-to-video)",
+    "CivitaiVideoGenGrokEditVideo": "Civitai Video Gen (grok / edit-video)",
+    "CivitaiVideoGenSeedance": "Civitai Video Gen (seedance)",
+    "CivitaiVideoGenHappyHorseV10TextToVideo": "Civitai Video Gen (Happy Horse / v1.0 / textToVideo)",
+    "CivitaiVideoGenHappyHorseV10ImageToVideo": "Civitai Video Gen (Happy Horse / v1.0 / imageToVideo)",
+    "CivitaiVideoGenHappyHorseV10VideoEdit": "Civitai Video Gen (Happy Horse / v1.0 / videoEdit)",
+    "CivitaiVideoGenHappyHorseV10ReferenceToVideo": "Civitai Video Gen (Happy Horse / v1.0 / referenceToVideo)",
     "CivitaiVideoInterpolation": "Civitai Video Interpolation",
     "CivitaiVideoUpscaler": "Civitai Video Upscaler",
 }

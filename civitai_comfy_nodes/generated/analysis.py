@@ -239,12 +239,12 @@ class CivitaiWdTagging(CivitaiRecipeNodeBase):
 
 
 class CivitaiXGuardModerationPrompt(CivitaiRecipeNodeBase):
-    """Civitai X Guard Moderation (Prompt) — xGuardModeration recipe via Civitai Orchestration."""
+    """Civitai X Guard Moderation (prompt) — xGuardModeration recipe via Civitai Orchestration."""
 
     RECIPE = "xGuardModeration"
     STEP_TYPE = "xGuardModeration"
     DISCRIMINATOR = {"mode": "prompt"}
-    CATEGORY = "Civitai/Analysis"
+    CATEGORY = "Civitai/Analysis/prompt"
     FUNCTION = "run"
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("results", "signal_metadata", "blocked", "triggered_labels", "workflow_id", "raw_json")
@@ -312,12 +312,12 @@ class CivitaiXGuardModerationPrompt(CivitaiRecipeNodeBase):
 
 
 class CivitaiXGuardModerationText(CivitaiRecipeNodeBase):
-    """Civitai X Guard Moderation (Text) — xGuardModeration recipe via Civitai Orchestration."""
+    """Civitai X Guard Moderation (text) — xGuardModeration recipe via Civitai Orchestration."""
 
     RECIPE = "xGuardModeration"
     STEP_TYPE = "xGuardModeration"
     DISCRIMINATOR = {"mode": "text"}
-    CATEGORY = "Civitai/Analysis"
+    CATEGORY = "Civitai/Analysis/text"
     FUNCTION = "run"
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("results", "signal_metadata", "blocked", "triggered_labels", "workflow_id", "raw_json")
@@ -386,6 +386,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiAgeClassification": "Civitai Age Classification",
     "CivitaiMediaRating": "Civitai Media Rating",
     "CivitaiWdTagging": "Civitai Wd Tagging",
-    "CivitaiXGuardModerationPrompt": "Civitai X Guard Moderation (Prompt)",
-    "CivitaiXGuardModerationText": "Civitai X Guard Moderation (Text)",
+    "CivitaiXGuardModerationPrompt": "Civitai X Guard Moderation (prompt)",
+    "CivitaiXGuardModerationText": "Civitai X Guard Moderation (text)",
 }

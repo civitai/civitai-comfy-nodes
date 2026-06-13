@@ -289,12 +289,12 @@ class CivitaiAudioCaptioning(CivitaiRecipeNodeBase):
 
 
 class CivitaiTextToSpeechCustom(CivitaiRecipeNodeBase):
-    """Civitai Text To Speech (Custom) — textToSpeech recipe via Civitai Orchestration."""
+    """Civitai Text To Speech (custom) — textToSpeech recipe via Civitai Orchestration."""
 
     RECIPE = "textToSpeech"
     STEP_TYPE = "textToSpeech"
     DISCRIMINATOR = {"engine": "custom"}
-    CATEGORY = "Civitai/Audio"
+    CATEGORY = "Civitai/Audio/custom"
     FUNCTION = "run"
     RETURN_TYPES = ("AUDIO", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("audio_blob", "model_type", "speaker", "workflow_id", "raw_json")
@@ -373,27 +373,23 @@ class CivitaiTextToSpeechCustom(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiTextToSpeechVllmOmni(CivitaiRecipeNodeBase):
-    """Civitai Text To Speech (VllmOmni) — textToSpeech recipe via Civitai Orchestration."""
+class CivitaiTextToSpeechVllmOmniQwen3Base(CivitaiRecipeNodeBase):
+    """Civitai Text To Speech (vllm-omni / qwen3 / base) — textToSpeech recipe via Civitai Orchestration."""
 
     RECIPE = "textToSpeech"
     STEP_TYPE = "textToSpeech"
-    DISCRIMINATOR = {"engine": "vllm-omni"}
-    CATEGORY = "Civitai/Audio"
+    DISCRIMINATOR = {"engine": "vllm-omni", "ecosystem": "qwen3", "operation": "base"}
+    CATEGORY = "Civitai/Audio/vllm-omni"
     FUNCTION = "run"
     RETURN_TYPES = ("AUDIO", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("audio_blob", "model_type", "speaker", "workflow_id", "raw_json")
     FIELDS = {
         "text": F("text", "value"),
         "language": F("language", "value"),
-        "ecosystem": F("ecosystem", "value"),
-        "operation": F("operation", "value"),
         "max_new_tokens": F("maxNewTokens", "value"),
         "ref_audio_url": F("refAudioUrl", "audio_url"),
         "ref_text": F("refText", "value"),
-        "instruct": F("instruct", "value"),
         "x_vector_only_mode": F("xVectorOnlyMode", "value"),
-        "speaker": F("speaker", "value"),
     }
     OUTPUTS = (
         O("audioBlob", "audio"),
@@ -409,14 +405,16 @@ class CivitaiTextToSpeechVllmOmni(CivitaiRecipeNodeBase):
                     "STRING",
                     {"tooltip": "The text to synthesize into speech.", "default": "", "multiline": True},
                 ),
-                "ecosystem": (["qwen3", "omnivoice"], {}),
+                "x_vector_only_mode": (
+                    "BOOLEAN",
+                    {"tooltip": "If true, uses only speaker embedding (ref_text not required).", "default": False},
+                ),
             },
             "optional": {
                 "language": (
                     "STRING",
                     {"tooltip": 'Target language (e.g., "English", "Chinese"). Defaults to "Auto".', "default": ""},
                 ),
-                "operation": (["", "base", "customVoice", "voiceDesign"], {}),
                 "max_new_tokens": (
                     "INT",
                     {
@@ -427,17 +425,197 @@ class CivitaiTextToSpeechVllmOmni(CivitaiRecipeNodeBase):
                         "step": 1,
                     },
                 ),
+                "ref_audio_url": (
+                    "AUDIO",
+                    {
+                        "tooltip": "Reference audio AIR URN or external URL for voice cloning. Accepts AIR URNs (existing resources) or HTTP(S) URLs."
+                    },
+                ),
+                "ref_text": (
+                    "STRING",
+                    {
+                        "tooltip": "Transcript of the reference audio. Required for Base mode unless XVectorOnlyMode is true.",
+                        "default": "",
+                    },
+                ),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiTextToSpeechVllmOmniQwen3CustomVoice(CivitaiRecipeNodeBase):
+    """Civitai Text To Speech (vllm-omni / qwen3 / customVoice) — textToSpeech recipe via Civitai Orchestration."""
+
+    RECIPE = "textToSpeech"
+    STEP_TYPE = "textToSpeech"
+    DISCRIMINATOR = {"engine": "vllm-omni", "ecosystem": "qwen3", "operation": "customVoice"}
+    CATEGORY = "Civitai/Audio/vllm-omni"
+    FUNCTION = "run"
+    RETURN_TYPES = ("AUDIO", "STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("audio_blob", "model_type", "speaker", "workflow_id", "raw_json")
+    FIELDS = {
+        "text": F("text", "value"),
+        "language": F("language", "value"),
+        "max_new_tokens": F("maxNewTokens", "value"),
+        "speaker": F("speaker", "value"),
+        "instruct": F("instruct", "value"),
+    }
+    OUTPUTS = (
+        O("audioBlob", "audio"),
+        O("modelType", "string"),
+        O("speaker", "string"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "text": (
+                    "STRING",
+                    {"tooltip": "The text to synthesize into speech.", "default": "", "multiline": True},
+                ),
+                "speaker": (
+                    ["aiden", "dylan", "eric", "ono_anna", "ryan", "serena", "sohee", "uncle_fu", "vivian"],
+                    {"tooltip": "Built-in speaker name for CustomVoice mode."},
+                ),
+            },
+            "optional": {
+                "language": (
+                    "STRING",
+                    {"tooltip": 'Target language (e.g., "English", "Chinese"). Defaults to "Auto".', "default": ""},
+                ),
+                "max_new_tokens": (
+                    "INT",
+                    {
+                        "tooltip": "Optional generation cap for max tokens.",
+                        "default": 0,
+                        "min": 0,
+                        "max": 2147483647,
+                        "step": 1,
+                    },
+                ),
+                "instruct": (
+                    "STRING",
+                    {"tooltip": 'Optional style instruction (e.g., "speak slowly and clearly").', "default": ""},
+                ),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiTextToSpeechVllmOmniQwen3VoiceDesign(CivitaiRecipeNodeBase):
+    """Civitai Text To Speech (vllm-omni / qwen3 / voiceDesign) — textToSpeech recipe via Civitai Orchestration."""
+
+    RECIPE = "textToSpeech"
+    STEP_TYPE = "textToSpeech"
+    DISCRIMINATOR = {"engine": "vllm-omni", "ecosystem": "qwen3", "operation": "voiceDesign"}
+    CATEGORY = "Civitai/Audio/vllm-omni"
+    FUNCTION = "run"
+    RETURN_TYPES = ("AUDIO", "STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("audio_blob", "model_type", "speaker", "workflow_id", "raw_json")
+    FIELDS = {
+        "text": F("text", "value"),
+        "language": F("language", "value"),
+        "max_new_tokens": F("maxNewTokens", "value"),
+        "instruct": F("instruct", "value"),
+    }
+    OUTPUTS = (
+        O("audioBlob", "audio"),
+        O("modelType", "string"),
+        O("speaker", "string"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "text": (
+                    "STRING",
+                    {"tooltip": "The text to synthesize into speech.", "default": "", "multiline": True},
+                ),
+                "instruct": (
+                    "STRING",
+                    {
+                        "tooltip": 'Natural-language description of the desired voice (e.g., "a calm middle-aged male narrator with a slight British accent").',
+                        "default": "",
+                    },
+                ),
+            },
+            "optional": {
+                "language": (
+                    "STRING",
+                    {"tooltip": 'Target language (e.g., "English", "Chinese"). Defaults to "Auto".', "default": ""},
+                ),
+                "max_new_tokens": (
+                    "INT",
+                    {
+                        "tooltip": "Optional generation cap for max tokens.",
+                        "default": 0,
+                        "min": 0,
+                        "max": 2147483647,
+                        "step": 1,
+                    },
+                ),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiTextToSpeechVllmOmniOmnivoice(CivitaiRecipeNodeBase):
+    """Civitai Text To Speech (vllm-omni / omnivoice) — textToSpeech recipe via Civitai Orchestration."""
+
+    RECIPE = "textToSpeech"
+    STEP_TYPE = "textToSpeech"
+    DISCRIMINATOR = {"engine": "vllm-omni", "ecosystem": "omnivoice"}
+    CATEGORY = "Civitai/Audio/vllm-omni"
+    FUNCTION = "run"
+    RETURN_TYPES = ("AUDIO", "STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("audio_blob", "model_type", "speaker", "workflow_id", "raw_json")
+    FIELDS = {
+        "text": F("text", "value"),
+        "language": F("language", "value"),
+        "ref_audio_url": F("refAudioUrl", "audio_url"),
+        "ref_text": F("refText", "value"),
+        "instruct": F("instruct", "value"),
+    }
+    OUTPUTS = (
+        O("audioBlob", "audio"),
+        O("modelType", "string"),
+        O("speaker", "string"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "text": (
+                    "STRING",
+                    {"tooltip": "The text to synthesize into speech.", "default": "", "multiline": True},
+                ),
+            },
+            "optional": {
+                "language": (
+                    "STRING",
+                    {"tooltip": 'Target language (e.g., "English", "Chinese"). Defaults to "Auto".', "default": ""},
+                ),
                 "ref_audio_url": ("AUDIO", {"tooltip": "Reference audio AIR URN or external URL for voice cloning."}),
                 "ref_text": ("STRING", {"tooltip": "Transcript of the reference audio.", "default": ""}),
                 "instruct": ("STRING", {"tooltip": "Optional voice/style instruction.", "default": ""}),
-                "x_vector_only_mode": (
-                    "BOOLEAN",
-                    {"tooltip": "If true, uses only speaker embedding (ref_text not required).", "default": False},
-                ),
-                "speaker": (
-                    ["", "aiden", "dylan", "eric", "ono_anna", "ryan", "serena", "sohee", "uncle_fu", "vivian"],
-                    {"tooltip": "Built-in speaker name for CustomVoice mode.", "default": ""},
-                ),
                 "api_config": (
                     "CIVITAI_CONFIG",
                     {
@@ -507,14 +685,20 @@ NODE_CLASS_MAPPINGS = {
     "CivitaiAceStepAudio": CivitaiAceStepAudio,
     "CivitaiAudioCaptioning": CivitaiAudioCaptioning,
     "CivitaiTextToSpeechCustom": CivitaiTextToSpeechCustom,
-    "CivitaiTextToSpeechVllmOmni": CivitaiTextToSpeechVllmOmni,
+    "CivitaiTextToSpeechVllmOmniQwen3Base": CivitaiTextToSpeechVllmOmniQwen3Base,
+    "CivitaiTextToSpeechVllmOmniQwen3CustomVoice": CivitaiTextToSpeechVllmOmniQwen3CustomVoice,
+    "CivitaiTextToSpeechVllmOmniQwen3VoiceDesign": CivitaiTextToSpeechVllmOmniQwen3VoiceDesign,
+    "CivitaiTextToSpeechVllmOmniOmnivoice": CivitaiTextToSpeechVllmOmniOmnivoice,
     "CivitaiTranscription": CivitaiTranscription,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiAceStepAudio": "Civitai Ace Step Audio",
     "CivitaiAudioCaptioning": "Civitai Audio Captioning",
-    "CivitaiTextToSpeechCustom": "Civitai Text To Speech (Custom)",
-    "CivitaiTextToSpeechVllmOmni": "Civitai Text To Speech (VllmOmni)",
+    "CivitaiTextToSpeechCustom": "Civitai Text To Speech (custom)",
+    "CivitaiTextToSpeechVllmOmniQwen3Base": "Civitai Text To Speech (vllm-omni / qwen3 / base)",
+    "CivitaiTextToSpeechVllmOmniQwen3CustomVoice": "Civitai Text To Speech (vllm-omni / qwen3 / customVoice)",
+    "CivitaiTextToSpeechVllmOmniQwen3VoiceDesign": "Civitai Text To Speech (vllm-omni / qwen3 / voiceDesign)",
+    "CivitaiTextToSpeechVllmOmniOmnivoice": "Civitai Text To Speech (vllm-omni / omnivoice)",
     "CivitaiTranscription": "Civitai Transcription",
 }

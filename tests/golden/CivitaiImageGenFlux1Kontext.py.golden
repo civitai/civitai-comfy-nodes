@@ -1,0 +1,41 @@
+class CivitaiImageGenFlux1Kontext(CivitaiRecipeNodeBase):
+    """Civitai Image Gen (flux1-kontext) — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {'engine': 'flux1-kontext'}
+    CATEGORY = "Civitai/Image/flux1-kontext"
+    FUNCTION = "run"
+    RETURN_TYPES = ('IMAGE', 'STRING', 'STRING', 'STRING')
+    RETURN_NAMES = ('images', 'errors', 'workflow_id', 'raw_json')
+    FIELDS = {
+        "model": F("model", "value"),
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "images": F("images", "image_list"),
+        "aspect_ratio": F("aspectRatio", "value"),
+        "guidance_scale": F("guidanceScale", "value"),
+        "quantity": F("quantity", "value"),
+        "seed": F("seed", "value"),
+    }
+    OUTPUTS = (O("images", "image_list"), O("errors", "json"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "model": (['pro', 'max', 'dev'], {'default': 'pro'}),
+                "prompt": ("STRING", {'default': '', 'multiline': True}),
+            },
+            "optional": {
+                "output_format": (['', 'jpeg', 'png', 'webP'], {'default': ''}),
+                "image_metadata": ("STRING", {'tooltip': 'External metadata that will be stored with the image', 'default': ''}),
+                "images": ("IMAGE", {}),
+                "aspect_ratio": (['21:9', '16:9', '4:3', '3:2', '1:1', '2:3', '3:4', '9:16', '9:21'], {'default': '1:1'}),
+                "guidance_scale": ("FLOAT", {'default': 3.5, 'min': 1.0, 'max': 20.0, 'step': 0.01}),
+                "quantity": ("INT", {'default': 1, 'min': 1, 'max': 4, 'step': 1}),
+                "seed": ("INT", {'control_after_generate': True, 'default': 0, 'min': 0, 'max': 4294967295, 'step': 1}),
+                "api_config": ("CIVITAI_CONFIG", {"tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."}),
+            },
+        }

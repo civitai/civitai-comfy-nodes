@@ -9,6 +9,7 @@ import json
 import re
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 from . import emit, ir
@@ -78,139 +79,221 @@ def list_recipes(spec: dict, overrides: dict) -> list[tuple[str, dict, dict]]:
     return recipes
 
 
+@dataclass
+class _Variant:
+    """One concrete node before assembly.
+
+    fixed   : discriminator selections shown as separate nodes (engine=sdcpp, operation=editImage)
+              — ordered shallow→deep; they form the node name + DISCRIMINATOR.
+    combos  : discriminator selections collapsed to a dropdown because their sibling subtrees were
+              structurally identical (model=[gpt-image-1, gpt-image-1.5, ...]) — prop -> (keys, default).
+    props   : remaining property schemas (the real input fields).
+    required: required property names along this path.
+    """
+
+    fixed: list
+    combos: dict
+    props: dict
+    required: set
+
+
 def build_nodes(spec: dict, overrides: dict) -> list[ir.NodeIR]:
-    nodes = []
+    from collections import Counter
+
+    pending = []  # (recipe, variant, outputs, recipe_overrides, base_name)
     for recipe, input_schema, output_schema in list_recipes(spec, overrides):
         recipe_overrides = overrides.get(recipe, {})
         resolved_input = ir.resolve_ref(spec, input_schema["$ref"]) if "$ref" in input_schema else input_schema
         discriminator = resolved_input.get("discriminator")
+        outputs = build_outputs(spec, output_schema, recipe_overrides)
 
         if discriminator and recipe_overrides.get("expand", True):
-            mapping = discriminator["mapping"]
-            for variant_key, variant_ref in mapping.items():
-                nodes.append(
-                    build_node(
-                        spec,
-                        recipe,
-                        output_schema,
-                        recipe_overrides,
-                        variant_key=variant_key,
-                        variant_schema=ir.resolve_ref(spec, variant_ref),
-                        disc_prop=discriminator["propertyName"],
-                    )
-                )
+            variants = expand_collapse(spec, input_schema, frozenset())
         else:
-            nodes.append(build_node(spec, recipe, output_schema, recipe_overrides))
+            props, required, _ = ir.merge_allof_chain(spec, input_schema)
+            variants = [_Variant(fixed=[], combos={}, props=props, required=set(required))]
+
+        for variant in variants:
+            base = f"Civitai{ir.pascal_case(recipe)}" + "".join(ir.pascal_case(k) for _, k in variant.fixed)
+            pending.append((recipe, variant, outputs, recipe_overrides, base))
+
+    # A fixed path is ambiguous when a deeper discriminator collapsed into more than one dropdown
+    # group (e.g. fal/qwen2 split into create-ops vs edit-ops); name those by the group's lead op.
+    ambiguous = {base for base, n in Counter(p[4] for p in pending).items() if n > 1}
+    used: set[str] = set()
+    nodes = []
+    for recipe, variant, outputs, recipe_overrides, base in pending:
+        nodes.append(assemble_node(spec, recipe, variant, outputs, recipe_overrides, base, base in ambiguous, used))
     return nodes
 
 
-def build_node(
+def expand_collapse(spec: dict, ref_or_schema, resolved: frozenset) -> list[_Variant]:
+    """Recursively expand every discriminator into separate variants, then collapse a level back
+    into a dropdown when all its sibling subtrees are structurally identical (smart split)."""
+    props, required, discs = ir.merge_allof_chain(spec, ref_or_schema)
+    pending = [(p, m) for (p, m) in discs if p not in resolved]
+    if not pending:
+        return [_Variant(fixed=[], combos={}, props=props, required=set(required))]
+
+    prop, mapping = pending[0]
+    children = {
+        key: expand_collapse(spec, ir.resolve_ref(spec, sub_ref), resolved | {prop}) for key, sub_ref in mapping.items()
+    }
+    default_key = _discriminator_default(spec, props.get(prop))
+
+    # Group sibling keys by the structural signature of their subtree (ignoring this prop's value).
+    groups: dict = {}
+    for key, child_variants in children.items():
+        groups.setdefault(_subtree_signature(spec, child_variants, prop), []).append(key)
+
+    result: list[_Variant] = []
+    for keys in groups.values():
+        representative = children[keys[0]]
+        if len(keys) >= 2 and prop != "engine":
+            combo_default = default_key if default_key in keys else keys[0]
+            for v in representative:
+                result.append(
+                    _Variant(
+                        fixed=list(v.fixed),
+                        combos={prop: (keys, combo_default), **v.combos},
+                        props=dict(v.props),
+                        required=set(v.required),
+                    )
+                )
+        else:
+            for key in keys:
+                for v in children[key]:
+                    result.append(
+                        _Variant(
+                            fixed=[(prop, key), *v.fixed],
+                            combos=dict(v.combos),
+                            props=dict(v.props),
+                            required=set(v.required),
+                        )
+                    )
+    return result
+
+
+def _discriminator_default(spec: dict, prop_schema: dict | None) -> str | None:
+    if not prop_schema:
+        return None
+    return ir.deref_property(spec, prop_schema).get("default")
+
+
+def _subtree_signature(spec: dict, variants: list[_Variant], exclude_prop: str):
+    """A hashable canonical form of a list of variants, ignoring `exclude_prop` — two subtrees with
+    the same signature render to the same node(s) and so can be merged into one dropdown."""
+    items = []
+    for v in variants:
+        decided = {p for p, _ in v.fixed} | set(v.combos) | {exclude_prop}
+        fields = sorted(
+            _field_signature(ir.FieldIR(*_field_tuple(spec, name, schema)))
+            for name, schema in v.props.items()
+            if name not in decided
+        )
+        combos = tuple(sorted((p, tuple(keys)) for p, (keys, _d) in v.combos.items()))
+        fixed = tuple(v.fixed)
+        req = tuple(sorted(r for r in v.required if r != exclude_prop))
+        items.append((fixed, combos, req, tuple(fields)))
+    return tuple(sorted(items, key=repr))
+
+
+def _field_signature(field: ir.FieldIR):
+    comfy = tuple(field.comfy_type) if isinstance(field.comfy_type, list) else field.comfy_type
+    opts = tuple(sorted((k, repr(val)) for k, val in field.options.items() if k != "tooltip"))
+    return (field.widget, field.kind, comfy, opts, field.required)
+
+
+def _field_tuple(spec: dict, prop_name: str, prop_schema: dict, hint: str | None = None, required: bool = False):
+    """Shared field derivation (used for both signatures and emitted nodes)."""
+    schema = ir.deref_property(spec, prop_schema)
+    kind, comfy_type, detected = ir.classify_input_field(prop_name, schema, hint)
+    widget = ir.snake_case(prop_name) + ("_json" if kind == "json" else "")
+    options = ir.widget_options(prop_name, schema, comfy_type, required)
+    if isinstance(comfy_type, list) and not required and "default" not in options:
+        comfy_type = ["", *comfy_type]
+        options["default"] = ""
+    if kind == "json":
+        options["multiline"] = True
+        options.setdefault("default", "")
+    return widget, prop_name, kind, comfy_type, options, required, detected
+
+
+def build_outputs(spec: dict, output_schema: dict, recipe_overrides: dict) -> list[ir.OutputIR]:
+    skip_outputs = set(recipe_overrides.get("skip_outputs", []))
+    resolved = ir.resolve_ref(spec, output_schema["$ref"]) if "$ref" in output_schema else output_schema
+    out_props, _, _ = ir.merge_allof_chain(spec, resolved)
+    return [
+        ir.classify_output_field(spec, name, schema) for name, schema in out_props.items() if name not in skip_outputs
+    ]
+
+
+def assemble_node(
     spec: dict,
     recipe: str,
-    output_schema: dict,
+    variant: _Variant,
+    outputs: list[ir.OutputIR],
     recipe_overrides: dict,
-    *,
-    variant_key: str | None = None,
-    variant_schema: dict | None = None,
-    disc_prop: str | None = None,
+    base_name: str,
+    ambiguous: bool,
+    used: set,
 ) -> ir.NodeIR:
-    module, category = MODULES[recipe]
+    module, base_category = MODULES[recipe]
     display_overrides = recipe_overrides.get("display", {})
     field_hints = recipe_overrides.get("field_types", {})
     skip_fields = set(recipe_overrides.get("skip_fields", []))
-    skip_outputs = set(recipe_overrides.get("skip_outputs", []))
+    decided = {p for p, _ in variant.fixed} | set(variant.combos)
 
-    if variant_key is not None:
-        properties, required, combos, warnings = ir.flatten_variant(spec, variant_schema, disc_prop)
-        properties.pop(disc_prop, None)
-        variant_display = display_overrides.get(variant_key, ir.pascal_case(variant_key))
-        class_name = f"Civitai{ir.pascal_case(recipe)}{ir.pascal_case(variant_key)}"
-        display_name = f"Civitai {ir.title_case(recipe)} ({variant_display})"
-        node_discriminator = {disc_prop: variant_key}
-    else:
-        properties, required, _discs = ir.merge_allof_chain(spec, _recipe_input_schema(spec, recipe))
-        combos, warnings = {}, []
-        class_name = f"Civitai{ir.pascal_case(recipe)}"
-        display_name = f"Civitai {ir.title_case(recipe)}"
-        node_discriminator = {}
+    fixed_dict = {p: key for p, key in variant.fixed}
+    path_labels = [display_overrides.get(key, key) for _, key in variant.fixed]
+    combo_reps = [keys[0] for keys, _default in variant.combos.values()]
+
+    class_name = base_name
+    if ambiguous and combo_reps:
+        class_name = base_name + "".join(ir.pascal_case(k) for k in combo_reps)
+        path_labels = path_labels + [display_overrides.get(k, k) for k in combo_reps]
+    suffix = 2
+    while class_name in used:
+        class_name = f"{base_name}{suffix}"
+        suffix += 1
+    used.add(class_name)
+
+    display_name = f"Civitai {ir.title_case(recipe)}" + (f" ({' / '.join(path_labels)})" if path_labels else "")
+    category = f"{base_category}/{path_labels[0]}" if path_labels else base_category
 
     node = ir.NodeIR(
         class_name=class_name,
         display_name=display_name,
         recipe=recipe,
         step_type=recipe,
-        discriminator=node_discriminator,
+        discriminator=fixed_dict,
         category=category,
         module=module,
         description=f"{recipe} recipe via Civitai Orchestration",
-        warnings=warnings,
     )
 
-    for prop_name, prop_schema in properties.items():
-        if prop_name in skip_fields or prop_name in node_discriminator:
-            continue
-        prop_schema = ir.deref_property(spec, prop_schema)
-        if prop_name in combos:
-            node.fields.append(_combo_field(prop_name, prop_schema, combos[prop_name], prop_name in required))
-            continue
-        kind, comfy_type, detected = ir.classify_input_field(prop_name, prop_schema, field_hints.get(prop_name))
-        widget = ir.snake_case(prop_name) + ("_json" if kind == "json" else "")
-        options = ir.widget_options(prop_name, prop_schema, comfy_type, prop_name in required)
-        if isinstance(comfy_type, list) and prop_name not in required and "default" not in options:
-            # optional enum without a spec default: let the server default by omitting ""
-            comfy_type = ["", *comfy_type]
-            options["default"] = ""
-        if kind == "json":
-            options["multiline"] = True
-            options.setdefault("default", "")
+    # Collapsed discriminators become required dropdowns whose value flows into the payload like any field.
+    for prop, (keys, default) in variant.combos.items():
         node.fields.append(
             ir.FieldIR(
-                widget=widget,
-                api=prop_name,
-                kind=kind,
-                comfy_type=comfy_type,
-                options=options,
-                required=prop_name in required,
-                detected_as=detected,
+                widget=ir.snake_case(prop),
+                api=prop,
+                kind="value",
+                comfy_type=list(keys),
+                options={"default": default} if default in keys else {},
+                required=True,
+                detected_as="discriminator-combo",
             )
         )
 
-    out_resolved = ir.resolve_ref(spec, output_schema["$ref"]) if "$ref" in output_schema else output_schema
-    out_props, _, _ = ir.merge_allof_chain(spec, out_resolved)
-    for prop_name, prop_schema in out_props.items():
-        if prop_name in skip_outputs:
+    for prop_name, prop_schema in variant.props.items():
+        if prop_name in decided or prop_name in skip_fields:
             continue
-        node.outputs.append(ir.classify_output_field(spec, prop_name, prop_schema))
+        tup = _field_tuple(spec, prop_name, prop_schema, field_hints.get(prop_name), prop_name in variant.required)
+        node.fields.append(ir.FieldIR(*tup))
 
+    node.outputs = list(outputs)
     return node
-
-
-def _combo_field(prop_name: str, prop_schema: dict, options: list, required: bool) -> ir.FieldIR:
-    """A nested-discriminator property rendered as a dropdown; optional ones get an omit ('') choice."""
-    schema, _ = ir.unwrap_nullable(prop_schema)
-    choices = list(options)
-    default = schema.get("default")
-    if not required and "" not in choices:
-        choices = ["", *choices]
-    widget_opts: dict = {}
-    if schema.get("description"):
-        widget_opts["tooltip"] = " ".join(schema["description"].split())
-    if default in choices:
-        widget_opts["default"] = default
-    return ir.FieldIR(
-        widget=ir.snake_case(prop_name),
-        api=prop_name,
-        kind="value",
-        comfy_type=choices,
-        options=widget_opts,
-        required=required,
-        detected_as="nested-discriminator",
-    )
-
-
-def _recipe_input_schema(spec: dict, recipe: str) -> dict:
-    post = spec["paths"][f"/v2/consumer/recipes/{recipe}"]["post"]
-    return post["requestBody"]["content"]["application/json"]["schema"]
 
 
 def print_audit(nodes: list[ir.NodeIR]) -> None:

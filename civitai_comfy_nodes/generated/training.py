@@ -5,12 +5,12 @@ from ..base import CivitaiRecipeNodeBase, F, O
 
 
 class CivitaiImageResourceTrainingKohya(CivitaiRecipeNodeBase):
-    """Civitai Image Resource Training (Kohya) — imageResourceTraining recipe via Civitai Orchestration."""
+    """Civitai Image Resource Training (kohya) — imageResourceTraining recipe via Civitai Orchestration."""
 
     RECIPE = "imageResourceTraining"
     STEP_TYPE = "imageResourceTraining"
     DISCRIMINATOR = {"engine": "kohya"}
-    CATEGORY = "Civitai/Training"
+    CATEGORY = "Civitai/Training/kohya"
     FUNCTION = "run"
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = (
@@ -267,12 +267,12 @@ class CivitaiImageResourceTrainingKohya(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageResourceTrainingFluxDevFast(CivitaiRecipeNodeBase):
-    """Civitai Image Resource Training (FluxDevFast) — imageResourceTraining recipe via Civitai Orchestration."""
+    """Civitai Image Resource Training (flux-dev-fast) — imageResourceTraining recipe via Civitai Orchestration."""
 
     RECIPE = "imageResourceTraining"
     STEP_TYPE = "imageResourceTraining"
     DISCRIMINATOR = {"engine": "flux-dev-fast"}
-    CATEGORY = "Civitai/Training"
+    CATEGORY = "Civitai/Training/flux-dev-fast"
     FUNCTION = "run"
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = (
@@ -344,12 +344,12 @@ class CivitaiImageResourceTrainingFluxDevFast(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageResourceTrainingMusubi(CivitaiRecipeNodeBase):
-    """Civitai Image Resource Training (Musubi) — imageResourceTraining recipe via Civitai Orchestration."""
+    """Civitai Image Resource Training (musubi) — imageResourceTraining recipe via Civitai Orchestration."""
 
     RECIPE = "imageResourceTraining"
     STEP_TYPE = "imageResourceTraining"
     DISCRIMINATOR = {"engine": "musubi"}
-    CATEGORY = "Civitai/Training"
+    CATEGORY = "Civitai/Training/musubi"
     FUNCTION = "run"
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = (
@@ -513,12 +513,12 @@ class CivitaiImageResourceTrainingMusubi(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageResourceTrainingFlux2Dev(CivitaiRecipeNodeBase):
-    """Civitai Image Resource Training (Flux2Dev) — imageResourceTraining recipe via Civitai Orchestration."""
+    """Civitai Image Resource Training (flux2-dev) — imageResourceTraining recipe via Civitai Orchestration."""
 
     RECIPE = "imageResourceTraining"
     STEP_TYPE = "imageResourceTraining"
     DISCRIMINATOR = {"engine": "flux2-dev"}
-    CATEGORY = "Civitai/Training"
+    CATEGORY = "Civitai/Training/flux2-dev"
     FUNCTION = "run"
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = (
@@ -620,12 +620,12 @@ class CivitaiImageResourceTrainingFlux2Dev(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageResourceTrainingFlux2DevEdit(CivitaiRecipeNodeBase):
-    """Civitai Image Resource Training (Flux2DevEdit) — imageResourceTraining recipe via Civitai Orchestration."""
+    """Civitai Image Resource Training (flux2-dev-edit) — imageResourceTraining recipe via Civitai Orchestration."""
 
     RECIPE = "imageResourceTraining"
     STEP_TYPE = "imageResourceTraining"
     DISCRIMINATOR = {"engine": "flux2-dev-edit"}
-    CATEGORY = "Civitai/Training"
+    CATEGORY = "Civitai/Training/flux2-dev-edit"
     FUNCTION = "run"
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = (
@@ -737,20 +737,20 @@ class CivitaiImageResourceTrainingFlux2DevEdit(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiTrainingAiToolkit(CivitaiRecipeNodeBase):
-    """Civitai Training (AiToolkit) — training recipe via Civitai Orchestration."""
+class CivitaiTrainingAiToolkitFlux1(CivitaiRecipeNodeBase):
+    """Civitai Training (ai-toolkit / flux1) — training recipe via Civitai Orchestration."""
 
     RECIPE = "training"
     STEP_TYPE = "training"
-    DISCRIMINATOR = {"engine": "ai-toolkit"}
-    CATEGORY = "Civitai/Training"
+    DISCRIMINATOR = {"engine": "ai-toolkit", "ecosystem": "flux1"}
+    CATEGORY = "Civitai/Training/ai-toolkit"
     FUNCTION = "run"
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("moderation_status", "epochs", "workflow_id", "raw_json")
     FIELDS = {
+        "model_variant": F("modelVariant", "value"),
         "training_data_json": F("trainingData", "json"),
         "samples_json": F("samples", "json"),
-        "ecosystem": F("ecosystem", "value"),
         "epochs": F("epochs", "value"),
         "steps": F("steps", "value"),
         "batch_size": F("batchSize", "value"),
@@ -771,12 +771,6 @@ class CivitaiTrainingAiToolkit(CivitaiRecipeNodeBase):
         "default_steps": F("defaultSteps", "value"),
         "uses_step_pricing": F("usesStepPricing", "value"),
         "max_batch_size": F("maxBatchSize", "value"),
-        "model_variant": F("modelVariant", "value"),
-        "min_snr_gamma": F("minSnrGamma", "value"),
-        "model": F("model", "value"),
-        "version": F("version", "value"),
-        "is_edit_training": F("isEditTraining", "value"),
-        "samples_overrides_json": F("samplesOverrides", "json"),
     }
     OUTPUTS = (
         O("moderationStatus", "json"),
@@ -787,29 +781,10 @@ class CivitaiTrainingAiToolkit(CivitaiRecipeNodeBase):
     def INPUT_TYPES(cls):
         return {
             "required": {
+                "model_variant": (["dev", "schnell"], {"default": "dev"}),
                 "training_data_json": (
                     "STRING",
                     {"tooltip": "Represents training data in various formats", "default": "", "multiline": True},
-                ),
-                "ecosystem": (
-                    [
-                        "flux1",
-                        "sdxl",
-                        "sd1",
-                        "chroma",
-                        "ernie",
-                        "qwen",
-                        "zimageturbo",
-                        "zimagebase",
-                        "flux2klein",
-                        "ltx2",
-                        "ltx23",
-                        "ace_step_15",
-                        "ace_step_15_xl",
-                        "hidream-o1",
-                        "anima",
-                    ],
-                    {},
                 ),
                 "storage_buzz_per_epoch": (
                     "FLOAT",
@@ -1009,7 +984,263 @@ class CivitaiTrainingAiToolkit(CivitaiRecipeNodeBase):
                         "default": "",
                     },
                 ),
-                "model_variant": (["", "base", "sft", "4b", "9b", "dev", "schnell"], {}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiTrainingAiToolkitSdxl(CivitaiRecipeNodeBase):
+    """Civitai Training (ai-toolkit / sdxl) — training recipe via Civitai Orchestration."""
+
+    RECIPE = "training"
+    STEP_TYPE = "training"
+    DISCRIMINATOR = {"engine": "ai-toolkit", "ecosystem": "sdxl"}
+    CATEGORY = "Civitai/Training/ai-toolkit"
+    FUNCTION = "run"
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("moderation_status", "epochs", "workflow_id", "raw_json")
+    FIELDS = {
+        "training_data_json": F("trainingData", "json"),
+        "samples_json": F("samples", "json"),
+        "epochs": F("epochs", "value"),
+        "steps": F("steps", "value"),
+        "batch_size": F("batchSize", "value"),
+        "lr": F("lr", "value"),
+        "text_encoder_lr": F("textEncoderLr", "value"),
+        "train_text_encoder": F("trainTextEncoder", "value"),
+        "lr_scheduler": F("lrScheduler", "value"),
+        "optimizer_type": F("optimizerType", "value"),
+        "network_dim": F("networkDim", "value"),
+        "network_alpha": F("networkAlpha", "value"),
+        "noise_offset": F("noiseOffset", "value"),
+        "flip_augmentation": F("flipAugmentation", "value"),
+        "shuffle_tokens": F("shuffleTokens", "value"),
+        "keep_tokens": F("keepTokens", "value"),
+        "trigger_word": F("triggerWord", "value"),
+        "continue_from": F("continueFrom", "value"),
+        "storage_buzz_per_epoch": F("storageBuzzPerEpoch", "value"),
+        "default_steps": F("defaultSteps", "value"),
+        "uses_step_pricing": F("usesStepPricing", "value"),
+        "max_batch_size": F("maxBatchSize", "value"),
+        "min_snr_gamma": F("minSnrGamma", "value"),
+        "model": F("model", "value"),
+    }
+    OUTPUTS = (
+        O("moderationStatus", "json"),
+        O("epochs", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "training_data_json": (
+                    "STRING",
+                    {"tooltip": "Represents training data in various formats", "default": "", "multiline": True},
+                ),
+                "storage_buzz_per_epoch": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Per-epoch surcharge (buzz). Each epoch is a delivered checkpoint plus its preview samples, billed on top of the per-step training cost — so raising the epoch count raises the price by this much each. Override per ecosystem where per-epoch samples are expensive to compute (e.g. video).",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 2147483647.0,
+                        "step": 0.01,
+                    },
+                ),
+                "default_steps": (
+                    "INT",
+                    {
+                        "tooltip": "Default total step budget when neither Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps nor Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs is supplied. Override per ecosystem where the default training length differs (e.g. video needs more steps, quickly-overtrained models need fewer).",
+                        "default": 0,
+                        "min": 0,
+                        "max": 2147483647,
+                        "step": 1,
+                    },
+                ),
+                "uses_step_pricing": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "True when billing uses the per-step model. This is the default; the only exception is the legacy path where the caller supplied Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs but no Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps (existing consumers), which keeps the historical flat per-epoch price.",
+                        "default": False,
+                    },
+                ),
+                "max_batch_size": (
+                    "INT",
+                    {
+                        "tooltip": "Ecosystem-specific maximum training batch size — the upper bound the user's Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.BatchSize is clamped to. Most ecosystems cap at 1.",
+                        "default": 0,
+                        "min": 0,
+                        "max": 2147483647,
+                        "step": 1,
+                    },
+                ),
+            },
+            "optional": {
+                "samples_json": (
+                    "STRING",
+                    {
+                        "tooltip": "Sample generation configuration for training workflows",
+                        "default": "",
+                        "multiline": True,
+                    },
+                ),
+                "epochs": (
+                    "INT",
+                    {
+                        "tooltip": "Number of training epochs — the number of saved checkpoints produced (each epoch yields one downloadable model). When omitted it is derived from Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps; when both are supplied, both are honored (epochs = checkpoint count, steps = total).",
+                        "default": 1,
+                        "min": 1,
+                        "max": 20,
+                        "step": 1,
+                    },
+                ),
+                "steps": (
+                    "INT",
+                    {
+                        "tooltip": "Total number of training steps. This is the primary control over training length and determines pricing. When supplied, Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs (the number of saved checkpoints) is derived from it; when omitted, steps are derived from epochs.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 10000,
+                        "step": 1,
+                    },
+                ),
+                "batch_size": (
+                    "INT",
+                    {
+                        "tooltip": "Training batch size. Defaults to 1; raise it (up to the ecosystem's maximum) to train faster at the cost of more GPU memory. A larger batch sees more images per step, so fewer steps are needed for a comparable result. Values above the ecosystem maximum are clamped down.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 4,
+                        "step": 1,
+                    },
+                ),
+                "lr": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Sets the learning rate for the model. This is the learning rate when performing additional learning on each attention block (and other blocks depending on the setting).",
+                        "default": 0.0001,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "text_encoder_lr": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Sets the learning rate for the text encoder. Only used when TrainTextEncoder is true. For models with multiple text encoders, this applies to all of them.",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "train_text_encoder": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "Whether to train the text encoder(s) alongside the model. Enabling this can improve prompt understanding but increases training time and memory usage.",
+                        "default": False,
+                    },
+                ),
+                "lr_scheduler": (
+                    ["", "constant", "constant_with_warmup", "cosine", "linear", "step"],
+                    {
+                        "tooltip": "You can change the learning rate in the middle of learning. A scheduler is a setting for how to change the learning rate.",
+                        "default": "",
+                    },
+                ),
+                "optimizer_type": (
+                    [
+                        "",
+                        "adamw",
+                        "adamw8bit",
+                        "adam8bit",
+                        "lion",
+                        "lion8bit",
+                        "adafactor",
+                        "adagrad",
+                        "prodigy",
+                        "prodigy8bit",
+                        "automagic",
+                    ],
+                    {
+                        "tooltip": 'The optimizer determines how to update the neural net weights during training. Various methods have been proposed for smart learning, but the most commonly used in LoRA learning is "adamw8bit".',
+                        "default": "",
+                    },
+                ),
+                "network_dim": (
+                    "INT",
+                    {
+                        "tooltip": "The larger the Dim setting, the more learning information can be stored, but the possibility of learning unnecessary information other than the learning target increases. A larger Dim also increases LoRA file size.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 256,
+                        "step": 1,
+                    },
+                ),
+                "network_alpha": (
+                    "INT",
+                    {
+                        "tooltip": "The smaller the Network alpha value, the larger the stored LoRA neural net weights. For example, with an Alpha of 16 and a Dim of 32, the strength of the weight used is 16/32 = 0.5, meaning that the learning rate is only half as powerful as the Learning Rate setting. If Alpha and Dim are the same number, the strength used will be 1 and will have no effect on the learning rate.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 256,
+                        "step": 1,
+                    },
+                ),
+                "noise_offset": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Adds noise to training images. 0 adds no noise at all. A value of 1 adds strong noise.",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "flip_augmentation": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "If this option is turned on, the image will be horizontally flipped randomly. It can learn left and right angles, which is useful when you want to learn symmetrical people and objects.",
+                        "default": False,
+                    },
+                ),
+                "shuffle_tokens": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "Randomly changes the order of your tags during training. The intent of shuffling is to improve learning. If you are using captions (sentences), this option has no meaning.",
+                        "default": False,
+                    },
+                ),
+                "keep_tokens": (
+                    "INT",
+                    {
+                        "tooltip": 'If your training images have tags, you can randomly shuffle them. However, if you have words that you want to keep at the beginning, you can use this option to specify "Keep the first 0 words at the beginning". This option does nothing if the Shuffle Tokens option is off.',
+                        "default": 0,
+                        "min": 0,
+                        "max": 10,
+                        "step": 1,
+                    },
+                ),
+                "trigger_word": (
+                    "STRING",
+                    {
+                        "tooltip": "A trigger word that activates the trained LoRA when used in prompts. Only applicable to certain ecosystems (sd1, sdxl, flux1, chroma, zimagebase, zimageturbo, flux2klein).",
+                        "default": "",
+                    },
+                ),
+                "continue_from": (
+                    "STRING",
+                    {
+                        "tooltip": 'Optional previously-trained LoRA to continue training from ("train further"). When set, the first epoch resumes from this model instead of the base model, and the new epochs build on top of it.',
+                        "default": "",
+                    },
+                ),
                 "min_snr_gamma": (
                     "INT",
                     {
@@ -1027,12 +1258,1575 @@ class CivitaiTrainingAiToolkit(CivitaiRecipeNodeBase):
                         "default": "urn:air:sdxl:checkpoint:civitai:101055@128078",
                     },
                 ),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiTrainingAiToolkitSd1(CivitaiRecipeNodeBase):
+    """Civitai Training (ai-toolkit / sd1) — training recipe via Civitai Orchestration."""
+
+    RECIPE = "training"
+    STEP_TYPE = "training"
+    DISCRIMINATOR = {"engine": "ai-toolkit", "ecosystem": "sd1"}
+    CATEGORY = "Civitai/Training/ai-toolkit"
+    FUNCTION = "run"
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("moderation_status", "epochs", "workflow_id", "raw_json")
+    FIELDS = {
+        "training_data_json": F("trainingData", "json"),
+        "samples_json": F("samples", "json"),
+        "epochs": F("epochs", "value"),
+        "steps": F("steps", "value"),
+        "batch_size": F("batchSize", "value"),
+        "lr": F("lr", "value"),
+        "text_encoder_lr": F("textEncoderLr", "value"),
+        "train_text_encoder": F("trainTextEncoder", "value"),
+        "lr_scheduler": F("lrScheduler", "value"),
+        "optimizer_type": F("optimizerType", "value"),
+        "network_dim": F("networkDim", "value"),
+        "network_alpha": F("networkAlpha", "value"),
+        "noise_offset": F("noiseOffset", "value"),
+        "flip_augmentation": F("flipAugmentation", "value"),
+        "shuffle_tokens": F("shuffleTokens", "value"),
+        "keep_tokens": F("keepTokens", "value"),
+        "trigger_word": F("triggerWord", "value"),
+        "continue_from": F("continueFrom", "value"),
+        "storage_buzz_per_epoch": F("storageBuzzPerEpoch", "value"),
+        "default_steps": F("defaultSteps", "value"),
+        "uses_step_pricing": F("usesStepPricing", "value"),
+        "max_batch_size": F("maxBatchSize", "value"),
+        "min_snr_gamma": F("minSnrGamma", "value"),
+        "model": F("model", "value"),
+    }
+    OUTPUTS = (
+        O("moderationStatus", "json"),
+        O("epochs", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "training_data_json": (
+                    "STRING",
+                    {"tooltip": "Represents training data in various formats", "default": "", "multiline": True},
+                ),
+                "storage_buzz_per_epoch": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Per-epoch surcharge (buzz). Each epoch is a delivered checkpoint plus its preview samples, billed on top of the per-step training cost — so raising the epoch count raises the price by this much each. Override per ecosystem where per-epoch samples are expensive to compute (e.g. video).",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 2147483647.0,
+                        "step": 0.01,
+                    },
+                ),
+                "default_steps": (
+                    "INT",
+                    {
+                        "tooltip": "Default total step budget when neither Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps nor Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs is supplied. Override per ecosystem where the default training length differs (e.g. video needs more steps, quickly-overtrained models need fewer).",
+                        "default": 0,
+                        "min": 0,
+                        "max": 2147483647,
+                        "step": 1,
+                    },
+                ),
+                "uses_step_pricing": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "True when billing uses the per-step model. This is the default; the only exception is the legacy path where the caller supplied Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs but no Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps (existing consumers), which keeps the historical flat per-epoch price.",
+                        "default": False,
+                    },
+                ),
+                "max_batch_size": (
+                    "INT",
+                    {
+                        "tooltip": "Ecosystem-specific maximum training batch size — the upper bound the user's Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.BatchSize is clamped to. Most ecosystems cap at 1.",
+                        "default": 0,
+                        "min": 0,
+                        "max": 2147483647,
+                        "step": 1,
+                    },
+                ),
+            },
+            "optional": {
+                "samples_json": (
+                    "STRING",
+                    {
+                        "tooltip": "Sample generation configuration for training workflows",
+                        "default": "",
+                        "multiline": True,
+                    },
+                ),
+                "epochs": (
+                    "INT",
+                    {
+                        "tooltip": "Number of training epochs — the number of saved checkpoints produced (each epoch yields one downloadable model). When omitted it is derived from Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps; when both are supplied, both are honored (epochs = checkpoint count, steps = total).",
+                        "default": 1,
+                        "min": 1,
+                        "max": 20,
+                        "step": 1,
+                    },
+                ),
+                "steps": (
+                    "INT",
+                    {
+                        "tooltip": "Total number of training steps. This is the primary control over training length and determines pricing. When supplied, Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs (the number of saved checkpoints) is derived from it; when omitted, steps are derived from epochs.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 10000,
+                        "step": 1,
+                    },
+                ),
+                "batch_size": (
+                    "INT",
+                    {
+                        "tooltip": "Training batch size. Defaults to 1; raise it (up to the ecosystem's maximum) to train faster at the cost of more GPU memory. A larger batch sees more images per step, so fewer steps are needed for a comparable result. Values above the ecosystem maximum are clamped down.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 4,
+                        "step": 1,
+                    },
+                ),
+                "lr": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Sets the learning rate for the model. This is the learning rate when performing additional learning on each attention block (and other blocks depending on the setting).",
+                        "default": 0.0001,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "text_encoder_lr": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Sets the learning rate for the text encoder. Only used when TrainTextEncoder is true. For models with multiple text encoders, this applies to all of them.",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "train_text_encoder": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "Whether to train the text encoder(s) alongside the model. Enabling this can improve prompt understanding but increases training time and memory usage.",
+                        "default": False,
+                    },
+                ),
+                "lr_scheduler": (
+                    ["", "constant", "constant_with_warmup", "cosine", "linear", "step"],
+                    {
+                        "tooltip": "You can change the learning rate in the middle of learning. A scheduler is a setting for how to change the learning rate.",
+                        "default": "",
+                    },
+                ),
+                "optimizer_type": (
+                    [
+                        "",
+                        "adamw",
+                        "adamw8bit",
+                        "adam8bit",
+                        "lion",
+                        "lion8bit",
+                        "adafactor",
+                        "adagrad",
+                        "prodigy",
+                        "prodigy8bit",
+                        "automagic",
+                    ],
+                    {
+                        "tooltip": 'The optimizer determines how to update the neural net weights during training. Various methods have been proposed for smart learning, but the most commonly used in LoRA learning is "adamw8bit".',
+                        "default": "",
+                    },
+                ),
+                "network_dim": (
+                    "INT",
+                    {
+                        "tooltip": "The larger the Dim setting, the more learning information can be stored, but the possibility of learning unnecessary information other than the learning target increases. A larger Dim also increases LoRA file size.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 256,
+                        "step": 1,
+                    },
+                ),
+                "network_alpha": (
+                    "INT",
+                    {
+                        "tooltip": "The smaller the Network alpha value, the larger the stored LoRA neural net weights. For example, with an Alpha of 16 and a Dim of 32, the strength of the weight used is 16/32 = 0.5, meaning that the learning rate is only half as powerful as the Learning Rate setting. If Alpha and Dim are the same number, the strength used will be 1 and will have no effect on the learning rate.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 256,
+                        "step": 1,
+                    },
+                ),
+                "noise_offset": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Adds noise to training images. 0 adds no noise at all. A value of 1 adds strong noise.",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "flip_augmentation": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "If this option is turned on, the image will be horizontally flipped randomly. It can learn left and right angles, which is useful when you want to learn symmetrical people and objects.",
+                        "default": False,
+                    },
+                ),
+                "shuffle_tokens": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "Randomly changes the order of your tags during training. The intent of shuffling is to improve learning. If you are using captions (sentences), this option has no meaning.",
+                        "default": False,
+                    },
+                ),
+                "keep_tokens": (
+                    "INT",
+                    {
+                        "tooltip": 'If your training images have tags, you can randomly shuffle them. However, if you have words that you want to keep at the beginning, you can use this option to specify "Keep the first 0 words at the beginning". This option does nothing if the Shuffle Tokens option is off.',
+                        "default": 0,
+                        "min": 0,
+                        "max": 10,
+                        "step": 1,
+                    },
+                ),
+                "trigger_word": (
+                    "STRING",
+                    {
+                        "tooltip": "A trigger word that activates the trained LoRA when used in prompts. Only applicable to certain ecosystems (sd1, sdxl, flux1, chroma, zimagebase, zimageturbo, flux2klein).",
+                        "default": "",
+                    },
+                ),
+                "continue_from": (
+                    "STRING",
+                    {
+                        "tooltip": 'Optional previously-trained LoRA to continue training from ("train further"). When set, the first epoch resumes from this model instead of the base model, and the new epochs build on top of it.',
+                        "default": "",
+                    },
+                ),
+                "min_snr_gamma": (
+                    "INT",
+                    {
+                        "tooltip": "Learning is performed by putting noise of various strengths on the training image, but depending on the difference in strength of the noise on which it is placed, learning will be stable by moving closer to or farther from the learning target. Min SNR gamma was introduced to compensate for that. When learning images have little noise, it may deviate greatly from the target, so try to suppress this jump.",
+                        "default": 0,
+                        "min": 0,
+                        "max": 20,
+                        "step": 1,
+                    },
+                ),
+                "model": (
+                    "STRING",
+                    {
+                        "tooltip": "The primary model to train upon.",
+                        "default": "urn:air:sd1:checkpoint:civitai:127227@139180",
+                    },
+                ),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiTrainingAiToolkit(CivitaiRecipeNodeBase):
+    """Civitai Training (ai-toolkit) — training recipe via Civitai Orchestration."""
+
+    RECIPE = "training"
+    STEP_TYPE = "training"
+    DISCRIMINATOR = {"engine": "ai-toolkit"}
+    CATEGORY = "Civitai/Training/ai-toolkit"
+    FUNCTION = "run"
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("moderation_status", "epochs", "workflow_id", "raw_json")
+    FIELDS = {
+        "ecosystem": F("ecosystem", "value"),
+        "training_data_json": F("trainingData", "json"),
+        "samples_json": F("samples", "json"),
+        "epochs": F("epochs", "value"),
+        "steps": F("steps", "value"),
+        "batch_size": F("batchSize", "value"),
+        "lr": F("lr", "value"),
+        "text_encoder_lr": F("textEncoderLr", "value"),
+        "train_text_encoder": F("trainTextEncoder", "value"),
+        "lr_scheduler": F("lrScheduler", "value"),
+        "optimizer_type": F("optimizerType", "value"),
+        "network_dim": F("networkDim", "value"),
+        "network_alpha": F("networkAlpha", "value"),
+        "noise_offset": F("noiseOffset", "value"),
+        "flip_augmentation": F("flipAugmentation", "value"),
+        "shuffle_tokens": F("shuffleTokens", "value"),
+        "keep_tokens": F("keepTokens", "value"),
+        "trigger_word": F("triggerWord", "value"),
+        "continue_from": F("continueFrom", "value"),
+        "storage_buzz_per_epoch": F("storageBuzzPerEpoch", "value"),
+        "default_steps": F("defaultSteps", "value"),
+        "uses_step_pricing": F("usesStepPricing", "value"),
+        "max_batch_size": F("maxBatchSize", "value"),
+    }
+    OUTPUTS = (
+        O("moderationStatus", "json"),
+        O("epochs", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "ecosystem": (
+                    ["chroma", "ernie", "zimageturbo", "zimagebase", "ltx2", "ltx23", "hidream-o1", "anima"],
+                    {"default": "chroma"},
+                ),
+                "training_data_json": (
+                    "STRING",
+                    {"tooltip": "Represents training data in various formats", "default": "", "multiline": True},
+                ),
+                "storage_buzz_per_epoch": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Per-epoch surcharge (buzz). Each epoch is a delivered checkpoint plus its preview samples, billed on top of the per-step training cost — so raising the epoch count raises the price by this much each. Override per ecosystem where per-epoch samples are expensive to compute (e.g. video).",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 2147483647.0,
+                        "step": 0.01,
+                    },
+                ),
+                "default_steps": (
+                    "INT",
+                    {
+                        "tooltip": "Default total step budget when neither Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps nor Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs is supplied. Override per ecosystem where the default training length differs (e.g. video needs more steps, quickly-overtrained models need fewer).",
+                        "default": 0,
+                        "min": 0,
+                        "max": 2147483647,
+                        "step": 1,
+                    },
+                ),
+                "uses_step_pricing": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "True when billing uses the per-step model. This is the default; the only exception is the legacy path where the caller supplied Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs but no Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps (existing consumers), which keeps the historical flat per-epoch price.",
+                        "default": False,
+                    },
+                ),
+                "max_batch_size": (
+                    "INT",
+                    {
+                        "tooltip": "Ecosystem-specific maximum training batch size — the upper bound the user's Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.BatchSize is clamped to. Most ecosystems cap at 1.",
+                        "default": 0,
+                        "min": 0,
+                        "max": 2147483647,
+                        "step": 1,
+                    },
+                ),
+            },
+            "optional": {
+                "samples_json": (
+                    "STRING",
+                    {
+                        "tooltip": "Sample generation configuration for training workflows",
+                        "default": "",
+                        "multiline": True,
+                    },
+                ),
+                "epochs": (
+                    "INT",
+                    {
+                        "tooltip": "Number of training epochs — the number of saved checkpoints produced (each epoch yields one downloadable model). When omitted it is derived from Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps; when both are supplied, both are honored (epochs = checkpoint count, steps = total).",
+                        "default": 1,
+                        "min": 1,
+                        "max": 20,
+                        "step": 1,
+                    },
+                ),
+                "steps": (
+                    "INT",
+                    {
+                        "tooltip": "Total number of training steps. This is the primary control over training length and determines pricing. When supplied, Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs (the number of saved checkpoints) is derived from it; when omitted, steps are derived from epochs.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 10000,
+                        "step": 1,
+                    },
+                ),
+                "batch_size": (
+                    "INT",
+                    {
+                        "tooltip": "Training batch size. Defaults to 1; raise it (up to the ecosystem's maximum) to train faster at the cost of more GPU memory. A larger batch sees more images per step, so fewer steps are needed for a comparable result. Values above the ecosystem maximum are clamped down.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 4,
+                        "step": 1,
+                    },
+                ),
+                "lr": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Sets the learning rate for the model. This is the learning rate when performing additional learning on each attention block (and other blocks depending on the setting).",
+                        "default": 0.0001,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "text_encoder_lr": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Sets the learning rate for the text encoder. Only used when TrainTextEncoder is true. For models with multiple text encoders, this applies to all of them.",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "train_text_encoder": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "Whether to train the text encoder(s) alongside the model. Enabling this can improve prompt understanding but increases training time and memory usage.",
+                        "default": False,
+                    },
+                ),
+                "lr_scheduler": (
+                    ["", "constant", "constant_with_warmup", "cosine", "linear", "step"],
+                    {
+                        "tooltip": "You can change the learning rate in the middle of learning. A scheduler is a setting for how to change the learning rate.",
+                        "default": "",
+                    },
+                ),
+                "optimizer_type": (
+                    [
+                        "",
+                        "adamw",
+                        "adamw8bit",
+                        "adam8bit",
+                        "lion",
+                        "lion8bit",
+                        "adafactor",
+                        "adagrad",
+                        "prodigy",
+                        "prodigy8bit",
+                        "automagic",
+                    ],
+                    {
+                        "tooltip": 'The optimizer determines how to update the neural net weights during training. Various methods have been proposed for smart learning, but the most commonly used in LoRA learning is "adamw8bit".',
+                        "default": "",
+                    },
+                ),
+                "network_dim": (
+                    "INT",
+                    {
+                        "tooltip": "The larger the Dim setting, the more learning information can be stored, but the possibility of learning unnecessary information other than the learning target increases. A larger Dim also increases LoRA file size.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 256,
+                        "step": 1,
+                    },
+                ),
+                "network_alpha": (
+                    "INT",
+                    {
+                        "tooltip": "The smaller the Network alpha value, the larger the stored LoRA neural net weights. For example, with an Alpha of 16 and a Dim of 32, the strength of the weight used is 16/32 = 0.5, meaning that the learning rate is only half as powerful as the Learning Rate setting. If Alpha and Dim are the same number, the strength used will be 1 and will have no effect on the learning rate.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 256,
+                        "step": 1,
+                    },
+                ),
+                "noise_offset": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Adds noise to training images. 0 adds no noise at all. A value of 1 adds strong noise.",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "flip_augmentation": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "If this option is turned on, the image will be horizontally flipped randomly. It can learn left and right angles, which is useful when you want to learn symmetrical people and objects.",
+                        "default": False,
+                    },
+                ),
+                "shuffle_tokens": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "Randomly changes the order of your tags during training. The intent of shuffling is to improve learning. If you are using captions (sentences), this option has no meaning.",
+                        "default": False,
+                    },
+                ),
+                "keep_tokens": (
+                    "INT",
+                    {
+                        "tooltip": 'If your training images have tags, you can randomly shuffle them. However, if you have words that you want to keep at the beginning, you can use this option to specify "Keep the first 0 words at the beginning". This option does nothing if the Shuffle Tokens option is off.',
+                        "default": 0,
+                        "min": 0,
+                        "max": 10,
+                        "step": 1,
+                    },
+                ),
+                "trigger_word": (
+                    "STRING",
+                    {
+                        "tooltip": "A trigger word that activates the trained LoRA when used in prompts. Only applicable to certain ecosystems (sd1, sdxl, flux1, chroma, zimagebase, zimageturbo, flux2klein).",
+                        "default": "",
+                    },
+                ),
+                "continue_from": (
+                    "STRING",
+                    {
+                        "tooltip": 'Optional previously-trained LoRA to continue training from ("train further"). When set, the first epoch resumes from this model instead of the base model, and the new epochs build on top of it.',
+                        "default": "",
+                    },
+                ),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiTrainingAiToolkitQwen(CivitaiRecipeNodeBase):
+    """Civitai Training (ai-toolkit / qwen) — training recipe via Civitai Orchestration."""
+
+    RECIPE = "training"
+    STEP_TYPE = "training"
+    DISCRIMINATOR = {"engine": "ai-toolkit", "ecosystem": "qwen"}
+    CATEGORY = "Civitai/Training/ai-toolkit"
+    FUNCTION = "run"
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("moderation_status", "epochs", "workflow_id", "raw_json")
+    FIELDS = {
+        "training_data_json": F("trainingData", "json"),
+        "samples_json": F("samples", "json"),
+        "epochs": F("epochs", "value"),
+        "steps": F("steps", "value"),
+        "batch_size": F("batchSize", "value"),
+        "lr": F("lr", "value"),
+        "text_encoder_lr": F("textEncoderLr", "value"),
+        "train_text_encoder": F("trainTextEncoder", "value"),
+        "lr_scheduler": F("lrScheduler", "value"),
+        "optimizer_type": F("optimizerType", "value"),
+        "network_dim": F("networkDim", "value"),
+        "network_alpha": F("networkAlpha", "value"),
+        "noise_offset": F("noiseOffset", "value"),
+        "flip_augmentation": F("flipAugmentation", "value"),
+        "shuffle_tokens": F("shuffleTokens", "value"),
+        "keep_tokens": F("keepTokens", "value"),
+        "trigger_word": F("triggerWord", "value"),
+        "continue_from": F("continueFrom", "value"),
+        "storage_buzz_per_epoch": F("storageBuzzPerEpoch", "value"),
+        "default_steps": F("defaultSteps", "value"),
+        "uses_step_pricing": F("usesStepPricing", "value"),
+        "max_batch_size": F("maxBatchSize", "value"),
+        "version": F("version", "value"),
+    }
+    OUTPUTS = (
+        O("moderationStatus", "json"),
+        O("epochs", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "training_data_json": (
+                    "STRING",
+                    {"tooltip": "Represents training data in various formats", "default": "", "multiline": True},
+                ),
+                "storage_buzz_per_epoch": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Per-epoch surcharge (buzz). Each epoch is a delivered checkpoint plus its preview samples, billed on top of the per-step training cost — so raising the epoch count raises the price by this much each. Override per ecosystem where per-epoch samples are expensive to compute (e.g. video).",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 2147483647.0,
+                        "step": 0.01,
+                    },
+                ),
+                "default_steps": (
+                    "INT",
+                    {
+                        "tooltip": "Default total step budget when neither Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps nor Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs is supplied. Override per ecosystem where the default training length differs (e.g. video needs more steps, quickly-overtrained models need fewer).",
+                        "default": 0,
+                        "min": 0,
+                        "max": 2147483647,
+                        "step": 1,
+                    },
+                ),
+                "uses_step_pricing": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "True when billing uses the per-step model. This is the default; the only exception is the legacy path where the caller supplied Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs but no Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps (existing consumers), which keeps the historical flat per-epoch price.",
+                        "default": False,
+                    },
+                ),
+                "max_batch_size": (
+                    "INT",
+                    {
+                        "tooltip": "Ecosystem-specific maximum training batch size — the upper bound the user's Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.BatchSize is clamped to. Most ecosystems cap at 1.",
+                        "default": 0,
+                        "min": 0,
+                        "max": 2147483647,
+                        "step": 1,
+                    },
+                ),
+            },
+            "optional": {
+                "samples_json": (
+                    "STRING",
+                    {
+                        "tooltip": "Sample generation configuration for training workflows",
+                        "default": "",
+                        "multiline": True,
+                    },
+                ),
+                "epochs": (
+                    "INT",
+                    {
+                        "tooltip": "Number of training epochs — the number of saved checkpoints produced (each epoch yields one downloadable model). When omitted it is derived from Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps; when both are supplied, both are honored (epochs = checkpoint count, steps = total).",
+                        "default": 1,
+                        "min": 1,
+                        "max": 20,
+                        "step": 1,
+                    },
+                ),
+                "steps": (
+                    "INT",
+                    {
+                        "tooltip": "Total number of training steps. This is the primary control over training length and determines pricing. When supplied, Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs (the number of saved checkpoints) is derived from it; when omitted, steps are derived from epochs.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 10000,
+                        "step": 1,
+                    },
+                ),
+                "batch_size": (
+                    "INT",
+                    {
+                        "tooltip": "Training batch size. Defaults to 1; raise it (up to the ecosystem's maximum) to train faster at the cost of more GPU memory. A larger batch sees more images per step, so fewer steps are needed for a comparable result. Values above the ecosystem maximum are clamped down.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 4,
+                        "step": 1,
+                    },
+                ),
+                "lr": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Sets the learning rate for the model. This is the learning rate when performing additional learning on each attention block (and other blocks depending on the setting).",
+                        "default": 0.0001,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "text_encoder_lr": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Sets the learning rate for the text encoder. Only used when TrainTextEncoder is true. For models with multiple text encoders, this applies to all of them.",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "train_text_encoder": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "Whether to train the text encoder(s) alongside the model. Enabling this can improve prompt understanding but increases training time and memory usage.",
+                        "default": False,
+                    },
+                ),
+                "lr_scheduler": (
+                    ["", "constant", "constant_with_warmup", "cosine", "linear", "step"],
+                    {
+                        "tooltip": "You can change the learning rate in the middle of learning. A scheduler is a setting for how to change the learning rate.",
+                        "default": "",
+                    },
+                ),
+                "optimizer_type": (
+                    [
+                        "",
+                        "adamw",
+                        "adamw8bit",
+                        "adam8bit",
+                        "lion",
+                        "lion8bit",
+                        "adafactor",
+                        "adagrad",
+                        "prodigy",
+                        "prodigy8bit",
+                        "automagic",
+                    ],
+                    {
+                        "tooltip": 'The optimizer determines how to update the neural net weights during training. Various methods have been proposed for smart learning, but the most commonly used in LoRA learning is "adamw8bit".',
+                        "default": "",
+                    },
+                ),
+                "network_dim": (
+                    "INT",
+                    {
+                        "tooltip": "The larger the Dim setting, the more learning information can be stored, but the possibility of learning unnecessary information other than the learning target increases. A larger Dim also increases LoRA file size.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 256,
+                        "step": 1,
+                    },
+                ),
+                "network_alpha": (
+                    "INT",
+                    {
+                        "tooltip": "The smaller the Network alpha value, the larger the stored LoRA neural net weights. For example, with an Alpha of 16 and a Dim of 32, the strength of the weight used is 16/32 = 0.5, meaning that the learning rate is only half as powerful as the Learning Rate setting. If Alpha and Dim are the same number, the strength used will be 1 and will have no effect on the learning rate.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 256,
+                        "step": 1,
+                    },
+                ),
+                "noise_offset": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Adds noise to training images. 0 adds no noise at all. A value of 1 adds strong noise.",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "flip_augmentation": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "If this option is turned on, the image will be horizontally flipped randomly. It can learn left and right angles, which is useful when you want to learn symmetrical people and objects.",
+                        "default": False,
+                    },
+                ),
+                "shuffle_tokens": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "Randomly changes the order of your tags during training. The intent of shuffling is to improve learning. If you are using captions (sentences), this option has no meaning.",
+                        "default": False,
+                    },
+                ),
+                "keep_tokens": (
+                    "INT",
+                    {
+                        "tooltip": 'If your training images have tags, you can randomly shuffle them. However, if you have words that you want to keep at the beginning, you can use this option to specify "Keep the first 0 words at the beginning". This option does nothing if the Shuffle Tokens option is off.',
+                        "default": 0,
+                        "min": 0,
+                        "max": 10,
+                        "step": 1,
+                    },
+                ),
+                "trigger_word": (
+                    "STRING",
+                    {
+                        "tooltip": "A trigger word that activates the trained LoRA when used in prompts. Only applicable to certain ecosystems (sd1, sdxl, flux1, chroma, zimagebase, zimageturbo, flux2klein).",
+                        "default": "",
+                    },
+                ),
+                "continue_from": (
+                    "STRING",
+                    {
+                        "tooltip": 'Optional previously-trained LoRA to continue training from ("train further"). When set, the first epoch resumes from this model instead of the base model, and the new epochs build on top of it.',
+                        "default": "",
+                    },
+                ),
                 "version": (["latest", "2509", "2512"], {"default": "latest"}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiTrainingAiToolkitFlux2klein(CivitaiRecipeNodeBase):
+    """Civitai Training (ai-toolkit / flux2klein) — training recipe via Civitai Orchestration."""
+
+    RECIPE = "training"
+    STEP_TYPE = "training"
+    DISCRIMINATOR = {"engine": "ai-toolkit", "ecosystem": "flux2klein"}
+    CATEGORY = "Civitai/Training/ai-toolkit"
+    FUNCTION = "run"
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("moderation_status", "epochs", "workflow_id", "raw_json")
+    FIELDS = {
+        "model_variant": F("modelVariant", "value"),
+        "training_data_json": F("trainingData", "json"),
+        "samples_json": F("samples", "json"),
+        "epochs": F("epochs", "value"),
+        "steps": F("steps", "value"),
+        "batch_size": F("batchSize", "value"),
+        "lr": F("lr", "value"),
+        "text_encoder_lr": F("textEncoderLr", "value"),
+        "train_text_encoder": F("trainTextEncoder", "value"),
+        "lr_scheduler": F("lrScheduler", "value"),
+        "optimizer_type": F("optimizerType", "value"),
+        "network_dim": F("networkDim", "value"),
+        "network_alpha": F("networkAlpha", "value"),
+        "noise_offset": F("noiseOffset", "value"),
+        "flip_augmentation": F("flipAugmentation", "value"),
+        "shuffle_tokens": F("shuffleTokens", "value"),
+        "keep_tokens": F("keepTokens", "value"),
+        "trigger_word": F("triggerWord", "value"),
+        "continue_from": F("continueFrom", "value"),
+        "storage_buzz_per_epoch": F("storageBuzzPerEpoch", "value"),
+        "default_steps": F("defaultSteps", "value"),
+        "uses_step_pricing": F("usesStepPricing", "value"),
+        "max_batch_size": F("maxBatchSize", "value"),
+        "is_edit_training": F("isEditTraining", "value"),
+    }
+    OUTPUTS = (
+        O("moderationStatus", "json"),
+        O("epochs", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "model_variant": (["4b", "9b"], {"default": "4b"}),
+                "training_data_json": (
+                    "STRING",
+                    {"tooltip": "Represents training data in various formats", "default": "", "multiline": True},
+                ),
+                "storage_buzz_per_epoch": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Per-epoch surcharge (buzz). Each epoch is a delivered checkpoint plus its preview samples, billed on top of the per-step training cost — so raising the epoch count raises the price by this much each. Override per ecosystem where per-epoch samples are expensive to compute (e.g. video).",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 2147483647.0,
+                        "step": 0.01,
+                    },
+                ),
+                "default_steps": (
+                    "INT",
+                    {
+                        "tooltip": "Default total step budget when neither Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps nor Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs is supplied. Override per ecosystem where the default training length differs (e.g. video needs more steps, quickly-overtrained models need fewer).",
+                        "default": 0,
+                        "min": 0,
+                        "max": 2147483647,
+                        "step": 1,
+                    },
+                ),
+                "uses_step_pricing": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "True when billing uses the per-step model. This is the default; the only exception is the legacy path where the caller supplied Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs but no Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps (existing consumers), which keeps the historical flat per-epoch price.",
+                        "default": False,
+                    },
+                ),
+                "max_batch_size": (
+                    "INT",
+                    {
+                        "tooltip": "Ecosystem-specific maximum training batch size — the upper bound the user's Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.BatchSize is clamped to. Most ecosystems cap at 1.",
+                        "default": 0,
+                        "min": 0,
+                        "max": 2147483647,
+                        "step": 1,
+                    },
+                ),
+            },
+            "optional": {
+                "samples_json": (
+                    "STRING",
+                    {
+                        "tooltip": "Sample generation configuration for training workflows",
+                        "default": "",
+                        "multiline": True,
+                    },
+                ),
+                "epochs": (
+                    "INT",
+                    {
+                        "tooltip": "Number of training epochs — the number of saved checkpoints produced (each epoch yields one downloadable model). When omitted it is derived from Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps; when both are supplied, both are honored (epochs = checkpoint count, steps = total).",
+                        "default": 1,
+                        "min": 1,
+                        "max": 20,
+                        "step": 1,
+                    },
+                ),
+                "steps": (
+                    "INT",
+                    {
+                        "tooltip": "Total number of training steps. This is the primary control over training length and determines pricing. When supplied, Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs (the number of saved checkpoints) is derived from it; when omitted, steps are derived from epochs.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 10000,
+                        "step": 1,
+                    },
+                ),
+                "batch_size": (
+                    "INT",
+                    {
+                        "tooltip": "Training batch size. Defaults to 1; raise it (up to the ecosystem's maximum) to train faster at the cost of more GPU memory. A larger batch sees more images per step, so fewer steps are needed for a comparable result. Values above the ecosystem maximum are clamped down.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 4,
+                        "step": 1,
+                    },
+                ),
+                "lr": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Sets the learning rate for the model. This is the learning rate when performing additional learning on each attention block (and other blocks depending on the setting).",
+                        "default": 0.0001,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "text_encoder_lr": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Sets the learning rate for the text encoder. Only used when TrainTextEncoder is true. For models with multiple text encoders, this applies to all of them.",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "train_text_encoder": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "Whether to train the text encoder(s) alongside the model. Enabling this can improve prompt understanding but increases training time and memory usage.",
+                        "default": False,
+                    },
+                ),
+                "lr_scheduler": (
+                    ["", "constant", "constant_with_warmup", "cosine", "linear", "step"],
+                    {
+                        "tooltip": "You can change the learning rate in the middle of learning. A scheduler is a setting for how to change the learning rate.",
+                        "default": "",
+                    },
+                ),
+                "optimizer_type": (
+                    [
+                        "",
+                        "adamw",
+                        "adamw8bit",
+                        "adam8bit",
+                        "lion",
+                        "lion8bit",
+                        "adafactor",
+                        "adagrad",
+                        "prodigy",
+                        "prodigy8bit",
+                        "automagic",
+                    ],
+                    {
+                        "tooltip": 'The optimizer determines how to update the neural net weights during training. Various methods have been proposed for smart learning, but the most commonly used in LoRA learning is "adamw8bit".',
+                        "default": "",
+                    },
+                ),
+                "network_dim": (
+                    "INT",
+                    {
+                        "tooltip": "The larger the Dim setting, the more learning information can be stored, but the possibility of learning unnecessary information other than the learning target increases. A larger Dim also increases LoRA file size.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 256,
+                        "step": 1,
+                    },
+                ),
+                "network_alpha": (
+                    "INT",
+                    {
+                        "tooltip": "The smaller the Network alpha value, the larger the stored LoRA neural net weights. For example, with an Alpha of 16 and a Dim of 32, the strength of the weight used is 16/32 = 0.5, meaning that the learning rate is only half as powerful as the Learning Rate setting. If Alpha and Dim are the same number, the strength used will be 1 and will have no effect on the learning rate.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 256,
+                        "step": 1,
+                    },
+                ),
+                "noise_offset": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Adds noise to training images. 0 adds no noise at all. A value of 1 adds strong noise.",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "flip_augmentation": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "If this option is turned on, the image will be horizontally flipped randomly. It can learn left and right angles, which is useful when you want to learn symmetrical people and objects.",
+                        "default": False,
+                    },
+                ),
+                "shuffle_tokens": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "Randomly changes the order of your tags during training. The intent of shuffling is to improve learning. If you are using captions (sentences), this option has no meaning.",
+                        "default": False,
+                    },
+                ),
+                "keep_tokens": (
+                    "INT",
+                    {
+                        "tooltip": 'If your training images have tags, you can randomly shuffle them. However, if you have words that you want to keep at the beginning, you can use this option to specify "Keep the first 0 words at the beginning". This option does nothing if the Shuffle Tokens option is off.',
+                        "default": 0,
+                        "min": 0,
+                        "max": 10,
+                        "step": 1,
+                    },
+                ),
+                "trigger_word": (
+                    "STRING",
+                    {
+                        "tooltip": "A trigger word that activates the trained LoRA when used in prompts. Only applicable to certain ecosystems (sd1, sdxl, flux1, chroma, zimagebase, zimageturbo, flux2klein).",
+                        "default": "",
+                    },
+                ),
+                "continue_from": (
+                    "STRING",
+                    {
+                        "tooltip": 'Optional previously-trained LoRA to continue training from ("train further"). When set, the first epoch resumes from this model instead of the base model, and the new epochs build on top of it.',
+                        "default": "",
+                    },
+                ),
                 "is_edit_training": (
                     "BOOLEAN",
                     {
                         "tooltip": "Whether this is image-edit training (uses control paths for reference images). When true, the training data zip should contain subfolders: main/, control_1/, control_2/, control_3/.",
                         "default": False,
+                    },
+                ),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiTrainingAiToolkitAceStep15(CivitaiRecipeNodeBase):
+    """Civitai Training (ai-toolkit / ace_step_15) — training recipe via Civitai Orchestration."""
+
+    RECIPE = "training"
+    STEP_TYPE = "training"
+    DISCRIMINATOR = {"engine": "ai-toolkit", "ecosystem": "ace_step_15"}
+    CATEGORY = "Civitai/Training/ai-toolkit"
+    FUNCTION = "run"
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("moderation_status", "epochs", "workflow_id", "raw_json")
+    FIELDS = {
+        "training_data_json": F("trainingData", "json"),
+        "samples_json": F("samples", "json"),
+        "epochs": F("epochs", "value"),
+        "steps": F("steps", "value"),
+        "batch_size": F("batchSize", "value"),
+        "lr": F("lr", "value"),
+        "text_encoder_lr": F("textEncoderLr", "value"),
+        "train_text_encoder": F("trainTextEncoder", "value"),
+        "lr_scheduler": F("lrScheduler", "value"),
+        "optimizer_type": F("optimizerType", "value"),
+        "network_dim": F("networkDim", "value"),
+        "network_alpha": F("networkAlpha", "value"),
+        "noise_offset": F("noiseOffset", "value"),
+        "flip_augmentation": F("flipAugmentation", "value"),
+        "shuffle_tokens": F("shuffleTokens", "value"),
+        "keep_tokens": F("keepTokens", "value"),
+        "trigger_word": F("triggerWord", "value"),
+        "continue_from": F("continueFrom", "value"),
+        "storage_buzz_per_epoch": F("storageBuzzPerEpoch", "value"),
+        "default_steps": F("defaultSteps", "value"),
+        "uses_step_pricing": F("usesStepPricing", "value"),
+        "max_batch_size": F("maxBatchSize", "value"),
+        "samples_overrides_json": F("samplesOverrides", "json"),
+    }
+    OUTPUTS = (
+        O("moderationStatus", "json"),
+        O("epochs", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "training_data_json": (
+                    "STRING",
+                    {"tooltip": "Represents training data in various formats", "default": "", "multiline": True},
+                ),
+                "storage_buzz_per_epoch": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Per-epoch surcharge (buzz). Each epoch is a delivered checkpoint plus its preview samples, billed on top of the per-step training cost — so raising the epoch count raises the price by this much each. Override per ecosystem where per-epoch samples are expensive to compute (e.g. video).",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 2147483647.0,
+                        "step": 0.01,
+                    },
+                ),
+                "default_steps": (
+                    "INT",
+                    {
+                        "tooltip": "Default total step budget when neither Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps nor Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs is supplied. Override per ecosystem where the default training length differs (e.g. video needs more steps, quickly-overtrained models need fewer).",
+                        "default": 0,
+                        "min": 0,
+                        "max": 2147483647,
+                        "step": 1,
+                    },
+                ),
+                "uses_step_pricing": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "True when billing uses the per-step model. This is the default; the only exception is the legacy path where the caller supplied Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs but no Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps (existing consumers), which keeps the historical flat per-epoch price.",
+                        "default": False,
+                    },
+                ),
+                "max_batch_size": (
+                    "INT",
+                    {
+                        "tooltip": "Ecosystem-specific maximum training batch size — the upper bound the user's Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.BatchSize is clamped to. Most ecosystems cap at 1.",
+                        "default": 0,
+                        "min": 0,
+                        "max": 2147483647,
+                        "step": 1,
+                    },
+                ),
+            },
+            "optional": {
+                "samples_json": (
+                    "STRING",
+                    {
+                        "tooltip": "Sample generation configuration for training workflows",
+                        "default": "",
+                        "multiline": True,
+                    },
+                ),
+                "epochs": (
+                    "INT",
+                    {
+                        "tooltip": "Number of training epochs — the number of saved checkpoints produced (each epoch yields one downloadable model). When omitted it is derived from Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps; when both are supplied, both are honored (epochs = checkpoint count, steps = total).",
+                        "default": 1,
+                        "min": 1,
+                        "max": 20,
+                        "step": 1,
+                    },
+                ),
+                "steps": (
+                    "INT",
+                    {
+                        "tooltip": "Total number of training steps. This is the primary control over training length and determines pricing. When supplied, Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs (the number of saved checkpoints) is derived from it; when omitted, steps are derived from epochs.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 10000,
+                        "step": 1,
+                    },
+                ),
+                "batch_size": (
+                    "INT",
+                    {
+                        "tooltip": "Training batch size. Defaults to 1; raise it (up to the ecosystem's maximum) to train faster at the cost of more GPU memory. A larger batch sees more images per step, so fewer steps are needed for a comparable result. Values above the ecosystem maximum are clamped down.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 4,
+                        "step": 1,
+                    },
+                ),
+                "lr": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Sets the learning rate for the model. This is the learning rate when performing additional learning on each attention block (and other blocks depending on the setting).",
+                        "default": 0.0001,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "text_encoder_lr": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Sets the learning rate for the text encoder. Only used when TrainTextEncoder is true. For models with multiple text encoders, this applies to all of them.",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "train_text_encoder": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "Whether to train the text encoder(s) alongside the model. Enabling this can improve prompt understanding but increases training time and memory usage.",
+                        "default": False,
+                    },
+                ),
+                "lr_scheduler": (
+                    ["", "constant", "constant_with_warmup", "cosine", "linear", "step"],
+                    {
+                        "tooltip": "You can change the learning rate in the middle of learning. A scheduler is a setting for how to change the learning rate.",
+                        "default": "",
+                    },
+                ),
+                "optimizer_type": (
+                    [
+                        "",
+                        "adamw",
+                        "adamw8bit",
+                        "adam8bit",
+                        "lion",
+                        "lion8bit",
+                        "adafactor",
+                        "adagrad",
+                        "prodigy",
+                        "prodigy8bit",
+                        "automagic",
+                    ],
+                    {
+                        "tooltip": 'The optimizer determines how to update the neural net weights during training. Various methods have been proposed for smart learning, but the most commonly used in LoRA learning is "adamw8bit".',
+                        "default": "",
+                    },
+                ),
+                "network_dim": (
+                    "INT",
+                    {
+                        "tooltip": "The larger the Dim setting, the more learning information can be stored, but the possibility of learning unnecessary information other than the learning target increases. A larger Dim also increases LoRA file size.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 256,
+                        "step": 1,
+                    },
+                ),
+                "network_alpha": (
+                    "INT",
+                    {
+                        "tooltip": "The smaller the Network alpha value, the larger the stored LoRA neural net weights. For example, with an Alpha of 16 and a Dim of 32, the strength of the weight used is 16/32 = 0.5, meaning that the learning rate is only half as powerful as the Learning Rate setting. If Alpha and Dim are the same number, the strength used will be 1 and will have no effect on the learning rate.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 256,
+                        "step": 1,
+                    },
+                ),
+                "noise_offset": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Adds noise to training images. 0 adds no noise at all. A value of 1 adds strong noise.",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "flip_augmentation": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "If this option is turned on, the image will be horizontally flipped randomly. It can learn left and right angles, which is useful when you want to learn symmetrical people and objects.",
+                        "default": False,
+                    },
+                ),
+                "shuffle_tokens": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "Randomly changes the order of your tags during training. The intent of shuffling is to improve learning. If you are using captions (sentences), this option has no meaning.",
+                        "default": False,
+                    },
+                ),
+                "keep_tokens": (
+                    "INT",
+                    {
+                        "tooltip": 'If your training images have tags, you can randomly shuffle them. However, if you have words that you want to keep at the beginning, you can use this option to specify "Keep the first 0 words at the beginning". This option does nothing if the Shuffle Tokens option is off.',
+                        "default": 0,
+                        "min": 0,
+                        "max": 10,
+                        "step": 1,
+                    },
+                ),
+                "trigger_word": (
+                    "STRING",
+                    {
+                        "tooltip": "A trigger word that activates the trained LoRA when used in prompts. Only applicable to certain ecosystems (sd1, sdxl, flux1, chroma, zimagebase, zimageturbo, flux2klein).",
+                        "default": "",
+                    },
+                ),
+                "continue_from": (
+                    "STRING",
+                    {
+                        "tooltip": 'Optional previously-trained LoRA to continue training from ("train further"). When set, the first epoch resumes from this model instead of the base model, and the new epochs build on top of it.',
+                        "default": "",
+                    },
+                ),
+                "samples_overrides_json": ("STRING", {"default": "", "multiline": True}),
+                "api_config": (
+                    "CIVITAI_CONFIG",
+                    {
+                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
+                    },
+                ),
+            },
+        }
+
+
+class CivitaiTrainingAiToolkitAceStep15Xl(CivitaiRecipeNodeBase):
+    """Civitai Training (ai-toolkit / ace_step_15_xl) — training recipe via Civitai Orchestration."""
+
+    RECIPE = "training"
+    STEP_TYPE = "training"
+    DISCRIMINATOR = {"engine": "ai-toolkit", "ecosystem": "ace_step_15_xl"}
+    CATEGORY = "Civitai/Training/ai-toolkit"
+    FUNCTION = "run"
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("moderation_status", "epochs", "workflow_id", "raw_json")
+    FIELDS = {
+        "model_variant": F("modelVariant", "value"),
+        "training_data_json": F("trainingData", "json"),
+        "samples_json": F("samples", "json"),
+        "epochs": F("epochs", "value"),
+        "steps": F("steps", "value"),
+        "batch_size": F("batchSize", "value"),
+        "lr": F("lr", "value"),
+        "text_encoder_lr": F("textEncoderLr", "value"),
+        "train_text_encoder": F("trainTextEncoder", "value"),
+        "lr_scheduler": F("lrScheduler", "value"),
+        "optimizer_type": F("optimizerType", "value"),
+        "network_dim": F("networkDim", "value"),
+        "network_alpha": F("networkAlpha", "value"),
+        "noise_offset": F("noiseOffset", "value"),
+        "flip_augmentation": F("flipAugmentation", "value"),
+        "shuffle_tokens": F("shuffleTokens", "value"),
+        "keep_tokens": F("keepTokens", "value"),
+        "trigger_word": F("triggerWord", "value"),
+        "continue_from": F("continueFrom", "value"),
+        "storage_buzz_per_epoch": F("storageBuzzPerEpoch", "value"),
+        "default_steps": F("defaultSteps", "value"),
+        "uses_step_pricing": F("usesStepPricing", "value"),
+        "max_batch_size": F("maxBatchSize", "value"),
+        "samples_overrides_json": F("samplesOverrides", "json"),
+    }
+    OUTPUTS = (
+        O("moderationStatus", "json"),
+        O("epochs", "json"),
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "model_variant": (["base", "sft"], {"default": "base"}),
+                "training_data_json": (
+                    "STRING",
+                    {"tooltip": "Represents training data in various formats", "default": "", "multiline": True},
+                ),
+                "storage_buzz_per_epoch": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Per-epoch surcharge (buzz). Each epoch is a delivered checkpoint plus its preview samples, billed on top of the per-step training cost — so raising the epoch count raises the price by this much each. Override per ecosystem where per-epoch samples are expensive to compute (e.g. video).",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 2147483647.0,
+                        "step": 0.01,
+                    },
+                ),
+                "default_steps": (
+                    "INT",
+                    {
+                        "tooltip": "Default total step budget when neither Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps nor Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs is supplied. Override per ecosystem where the default training length differs (e.g. video needs more steps, quickly-overtrained models need fewer).",
+                        "default": 0,
+                        "min": 0,
+                        "max": 2147483647,
+                        "step": 1,
+                    },
+                ),
+                "uses_step_pricing": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "True when billing uses the per-step model. This is the default; the only exception is the legacy path where the caller supplied Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs but no Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps (existing consumers), which keeps the historical flat per-epoch price.",
+                        "default": False,
+                    },
+                ),
+                "max_batch_size": (
+                    "INT",
+                    {
+                        "tooltip": "Ecosystem-specific maximum training batch size — the upper bound the user's Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.BatchSize is clamped to. Most ecosystems cap at 1.",
+                        "default": 0,
+                        "min": 0,
+                        "max": 2147483647,
+                        "step": 1,
+                    },
+                ),
+            },
+            "optional": {
+                "samples_json": (
+                    "STRING",
+                    {
+                        "tooltip": "Sample generation configuration for training workflows",
+                        "default": "",
+                        "multiline": True,
+                    },
+                ),
+                "epochs": (
+                    "INT",
+                    {
+                        "tooltip": "Number of training epochs — the number of saved checkpoints produced (each epoch yields one downloadable model). When omitted it is derived from Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Steps; when both are supplied, both are honored (epochs = checkpoint count, steps = total).",
+                        "default": 1,
+                        "min": 1,
+                        "max": 20,
+                        "step": 1,
+                    },
+                ),
+                "steps": (
+                    "INT",
+                    {
+                        "tooltip": "Total number of training steps. This is the primary control over training length and determines pricing. When supplied, Civitai.Orchestration.Grains.Workflows.Steps.Training.AIToolkit.AIToolkitTrainingInput.Epochs (the number of saved checkpoints) is derived from it; when omitted, steps are derived from epochs.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 10000,
+                        "step": 1,
+                    },
+                ),
+                "batch_size": (
+                    "INT",
+                    {
+                        "tooltip": "Training batch size. Defaults to 1; raise it (up to the ecosystem's maximum) to train faster at the cost of more GPU memory. A larger batch sees more images per step, so fewer steps are needed for a comparable result. Values above the ecosystem maximum are clamped down.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 4,
+                        "step": 1,
+                    },
+                ),
+                "lr": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Sets the learning rate for the model. This is the learning rate when performing additional learning on each attention block (and other blocks depending on the setting).",
+                        "default": 0.0001,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "text_encoder_lr": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Sets the learning rate for the text encoder. Only used when TrainTextEncoder is true. For models with multiple text encoders, this applies to all of them.",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "train_text_encoder": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "Whether to train the text encoder(s) alongside the model. Enabling this can improve prompt understanding but increases training time and memory usage.",
+                        "default": False,
+                    },
+                ),
+                "lr_scheduler": (
+                    ["", "constant", "constant_with_warmup", "cosine", "linear", "step"],
+                    {
+                        "tooltip": "You can change the learning rate in the middle of learning. A scheduler is a setting for how to change the learning rate.",
+                        "default": "",
+                    },
+                ),
+                "optimizer_type": (
+                    [
+                        "",
+                        "adamw",
+                        "adamw8bit",
+                        "adam8bit",
+                        "lion",
+                        "lion8bit",
+                        "adafactor",
+                        "adagrad",
+                        "prodigy",
+                        "prodigy8bit",
+                        "automagic",
+                    ],
+                    {
+                        "tooltip": 'The optimizer determines how to update the neural net weights during training. Various methods have been proposed for smart learning, but the most commonly used in LoRA learning is "adamw8bit".',
+                        "default": "",
+                    },
+                ),
+                "network_dim": (
+                    "INT",
+                    {
+                        "tooltip": "The larger the Dim setting, the more learning information can be stored, but the possibility of learning unnecessary information other than the learning target increases. A larger Dim also increases LoRA file size.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 256,
+                        "step": 1,
+                    },
+                ),
+                "network_alpha": (
+                    "INT",
+                    {
+                        "tooltip": "The smaller the Network alpha value, the larger the stored LoRA neural net weights. For example, with an Alpha of 16 and a Dim of 32, the strength of the weight used is 16/32 = 0.5, meaning that the learning rate is only half as powerful as the Learning Rate setting. If Alpha and Dim are the same number, the strength used will be 1 and will have no effect on the learning rate.",
+                        "default": 1,
+                        "min": 1,
+                        "max": 256,
+                        "step": 1,
+                    },
+                ),
+                "noise_offset": (
+                    "FLOAT",
+                    {
+                        "tooltip": "Adds noise to training images. 0 adds no noise at all. A value of 1 adds strong noise.",
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                    },
+                ),
+                "flip_augmentation": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "If this option is turned on, the image will be horizontally flipped randomly. It can learn left and right angles, which is useful when you want to learn symmetrical people and objects.",
+                        "default": False,
+                    },
+                ),
+                "shuffle_tokens": (
+                    "BOOLEAN",
+                    {
+                        "tooltip": "Randomly changes the order of your tags during training. The intent of shuffling is to improve learning. If you are using captions (sentences), this option has no meaning.",
+                        "default": False,
+                    },
+                ),
+                "keep_tokens": (
+                    "INT",
+                    {
+                        "tooltip": 'If your training images have tags, you can randomly shuffle them. However, if you have words that you want to keep at the beginning, you can use this option to specify "Keep the first 0 words at the beginning". This option does nothing if the Shuffle Tokens option is off.',
+                        "default": 0,
+                        "min": 0,
+                        "max": 10,
+                        "step": 1,
+                    },
+                ),
+                "trigger_word": (
+                    "STRING",
+                    {
+                        "tooltip": "A trigger word that activates the trained LoRA when used in prompts. Only applicable to certain ecosystems (sd1, sdxl, flux1, chroma, zimagebase, zimageturbo, flux2klein).",
+                        "default": "",
+                    },
+                ),
+                "continue_from": (
+                    "STRING",
+                    {
+                        "tooltip": 'Optional previously-trained LoRA to continue training from ("train further"). When set, the first epoch resumes from this model instead of the base model, and the new epochs build on top of it.',
+                        "default": "",
                     },
                 ),
                 "samples_overrides_json": ("STRING", {"default": "", "multiline": True}),
@@ -1052,14 +2846,28 @@ NODE_CLASS_MAPPINGS = {
     "CivitaiImageResourceTrainingMusubi": CivitaiImageResourceTrainingMusubi,
     "CivitaiImageResourceTrainingFlux2Dev": CivitaiImageResourceTrainingFlux2Dev,
     "CivitaiImageResourceTrainingFlux2DevEdit": CivitaiImageResourceTrainingFlux2DevEdit,
+    "CivitaiTrainingAiToolkitFlux1": CivitaiTrainingAiToolkitFlux1,
+    "CivitaiTrainingAiToolkitSdxl": CivitaiTrainingAiToolkitSdxl,
+    "CivitaiTrainingAiToolkitSd1": CivitaiTrainingAiToolkitSd1,
     "CivitaiTrainingAiToolkit": CivitaiTrainingAiToolkit,
+    "CivitaiTrainingAiToolkitQwen": CivitaiTrainingAiToolkitQwen,
+    "CivitaiTrainingAiToolkitFlux2klein": CivitaiTrainingAiToolkitFlux2klein,
+    "CivitaiTrainingAiToolkitAceStep15": CivitaiTrainingAiToolkitAceStep15,
+    "CivitaiTrainingAiToolkitAceStep15Xl": CivitaiTrainingAiToolkitAceStep15Xl,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "CivitaiImageResourceTrainingKohya": "Civitai Image Resource Training (Kohya)",
-    "CivitaiImageResourceTrainingFluxDevFast": "Civitai Image Resource Training (FluxDevFast)",
-    "CivitaiImageResourceTrainingMusubi": "Civitai Image Resource Training (Musubi)",
-    "CivitaiImageResourceTrainingFlux2Dev": "Civitai Image Resource Training (Flux2Dev)",
-    "CivitaiImageResourceTrainingFlux2DevEdit": "Civitai Image Resource Training (Flux2DevEdit)",
-    "CivitaiTrainingAiToolkit": "Civitai Training (AiToolkit)",
+    "CivitaiImageResourceTrainingKohya": "Civitai Image Resource Training (kohya)",
+    "CivitaiImageResourceTrainingFluxDevFast": "Civitai Image Resource Training (flux-dev-fast)",
+    "CivitaiImageResourceTrainingMusubi": "Civitai Image Resource Training (musubi)",
+    "CivitaiImageResourceTrainingFlux2Dev": "Civitai Image Resource Training (flux2-dev)",
+    "CivitaiImageResourceTrainingFlux2DevEdit": "Civitai Image Resource Training (flux2-dev-edit)",
+    "CivitaiTrainingAiToolkitFlux1": "Civitai Training (ai-toolkit / flux1)",
+    "CivitaiTrainingAiToolkitSdxl": "Civitai Training (ai-toolkit / sdxl)",
+    "CivitaiTrainingAiToolkitSd1": "Civitai Training (ai-toolkit / sd1)",
+    "CivitaiTrainingAiToolkit": "Civitai Training (ai-toolkit)",
+    "CivitaiTrainingAiToolkitQwen": "Civitai Training (ai-toolkit / qwen)",
+    "CivitaiTrainingAiToolkitFlux2klein": "Civitai Training (ai-toolkit / flux2klein)",
+    "CivitaiTrainingAiToolkitAceStep15": "Civitai Training (ai-toolkit / ace_step_15)",
+    "CivitaiTrainingAiToolkitAceStep15Xl": "Civitai Training (ai-toolkit / ace_step_15_xl)",
 }
