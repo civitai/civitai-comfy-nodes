@@ -25,7 +25,7 @@ OAUTH_BASE = os.environ.get("CIVITAI_OAUTH_BASE", "https://civitai.com")
 # UserRead | AIServicesRead | AIServicesWrite | BuzzRead = 1 + 16384 + 32768 + 65536
 SCOPE = 114689
 # Registered for the official "Civitai ComfyUI Nodes" OAuth app; override for your own app.
-CLIENT_ID = os.environ.get("CIVITAI_OAUTH_CLIENT_ID", "")
+CLIENT_ID = os.environ.get("CIVITAI_OAUTH_CLIENT_ID", "2d61872c-9aa9-4dbc-93c3-899c222842c1")
 REDIRECT_PORT = int(os.environ.get("CIVITAI_OAUTH_REDIRECT_PORT", "18188"))
 REDIRECT_URI = f"http://localhost:{REDIRECT_PORT}/civitai/callback"
 LOGIN_TIMEOUT_SECONDS = 300
