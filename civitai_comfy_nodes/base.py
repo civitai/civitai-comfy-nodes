@@ -6,6 +6,7 @@ Everything behavioral — payload building, submit, poll, blob conversion — li
 """
 
 import json
+import logging
 import time
 from dataclasses import dataclass
 
@@ -13,6 +14,9 @@ from . import comfy_compat, conversions
 from .client import TERMINAL_STATUSES, OrchestrationClient
 from .config import resolve_config
 from .errors import CivitaiNodeError, workflow_failure_message
+
+# Propagates to ComfyUI's root logger, so these show in the same console as "[INFO] got prompt".
+logger = logging.getLogger("civitai_comfy_nodes")
 
 POLL_SCHEDULE = (2, 2, 5, 5, 10, 15)
 POLL_MAX_INTERVAL = 30
@@ -55,10 +59,14 @@ class CivitaiRecipeNodeBase:
         payload.update(self.DISCRIMINATOR)
 
         workflow = client.submit_workflow(self.STEP_TYPE, payload, wait=5)
+        workflow_id = workflow.get("id", "?")
+        logger.info("Civitai %s: submitted workflow %s (status: %s)", self.RECIPE, workflow_id, workflow.get("status"))
         workflow = self._poll(client, workflow, timeout_minutes=config.timeout_minutes)
         if workflow.get("status") != "succeeded":
             raise CivitaiNodeError(workflow_failure_message(workflow))
 
+        cost = (workflow.get("cost") or {}).get("total")
+        logger.info("Civitai workflow %s succeeded%s", workflow_id, f" · {cost} Buzz" if cost is not None else "")
         step = (workflow.get("steps") or [{}])[0]
         output = step.get("output") or {}
         results = self._convert_outputs(client, output)
@@ -117,24 +125,33 @@ class CivitaiRecipeNodeBase:
 
     def _poll(self, client: OrchestrationClient, workflow: dict, *, timeout_minutes: float) -> dict:
         bar = comfy_compat.progress_bar(100)
+        workflow_id = workflow.get("id", "?")
         deadline = time.time() + timeout_minutes * 60
         intervals = iter(POLL_SCHEDULE)
+        last_marker = None
         while workflow.get("status") not in TERMINAL_STATUSES:
             if time.time() > deadline:
                 self._try_cancel(client, workflow)
                 raise CivitaiNodeError(
-                    f"Civitai workflow {workflow.get('id', '?')} timed out after {timeout_minutes:g} minutes "
+                    f"Civitai workflow {workflow_id} timed out after {timeout_minutes:g} minutes "
                     f"(status: {workflow.get('status')}). Increase timeout via the Civitai Auth node or "
                     "CIVITAI_COMFY_TIMEOUT."
                 )
-            self._report_progress(bar, workflow)
+            progress = self._report_progress(bar, workflow)
+            status = workflow.get("status", "")
+            queue_pos = self._queue_position(workflow)
+            marker = (status, progress, queue_pos)
+            if marker != last_marker:
+                queue = f", queue position {queue_pos}" if queue_pos else ""
+                logger.info("Civitai workflow %s: %s (%d%%%s)", workflow_id, status, progress, queue)
+                last_marker = marker
             interval = next(intervals, POLL_MAX_INTERVAL)
             try:
                 self._interruptible_sleep(interval)
             except BaseException:
                 self._try_cancel(client, workflow)
                 raise
-            workflow = client.get_workflow(workflow["id"])
+            workflow = client.get_workflow(workflow_id)
         bar.update_absolute(100)
         return workflow
 
@@ -154,7 +171,7 @@ class CivitaiRecipeNodeBase:
             pass
 
     @staticmethod
-    def _report_progress(bar, workflow: dict) -> None:
+    def _report_progress(bar, workflow: dict) -> int:
         status = workflow.get("status", "")
         progress = PROGRESS_BY_STATUS.get(status, 5)
         if status == "processing":
@@ -162,6 +179,13 @@ class CivitaiRecipeNodeBase:
             rates = [j.get("estimatedProgressRate") or 0 for j in (steps[0].get("jobs") or [])]
             progress += int(55 * max(rates, default=0))
         bar.update_absolute(progress)
+        return progress
+
+    @staticmethod
+    def _queue_position(workflow: dict):
+        jobs = ((workflow.get("steps") or [{}])[0].get("jobs")) or []
+        positions = [j.get("queuePosition") for j in jobs if j.get("queuePosition") is not None]
+        return min(positions) if positions else None
 
     def _convert_outputs(self, client: OrchestrationClient, output: dict) -> list:
         results = []
