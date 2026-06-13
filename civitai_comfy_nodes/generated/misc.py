@@ -150,7 +150,7 @@ class CivitaiEcho(CivitaiRecipeNodeBase):
 
 
 class CivitaiPolyGenFalMeshyTextTo3D(CivitaiRecipeNodeBase):
-    """Civitai Poly Gen (fal / meshy / textTo3D) — polyGen recipe via Civitai Orchestration."""
+    """fal / meshy / textTo3D — polyGen recipe via Civitai Orchestration."""
 
     RECIPE = "polyGen"
     STEP_TYPE = "polyGen"
@@ -208,7 +208,7 @@ class CivitaiPolyGenFalMeshyTextTo3D(CivitaiRecipeNodeBase):
 
 
 class CivitaiPolyGenFalMeshyImageTo3D(CivitaiRecipeNodeBase):
-    """Civitai Poly Gen (fal / meshy / imageTo3D) — polyGen recipe via Civitai Orchestration."""
+    """fal / meshy / imageTo3D — polyGen recipe via Civitai Orchestration."""
 
     RECIPE = "polyGen"
     STEP_TYPE = "polyGen"
@@ -275,6 +275,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiComfy": "Civitai Comfy",
     "CivitaiCustomComfy": "Civitai Custom Comfy",
     "CivitaiEcho": "Civitai Echo",
-    "CivitaiPolyGenFalMeshyTextTo3D": "Civitai Poly Gen (fal / meshy / textTo3D)",
-    "CivitaiPolyGenFalMeshyImageTo3D": "Civitai Poly Gen (fal / meshy / imageTo3D)",
+    "CivitaiPolyGenFalMeshyTextTo3D": "fal / meshy / textTo3D",
+    "CivitaiPolyGenFalMeshyImageTo3D": "fal / meshy / imageTo3D",
 }

@@ -239,7 +239,7 @@ class CivitaiWdTagging(CivitaiRecipeNodeBase):
 
 
 class CivitaiXGuardModerationPrompt(CivitaiRecipeNodeBase):
-    """Civitai X Guard Moderation (prompt) — xGuardModeration recipe via Civitai Orchestration."""
+    """prompt — xGuardModeration recipe via Civitai Orchestration."""
 
     RECIPE = "xGuardModeration"
     STEP_TYPE = "xGuardModeration"
@@ -312,7 +312,7 @@ class CivitaiXGuardModerationPrompt(CivitaiRecipeNodeBase):
 
 
 class CivitaiXGuardModerationText(CivitaiRecipeNodeBase):
-    """Civitai X Guard Moderation (text) — xGuardModeration recipe via Civitai Orchestration."""
+    """text — xGuardModeration recipe via Civitai Orchestration."""
 
     RECIPE = "xGuardModeration"
     STEP_TYPE = "xGuardModeration"
@@ -386,6 +386,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiAgeClassification": "Civitai Age Classification",
     "CivitaiMediaRating": "Civitai Media Rating",
     "CivitaiWdTagging": "Civitai Wd Tagging",
-    "CivitaiXGuardModerationPrompt": "Civitai X Guard Moderation (prompt)",
-    "CivitaiXGuardModerationText": "Civitai X Guard Moderation (text)",
+    "CivitaiXGuardModerationPrompt": "prompt",
+    "CivitaiXGuardModerationText": "text",
 }

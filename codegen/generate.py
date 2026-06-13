@@ -258,7 +258,10 @@ def assemble_node(
         suffix += 1
     used.add(class_name)
 
-    display_name = f"Civitai {ir.title_case(recipe)}" + (f" ({' / '.join(path_labels)})" if path_labels else "")
+    # Variant nodes are titled by their discriminator path alone — the recipe + engine are already
+    # the category submenu (Civitai/Image/sdcpp), so repeating them in the title is redundant.
+    # Non-discriminated nodes keep a descriptive name (e.g. "Civitai Text To Image").
+    display_name = " / ".join(path_labels) if path_labels else f"Civitai {ir.title_case(recipe)}"
     category = f"{base_category}/{path_labels[0]}" if path_labels else base_category
 
     node = ir.NodeIR(

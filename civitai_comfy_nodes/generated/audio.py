@@ -287,7 +287,7 @@ class CivitaiAudioCaptioning(CivitaiRecipeNodeBase):
 
 
 class CivitaiTextToSpeechCustom(CivitaiRecipeNodeBase):
-    """Civitai Text To Speech (custom) — textToSpeech recipe via Civitai Orchestration."""
+    """custom — textToSpeech recipe via Civitai Orchestration."""
 
     RECIPE = "textToSpeech"
     STEP_TYPE = "textToSpeech"
@@ -372,7 +372,7 @@ class CivitaiTextToSpeechCustom(CivitaiRecipeNodeBase):
 
 
 class CivitaiTextToSpeechVllmOmniQwen3Base(CivitaiRecipeNodeBase):
-    """Civitai Text To Speech (vllm-omni / qwen3 / base) — textToSpeech recipe via Civitai Orchestration."""
+    """vllm-omni / qwen3 / base — textToSpeech recipe via Civitai Orchestration."""
 
     RECIPE = "textToSpeech"
     STEP_TYPE = "textToSpeech"
@@ -447,7 +447,7 @@ class CivitaiTextToSpeechVllmOmniQwen3Base(CivitaiRecipeNodeBase):
 
 
 class CivitaiTextToSpeechVllmOmniQwen3CustomVoice(CivitaiRecipeNodeBase):
-    """Civitai Text To Speech (vllm-omni / qwen3 / customVoice) — textToSpeech recipe via Civitai Orchestration."""
+    """vllm-omni / qwen3 / customVoice — textToSpeech recipe via Civitai Orchestration."""
 
     RECIPE = "textToSpeech"
     STEP_TYPE = "textToSpeech"
@@ -512,7 +512,7 @@ class CivitaiTextToSpeechVllmOmniQwen3CustomVoice(CivitaiRecipeNodeBase):
 
 
 class CivitaiTextToSpeechVllmOmniQwen3VoiceDesign(CivitaiRecipeNodeBase):
-    """Civitai Text To Speech (vllm-omni / qwen3 / voiceDesign) — textToSpeech recipe via Civitai Orchestration."""
+    """vllm-omni / qwen3 / voiceDesign — textToSpeech recipe via Civitai Orchestration."""
 
     RECIPE = "textToSpeech"
     STEP_TYPE = "textToSpeech"
@@ -575,7 +575,7 @@ class CivitaiTextToSpeechVllmOmniQwen3VoiceDesign(CivitaiRecipeNodeBase):
 
 
 class CivitaiTextToSpeechVllmOmniOmnivoice(CivitaiRecipeNodeBase):
-    """Civitai Text To Speech (vllm-omni / omnivoice) — textToSpeech recipe via Civitai Orchestration."""
+    """vllm-omni / omnivoice — textToSpeech recipe via Civitai Orchestration."""
 
     RECIPE = "textToSpeech"
     STEP_TYPE = "textToSpeech"
@@ -693,10 +693,10 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiAceStepAudio": "Civitai Ace Step Audio",
     "CivitaiAudioCaptioning": "Civitai Audio Captioning",
-    "CivitaiTextToSpeechCustom": "Civitai Text To Speech (custom)",
-    "CivitaiTextToSpeechVllmOmniQwen3Base": "Civitai Text To Speech (vllm-omni / qwen3 / base)",
-    "CivitaiTextToSpeechVllmOmniQwen3CustomVoice": "Civitai Text To Speech (vllm-omni / qwen3 / customVoice)",
-    "CivitaiTextToSpeechVllmOmniQwen3VoiceDesign": "Civitai Text To Speech (vllm-omni / qwen3 / voiceDesign)",
-    "CivitaiTextToSpeechVllmOmniOmnivoice": "Civitai Text To Speech (vllm-omni / omnivoice)",
+    "CivitaiTextToSpeechCustom": "custom",
+    "CivitaiTextToSpeechVllmOmniQwen3Base": "vllm-omni / qwen3 / base",
+    "CivitaiTextToSpeechVllmOmniQwen3CustomVoice": "vllm-omni / qwen3 / customVoice",
+    "CivitaiTextToSpeechVllmOmniQwen3VoiceDesign": "vllm-omni / qwen3 / voiceDesign",
+    "CivitaiTextToSpeechVllmOmniOmnivoice": "vllm-omni / omnivoice",
     "CivitaiTranscription": "Civitai Transcription",
 }

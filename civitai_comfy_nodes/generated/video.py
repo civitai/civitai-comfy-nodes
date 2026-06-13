@@ -40,7 +40,7 @@ class CivitaiVideoEnhancement(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenHaiper(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (haiper) — videoGen recipe via Civitai Orchestration."""
+    """haiper — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -96,7 +96,7 @@ class CivitaiVideoGenHaiper(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenMochi(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (mochi) — videoGen recipe via Civitai Orchestration."""
+    """mochi — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -135,7 +135,7 @@ class CivitaiVideoGenMochi(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenKling(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (kling) — videoGen recipe via Civitai Orchestration."""
+    """kling — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -185,7 +185,7 @@ class CivitaiVideoGenKling(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenMinimax(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (minimax) — videoGen recipe via Civitai Orchestration."""
+    """minimax — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -223,7 +223,7 @@ class CivitaiVideoGenMinimax(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenLightricks(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (lightricks) — videoGen recipe via Civitai Orchestration."""
+    """lightricks — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -273,7 +273,7 @@ class CivitaiVideoGenLightricks(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenLtx2CreateVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (LTX 2 / createVideo) — videoGen recipe via Civitai Orchestration."""
+    """LTX 2 / createVideo — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -329,7 +329,7 @@ class CivitaiVideoGenLtx2CreateVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenLtx2ExtendVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (LTX 2 / extendVideo) — videoGen recipe via Civitai Orchestration."""
+    """LTX 2 / extendVideo — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -387,7 +387,7 @@ class CivitaiVideoGenLtx2ExtendVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenLtx2EditVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (LTX 2 / editVideo) — videoGen recipe via Civitai Orchestration."""
+    """LTX 2 / editVideo — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -449,7 +449,7 @@ class CivitaiVideoGenLtx2EditVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenLtx2FirstLastFrameToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (LTX 2 / firstLastFrameToVideo) — videoGen recipe via Civitai Orchestration."""
+    """LTX 2 / firstLastFrameToVideo — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -530,7 +530,7 @@ class CivitaiVideoGenLtx2FirstLastFrameToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenLtx23CreateVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (LTX 2.3 / createVideo) — videoGen recipe via Civitai Orchestration."""
+    """LTX 2.3 / createVideo — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -605,7 +605,7 @@ class CivitaiVideoGenLtx23CreateVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenLtx23ExtendVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (LTX 2.3 / extendVideo) — videoGen recipe via Civitai Orchestration."""
+    """LTX 2.3 / extendVideo — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -682,7 +682,7 @@ class CivitaiVideoGenLtx23ExtendVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenLtx23EditVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (LTX 2.3 / editVideo) — videoGen recipe via Civitai Orchestration."""
+    """LTX 2.3 / editVideo — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -763,7 +763,7 @@ class CivitaiVideoGenLtx23EditVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenLtx23FirstLastFrameToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (LTX 2.3 / firstLastFrameToVideo) — videoGen recipe via Civitai Orchestration."""
+    """LTX 2.3 / firstLastFrameToVideo — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -863,7 +863,7 @@ class CivitaiVideoGenLtx23FirstLastFrameToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenLtx23VideoToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (LTX 2.3 / videoToVideo) — videoGen recipe via Civitai Orchestration."""
+    """LTX 2.3 / videoToVideo — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -940,7 +940,7 @@ class CivitaiVideoGenLtx23VideoToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenLtx23AudioToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (LTX 2.3 / audioToVideo) — videoGen recipe via Civitai Orchestration."""
+    """LTX 2.3 / audioToVideo — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -1045,7 +1045,7 @@ class CivitaiVideoGenLtx23AudioToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenHunyuan(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (hunyuan) — videoGen recipe via Civitai Orchestration."""
+    """hunyuan — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -1095,7 +1095,7 @@ class CivitaiVideoGenHunyuan(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenWanV21Civitai(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (wan / v2.1 / civitai) — videoGen recipe via Civitai Orchestration."""
+    """wan / v2.1 / civitai — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -1149,7 +1149,7 @@ class CivitaiVideoGenWanV21Civitai(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenWanV21Fal(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (wan / v2.1 / fal) — videoGen recipe via Civitai Orchestration."""
+    """wan / v2.1 / fal — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -1199,7 +1199,7 @@ class CivitaiVideoGenWanV21Fal(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenWanV22FalTextToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (wan / v2.2 / fal / text-to-video) — videoGen recipe via Civitai Orchestration."""
+    """wan / v2.2 / fal / text-to-video — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -1261,7 +1261,7 @@ class CivitaiVideoGenWanV22FalTextToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenWanV22FalImageToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (wan / v2.2 / fal / image-to-video) — videoGen recipe via Civitai Orchestration."""
+    """wan / v2.2 / fal / image-to-video — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -1325,7 +1325,7 @@ class CivitaiVideoGenWanV22FalImageToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenWanV22Comfy(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (wan / v2.2 / comfy) — videoGen recipe via Civitai Orchestration."""
+    """wan / v2.2 / comfy — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -1412,7 +1412,7 @@ class CivitaiVideoGenWanV22Comfy(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenWanV225bFalTextToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (wan / v2.2-5b / fal / text-to-video) — videoGen recipe via Civitai Orchestration."""
+    """wan / v2.2-5b / fal / text-to-video — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -1476,7 +1476,7 @@ class CivitaiVideoGenWanV225bFalTextToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenWanV225bFalImageToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (wan / v2.2-5b / fal / image-to-video) — videoGen recipe via Civitai Orchestration."""
+    """wan / v2.2-5b / fal / image-to-video — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -1542,7 +1542,7 @@ class CivitaiVideoGenWanV225bFalImageToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenWanV25FalTextToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (wan / v2.5 / fal / text-to-video) — videoGen recipe via Civitai Orchestration."""
+    """wan / v2.5 / fal / text-to-video — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -1596,7 +1596,7 @@ class CivitaiVideoGenWanV25FalTextToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenWanV25FalImageToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (wan / v2.5 / fal / image-to-video) — videoGen recipe via Civitai Orchestration."""
+    """wan / v2.5 / fal / image-to-video — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -1652,7 +1652,7 @@ class CivitaiVideoGenWanV25FalImageToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenWanV26FalTextToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (wan / v2.6 / fal / text-to-video) — videoGen recipe via Civitai Orchestration."""
+    """wan / v2.6 / fal / text-to-video — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -1718,7 +1718,7 @@ class CivitaiVideoGenWanV26FalTextToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenWanV26FalImageToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (wan / v2.6 / fal / image-to-video) — videoGen recipe via Civitai Orchestration."""
+    """wan / v2.6 / fal / image-to-video — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -1784,7 +1784,7 @@ class CivitaiVideoGenWanV26FalImageToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenWanV26FalReferenceToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (wan / v2.6 / fal / reference-to-video) — videoGen recipe via Civitai Orchestration."""
+    """wan / v2.6 / fal / reference-to-video — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -1868,7 +1868,7 @@ class CivitaiVideoGenWanV26FalReferenceToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenWanV27FalTextToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (wan / v2.7 / fal / text-to-video) — videoGen recipe via Civitai Orchestration."""
+    """wan / v2.7 / fal / text-to-video — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -1929,7 +1929,7 @@ class CivitaiVideoGenWanV27FalTextToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenWanV27FalImageToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (wan / v2.7 / fal / image-to-video) — videoGen recipe via Civitai Orchestration."""
+    """wan / v2.7 / fal / image-to-video — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -1997,7 +1997,7 @@ class CivitaiVideoGenWanV27FalImageToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenWanV27FalReferenceToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (wan / v2.7 / fal / reference-to-video) — videoGen recipe via Civitai Orchestration."""
+    """wan / v2.7 / fal / reference-to-video — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -2067,7 +2067,7 @@ class CivitaiVideoGenWanV27FalReferenceToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenWanV27FalEditVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (wan / v2.7 / fal / edit-video) — videoGen recipe via Civitai Orchestration."""
+    """wan / v2.7 / fal / edit-video — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -2140,7 +2140,7 @@ class CivitaiVideoGenWanV27FalEditVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenVidu(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (vidu) — videoGen recipe via Civitai Orchestration."""
+    """vidu — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -2194,7 +2194,7 @@ class CivitaiVideoGenVidu(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenViduQ3(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Vidu Q3) — videoGen recipe via Civitai Orchestration."""
+    """Vidu Q3 — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -2240,7 +2240,7 @@ class CivitaiVideoGenViduQ3(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenVeo3(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (veo3) — videoGen recipe via Civitai Orchestration."""
+    """veo3 — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -2292,7 +2292,7 @@ class CivitaiVideoGenVeo3(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenSoraTextToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (sora / text-to-video) — videoGen recipe via Civitai Orchestration."""
+    """sora / text-to-video — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -2334,7 +2334,7 @@ class CivitaiVideoGenSoraTextToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenSoraImageToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (sora / image-to-video) — videoGen recipe via Civitai Orchestration."""
+    """sora / image-to-video — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -2378,7 +2378,7 @@ class CivitaiVideoGenSoraImageToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenKlingV3(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Kling V3) — videoGen recipe via Civitai Orchestration."""
+    """Kling V3 — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -2446,7 +2446,7 @@ class CivitaiVideoGenKlingV3(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenGrokTextToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (grok / text-to-video) — videoGen recipe via Civitai Orchestration."""
+    """grok / text-to-video — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -2484,7 +2484,7 @@ class CivitaiVideoGenGrokTextToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenGrokImageToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (grok / image-to-video) — videoGen recipe via Civitai Orchestration."""
+    """grok / image-to-video — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -2524,7 +2524,7 @@ class CivitaiVideoGenGrokImageToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenGrokEditVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (grok / edit-video) — videoGen recipe via Civitai Orchestration."""
+    """grok / edit-video — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -2564,7 +2564,7 @@ class CivitaiVideoGenGrokEditVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenSeedance(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (seedance) — videoGen recipe via Civitai Orchestration."""
+    """seedance — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -2610,7 +2610,7 @@ class CivitaiVideoGenSeedance(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenHappyHorseV10TextToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Happy Horse / v1.0 / textToVideo) — videoGen recipe via Civitai Orchestration."""
+    """Happy Horse / v1.0 / textToVideo — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -2652,7 +2652,7 @@ class CivitaiVideoGenHappyHorseV10TextToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenHappyHorseV10ImageToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Happy Horse / v1.0 / imageToVideo) — videoGen recipe via Civitai Orchestration."""
+    """Happy Horse / v1.0 / imageToVideo — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -2694,7 +2694,7 @@ class CivitaiVideoGenHappyHorseV10ImageToVideo(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenHappyHorseV10VideoEdit(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Happy Horse / v1.0 / videoEdit) — videoGen recipe via Civitai Orchestration."""
+    """Happy Horse / v1.0 / videoEdit — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -2740,7 +2740,7 @@ class CivitaiVideoGenHappyHorseV10VideoEdit(CivitaiRecipeNodeBase):
 
 
 class CivitaiVideoGenHappyHorseV10ReferenceToVideo(CivitaiRecipeNodeBase):
-    """Civitai Video Gen (Happy Horse / v1.0 / referenceToVideo) — videoGen recipe via Civitai Orchestration."""
+    """Happy Horse / v1.0 / referenceToVideo — videoGen recipe via Civitai Orchestration."""
 
     RECIPE = "videoGen"
     STEP_TYPE = "videoGen"
@@ -2905,52 +2905,52 @@ NODE_CLASS_MAPPINGS = {
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiVideoEnhancement": "Civitai Video Enhancement",
-    "CivitaiVideoGenHaiper": "Civitai Video Gen (haiper)",
-    "CivitaiVideoGenMochi": "Civitai Video Gen (mochi)",
-    "CivitaiVideoGenKling": "Civitai Video Gen (kling)",
-    "CivitaiVideoGenMinimax": "Civitai Video Gen (minimax)",
-    "CivitaiVideoGenLightricks": "Civitai Video Gen (lightricks)",
-    "CivitaiVideoGenLtx2CreateVideo": "Civitai Video Gen (LTX 2 / createVideo)",
-    "CivitaiVideoGenLtx2ExtendVideo": "Civitai Video Gen (LTX 2 / extendVideo)",
-    "CivitaiVideoGenLtx2EditVideo": "Civitai Video Gen (LTX 2 / editVideo)",
-    "CivitaiVideoGenLtx2FirstLastFrameToVideo": "Civitai Video Gen (LTX 2 / firstLastFrameToVideo)",
-    "CivitaiVideoGenLtx23CreateVideo": "Civitai Video Gen (LTX 2.3 / createVideo)",
-    "CivitaiVideoGenLtx23ExtendVideo": "Civitai Video Gen (LTX 2.3 / extendVideo)",
-    "CivitaiVideoGenLtx23EditVideo": "Civitai Video Gen (LTX 2.3 / editVideo)",
-    "CivitaiVideoGenLtx23FirstLastFrameToVideo": "Civitai Video Gen (LTX 2.3 / firstLastFrameToVideo)",
-    "CivitaiVideoGenLtx23VideoToVideo": "Civitai Video Gen (LTX 2.3 / videoToVideo)",
-    "CivitaiVideoGenLtx23AudioToVideo": "Civitai Video Gen (LTX 2.3 / audioToVideo)",
-    "CivitaiVideoGenHunyuan": "Civitai Video Gen (hunyuan)",
-    "CivitaiVideoGenWanV21Civitai": "Civitai Video Gen (wan / v2.1 / civitai)",
-    "CivitaiVideoGenWanV21Fal": "Civitai Video Gen (wan / v2.1 / fal)",
-    "CivitaiVideoGenWanV22FalTextToVideo": "Civitai Video Gen (wan / v2.2 / fal / text-to-video)",
-    "CivitaiVideoGenWanV22FalImageToVideo": "Civitai Video Gen (wan / v2.2 / fal / image-to-video)",
-    "CivitaiVideoGenWanV22Comfy": "Civitai Video Gen (wan / v2.2 / comfy)",
-    "CivitaiVideoGenWanV225bFalTextToVideo": "Civitai Video Gen (wan / v2.2-5b / fal / text-to-video)",
-    "CivitaiVideoGenWanV225bFalImageToVideo": "Civitai Video Gen (wan / v2.2-5b / fal / image-to-video)",
-    "CivitaiVideoGenWanV25FalTextToVideo": "Civitai Video Gen (wan / v2.5 / fal / text-to-video)",
-    "CivitaiVideoGenWanV25FalImageToVideo": "Civitai Video Gen (wan / v2.5 / fal / image-to-video)",
-    "CivitaiVideoGenWanV26FalTextToVideo": "Civitai Video Gen (wan / v2.6 / fal / text-to-video)",
-    "CivitaiVideoGenWanV26FalImageToVideo": "Civitai Video Gen (wan / v2.6 / fal / image-to-video)",
-    "CivitaiVideoGenWanV26FalReferenceToVideo": "Civitai Video Gen (wan / v2.6 / fal / reference-to-video)",
-    "CivitaiVideoGenWanV27FalTextToVideo": "Civitai Video Gen (wan / v2.7 / fal / text-to-video)",
-    "CivitaiVideoGenWanV27FalImageToVideo": "Civitai Video Gen (wan / v2.7 / fal / image-to-video)",
-    "CivitaiVideoGenWanV27FalReferenceToVideo": "Civitai Video Gen (wan / v2.7 / fal / reference-to-video)",
-    "CivitaiVideoGenWanV27FalEditVideo": "Civitai Video Gen (wan / v2.7 / fal / edit-video)",
-    "CivitaiVideoGenVidu": "Civitai Video Gen (vidu)",
-    "CivitaiVideoGenViduQ3": "Civitai Video Gen (Vidu Q3)",
-    "CivitaiVideoGenVeo3": "Civitai Video Gen (veo3)",
-    "CivitaiVideoGenSoraTextToVideo": "Civitai Video Gen (sora / text-to-video)",
-    "CivitaiVideoGenSoraImageToVideo": "Civitai Video Gen (sora / image-to-video)",
-    "CivitaiVideoGenKlingV3": "Civitai Video Gen (Kling V3)",
-    "CivitaiVideoGenGrokTextToVideo": "Civitai Video Gen (grok / text-to-video)",
-    "CivitaiVideoGenGrokImageToVideo": "Civitai Video Gen (grok / image-to-video)",
-    "CivitaiVideoGenGrokEditVideo": "Civitai Video Gen (grok / edit-video)",
-    "CivitaiVideoGenSeedance": "Civitai Video Gen (seedance)",
-    "CivitaiVideoGenHappyHorseV10TextToVideo": "Civitai Video Gen (Happy Horse / v1.0 / textToVideo)",
-    "CivitaiVideoGenHappyHorseV10ImageToVideo": "Civitai Video Gen (Happy Horse / v1.0 / imageToVideo)",
-    "CivitaiVideoGenHappyHorseV10VideoEdit": "Civitai Video Gen (Happy Horse / v1.0 / videoEdit)",
-    "CivitaiVideoGenHappyHorseV10ReferenceToVideo": "Civitai Video Gen (Happy Horse / v1.0 / referenceToVideo)",
+    "CivitaiVideoGenHaiper": "haiper",
+    "CivitaiVideoGenMochi": "mochi",
+    "CivitaiVideoGenKling": "kling",
+    "CivitaiVideoGenMinimax": "minimax",
+    "CivitaiVideoGenLightricks": "lightricks",
+    "CivitaiVideoGenLtx2CreateVideo": "LTX 2 / createVideo",
+    "CivitaiVideoGenLtx2ExtendVideo": "LTX 2 / extendVideo",
+    "CivitaiVideoGenLtx2EditVideo": "LTX 2 / editVideo",
+    "CivitaiVideoGenLtx2FirstLastFrameToVideo": "LTX 2 / firstLastFrameToVideo",
+    "CivitaiVideoGenLtx23CreateVideo": "LTX 2.3 / createVideo",
+    "CivitaiVideoGenLtx23ExtendVideo": "LTX 2.3 / extendVideo",
+    "CivitaiVideoGenLtx23EditVideo": "LTX 2.3 / editVideo",
+    "CivitaiVideoGenLtx23FirstLastFrameToVideo": "LTX 2.3 / firstLastFrameToVideo",
+    "CivitaiVideoGenLtx23VideoToVideo": "LTX 2.3 / videoToVideo",
+    "CivitaiVideoGenLtx23AudioToVideo": "LTX 2.3 / audioToVideo",
+    "CivitaiVideoGenHunyuan": "hunyuan",
+    "CivitaiVideoGenWanV21Civitai": "wan / v2.1 / civitai",
+    "CivitaiVideoGenWanV21Fal": "wan / v2.1 / fal",
+    "CivitaiVideoGenWanV22FalTextToVideo": "wan / v2.2 / fal / text-to-video",
+    "CivitaiVideoGenWanV22FalImageToVideo": "wan / v2.2 / fal / image-to-video",
+    "CivitaiVideoGenWanV22Comfy": "wan / v2.2 / comfy",
+    "CivitaiVideoGenWanV225bFalTextToVideo": "wan / v2.2-5b / fal / text-to-video",
+    "CivitaiVideoGenWanV225bFalImageToVideo": "wan / v2.2-5b / fal / image-to-video",
+    "CivitaiVideoGenWanV25FalTextToVideo": "wan / v2.5 / fal / text-to-video",
+    "CivitaiVideoGenWanV25FalImageToVideo": "wan / v2.5 / fal / image-to-video",
+    "CivitaiVideoGenWanV26FalTextToVideo": "wan / v2.6 / fal / text-to-video",
+    "CivitaiVideoGenWanV26FalImageToVideo": "wan / v2.6 / fal / image-to-video",
+    "CivitaiVideoGenWanV26FalReferenceToVideo": "wan / v2.6 / fal / reference-to-video",
+    "CivitaiVideoGenWanV27FalTextToVideo": "wan / v2.7 / fal / text-to-video",
+    "CivitaiVideoGenWanV27FalImageToVideo": "wan / v2.7 / fal / image-to-video",
+    "CivitaiVideoGenWanV27FalReferenceToVideo": "wan / v2.7 / fal / reference-to-video",
+    "CivitaiVideoGenWanV27FalEditVideo": "wan / v2.7 / fal / edit-video",
+    "CivitaiVideoGenVidu": "vidu",
+    "CivitaiVideoGenViduQ3": "Vidu Q3",
+    "CivitaiVideoGenVeo3": "veo3",
+    "CivitaiVideoGenSoraTextToVideo": "sora / text-to-video",
+    "CivitaiVideoGenSoraImageToVideo": "sora / image-to-video",
+    "CivitaiVideoGenKlingV3": "Kling V3",
+    "CivitaiVideoGenGrokTextToVideo": "grok / text-to-video",
+    "CivitaiVideoGenGrokImageToVideo": "grok / image-to-video",
+    "CivitaiVideoGenGrokEditVideo": "grok / edit-video",
+    "CivitaiVideoGenSeedance": "seedance",
+    "CivitaiVideoGenHappyHorseV10TextToVideo": "Happy Horse / v1.0 / textToVideo",
+    "CivitaiVideoGenHappyHorseV10ImageToVideo": "Happy Horse / v1.0 / imageToVideo",
+    "CivitaiVideoGenHappyHorseV10VideoEdit": "Happy Horse / v1.0 / videoEdit",
+    "CivitaiVideoGenHappyHorseV10ReferenceToVideo": "Happy Horse / v1.0 / referenceToVideo",
     "CivitaiVideoInterpolation": "Civitai Video Interpolation",
     "CivitaiVideoUpscaler": "Civitai Video Upscaler",
 }

@@ -38,7 +38,7 @@ class CivitaiImageBackgroundRemoval(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenOpenaiGptImage1CreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (openai / gpt-image-1 / createImage) — imageGen recipe via Civitai Orchestration."""
+    """openai / gpt-image-1 / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -88,7 +88,7 @@ class CivitaiImageGenOpenaiGptImage1CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenOpenaiGptImage1EditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (openai / gpt-image-1 / editImage) — imageGen recipe via Civitai Orchestration."""
+    """openai / gpt-image-1 / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -142,7 +142,7 @@ class CivitaiImageGenOpenaiGptImage1EditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenOpenaiGptImage15CreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (openai / gpt-image-1.5 / createImage) — imageGen recipe via Civitai Orchestration."""
+    """openai / gpt-image-1.5 / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -192,7 +192,7 @@ class CivitaiImageGenOpenaiGptImage15CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenOpenaiGptImage15EditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (openai / gpt-image-1.5 / editImage) — imageGen recipe via Civitai Orchestration."""
+    """openai / gpt-image-1.5 / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -252,7 +252,7 @@ class CivitaiImageGenOpenaiGptImage15EditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenOpenaiGptImage2CreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (openai / gpt-image-2 / createImage) — imageGen recipe via Civitai Orchestration."""
+    """openai / gpt-image-2 / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -302,7 +302,7 @@ class CivitaiImageGenOpenaiGptImage2CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenOpenaiGptImage2EditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (openai / gpt-image-2 / editImage) — imageGen recipe via Civitai Orchestration."""
+    """openai / gpt-image-2 / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -374,7 +374,7 @@ class CivitaiImageGenOpenaiGptImage2EditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenOpenaiDallE2CreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (openai / dall-e-2 / createImage) — imageGen recipe via Civitai Orchestration."""
+    """openai / dall-e-2 / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -422,7 +422,7 @@ class CivitaiImageGenOpenaiDallE2CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenOpenaiDallE2EditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (openai / dall-e-2 / editImage) — imageGen recipe via Civitai Orchestration."""
+    """openai / dall-e-2 / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -472,7 +472,7 @@ class CivitaiImageGenOpenaiDallE2EditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenOpenaiDallE3CreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (openai / dall-e-3 / createImage) — imageGen recipe via Civitai Orchestration."""
+    """openai / dall-e-3 / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -522,7 +522,7 @@ class CivitaiImageGenOpenaiDallE3CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFlux1Kontext(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (flux1-kontext) — imageGen recipe via Civitai Orchestration."""
+    """flux1-kontext — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -579,7 +579,7 @@ class CivitaiImageGenFlux1Kontext(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFlux2DevCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (flux2 / dev / createImage) — imageGen recipe via Civitai Orchestration."""
+    """flux2 / dev / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -637,7 +637,7 @@ class CivitaiImageGenFlux2DevCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFlux2DevEditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (flux2 / dev / editImage) — imageGen recipe via Civitai Orchestration."""
+    """flux2 / dev / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -697,7 +697,7 @@ class CivitaiImageGenFlux2DevEditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFlux2FlexCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (flux2 / flex / createImage) — imageGen recipe via Civitai Orchestration."""
+    """flux2 / flex / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -753,7 +753,7 @@ class CivitaiImageGenFlux2FlexCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFlux2FlexEditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (flux2 / flex / editImage) — imageGen recipe via Civitai Orchestration."""
+    """flux2 / flex / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -811,7 +811,7 @@ class CivitaiImageGenFlux2FlexEditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFlux2CreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (flux2 / createImage) — imageGen recipe via Civitai Orchestration."""
+    """flux2 / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -865,7 +865,7 @@ class CivitaiImageGenFlux2CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFlux2EditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (flux2 / editImage) — imageGen recipe via Civitai Orchestration."""
+    """flux2 / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -921,7 +921,7 @@ class CivitaiImageGenFlux2EditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFlux2KleinCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (flux2 / klein / createImage) — imageGen recipe via Civitai Orchestration."""
+    """flux2 / klein / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -1029,7 +1029,7 @@ class CivitaiImageGenFlux2KleinCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFlux2KleinEditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (flux2 / klein / editImage) — imageGen recipe via Civitai Orchestration."""
+    """flux2 / klein / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -1139,7 +1139,7 @@ class CivitaiImageGenFlux2KleinEditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenGoogleImagen4(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (google / imagen4) — imageGen recipe via Civitai Orchestration."""
+    """google / imagen4 — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -1189,7 +1189,7 @@ class CivitaiImageGenGoogleImagen4(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenGoogleNanoBananaPro(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (google / nano-banana-pro) — imageGen recipe via Civitai Orchestration."""
+    """google / nano-banana-pro — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -1242,7 +1242,7 @@ class CivitaiImageGenGoogleNanoBananaPro(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenGoogleNanoBanana2(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (google / nano-banana-2) — imageGen recipe via Civitai Orchestration."""
+    """google / nano-banana-2 — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -1301,7 +1301,7 @@ class CivitaiImageGenGoogleNanoBanana2(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenWanV22Fal(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (wan / v2.2 / fal) — imageGen recipe via Civitai Orchestration."""
+    """wan / v2.2 / fal — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -1363,7 +1363,7 @@ class CivitaiImageGenWanV22Fal(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenWanV225bFal(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (wan / v2.2-5b / fal) — imageGen recipe via Civitai Orchestration."""
+    """wan / v2.2-5b / fal — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -1425,7 +1425,7 @@ class CivitaiImageGenWanV225bFal(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenWanV25FalTextToImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (wan / v2.5 / fal / text-to-image) — imageGen recipe via Civitai Orchestration."""
+    """wan / v2.5 / fal / text-to-image — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -1483,7 +1483,7 @@ class CivitaiImageGenWanV25FalTextToImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenWanV25FalImageToImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (wan / v2.5 / fal / image-to-image) — imageGen recipe via Civitai Orchestration."""
+    """wan / v2.5 / fal / image-to-image — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -1543,7 +1543,7 @@ class CivitaiImageGenWanV25FalImageToImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenWanV27FalCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (wan / v2.7 / fal / createImage) — imageGen recipe via Civitai Orchestration."""
+    """wan / v2.7 / fal / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -1603,7 +1603,7 @@ class CivitaiImageGenWanV27FalCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenWanV27FalEditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (wan / v2.7 / fal / editImage) — imageGen recipe via Civitai Orchestration."""
+    """wan / v2.7 / fal / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -1665,7 +1665,7 @@ class CivitaiImageGenWanV27FalEditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenGemini25FlashCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (gemini / 2.5-flash / createImage) — imageGen recipe via Civitai Orchestration."""
+    """gemini / 2.5-flash / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -1709,7 +1709,7 @@ class CivitaiImageGenGemini25FlashCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenGemini25FlashEditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (gemini / 2.5-flash / editImage) — imageGen recipe via Civitai Orchestration."""
+    """gemini / 2.5-flash / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -1755,7 +1755,7 @@ class CivitaiImageGenGemini25FlashEditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppQwen20bCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / qwen / 20b / createImage) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / qwen / 20b / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -1855,7 +1855,7 @@ class CivitaiImageGenSdcppQwen20bCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppQwen20bEditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / qwen / 20b / editImage) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / qwen / 20b / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -1957,7 +1957,7 @@ class CivitaiImageGenSdcppQwen20bEditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppQwen20bCreateVariant(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / qwen / 20b / createVariant) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / qwen / 20b / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -2061,7 +2061,7 @@ class CivitaiImageGenSdcppQwen20bCreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppZImageTurboCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / zImage / turbo / createImage) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / zImage / turbo / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -2163,7 +2163,7 @@ class CivitaiImageGenSdcppZImageTurboCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppZImageBaseCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / zImage / base / createImage) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / zImage / base / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -2265,7 +2265,7 @@ class CivitaiImageGenSdcppZImageBaseCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppAnimaCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / anima / createImage) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / anima / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -2365,7 +2365,7 @@ class CivitaiImageGenSdcppAnimaCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppAnimaCreateVariant(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / anima / createVariant) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / anima / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -2469,7 +2469,7 @@ class CivitaiImageGenSdcppAnimaCreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppSd1CreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / sd1 / createImage) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / sd1 / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -2577,7 +2577,7 @@ class CivitaiImageGenSdcppSd1CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppSd1CreateVariant(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / sd1 / createVariant) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / sd1 / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -2689,7 +2689,7 @@ class CivitaiImageGenSdcppSd1CreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppSdxlCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / sdxl / createImage) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / sdxl / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -2795,7 +2795,7 @@ class CivitaiImageGenSdcppSdxlCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppSdxlCreateVariant(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / sdxl / createVariant) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / sdxl / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -2905,7 +2905,7 @@ class CivitaiImageGenSdcppSdxlCreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppFlux1CreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / flux1 / createImage) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / flux1 / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -3011,7 +3011,7 @@ class CivitaiImageGenSdcppFlux1CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppFlux1EditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / flux1 / editImage) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / flux1 / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -3119,7 +3119,7 @@ class CivitaiImageGenSdcppFlux1EditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppFlux1CreateVariant(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / flux1 / createVariant) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / flux1 / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -3229,7 +3229,7 @@ class CivitaiImageGenSdcppFlux1CreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppFlux2DevCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / flux2Dev / createImage) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / flux2Dev / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -3327,7 +3327,7 @@ class CivitaiImageGenSdcppFlux2DevCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppFlux2DevEditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / flux2Dev / editImage) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / flux2Dev / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -3427,7 +3427,7 @@ class CivitaiImageGenSdcppFlux2DevEditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppFlux2DevCreateVariant(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / flux2Dev / createVariant) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / flux2Dev / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -3529,7 +3529,7 @@ class CivitaiImageGenSdcppFlux2DevCreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppFlux2KleinCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / flux2Klein / createImage) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / flux2Klein / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -3629,7 +3629,7 @@ class CivitaiImageGenSdcppFlux2KleinCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppFlux2KleinEditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / flux2Klein / editImage) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / flux2Klein / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -3731,7 +3731,7 @@ class CivitaiImageGenSdcppFlux2KleinEditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppFlux2KleinCreateVariant(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (sdcpp / flux2Klein / createVariant) — imageGen recipe via Civitai Orchestration."""
+    """sdcpp / flux2Klein / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -3835,7 +3835,7 @@ class CivitaiImageGenSdcppFlux2KleinCreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfySd1CreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / sd1 / createImage) — imageGen recipe via Civitai Orchestration."""
+    """comfy / sd1 / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -3944,7 +3944,7 @@ class CivitaiImageGenComfySd1CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfySd1CreateVariant(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / sd1 / createVariant) — imageGen recipe via Civitai Orchestration."""
+    """comfy / sd1 / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -4057,7 +4057,7 @@ class CivitaiImageGenComfySd1CreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfySdxlCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / sdxl / createImage) — imageGen recipe via Civitai Orchestration."""
+    """comfy / sdxl / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -4164,7 +4164,7 @@ class CivitaiImageGenComfySdxlCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfySdxlCreateVariant(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / sdxl / createVariant) — imageGen recipe via Civitai Orchestration."""
+    """comfy / sdxl / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -4275,7 +4275,7 @@ class CivitaiImageGenComfySdxlCreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyFlux1CreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / flux1 / createImage) — imageGen recipe via Civitai Orchestration."""
+    """comfy / flux1 / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -4380,7 +4380,7 @@ class CivitaiImageGenComfyFlux1CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyFlux1CreateVariant(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / flux1 / createVariant) — imageGen recipe via Civitai Orchestration."""
+    """comfy / flux1 / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -4489,7 +4489,7 @@ class CivitaiImageGenComfyFlux1CreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyFlux2DevCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / flux2Dev / createImage) — imageGen recipe via Civitai Orchestration."""
+    """comfy / flux2Dev / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -4590,7 +4590,7 @@ class CivitaiImageGenComfyFlux2DevCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyFlux2DevEditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / flux2Dev / editImage) — imageGen recipe via Civitai Orchestration."""
+    """comfy / flux2Dev / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -4693,7 +4693,7 @@ class CivitaiImageGenComfyFlux2DevEditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyErnieErnieCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / ernie / ernie / createImage) — imageGen recipe via Civitai Orchestration."""
+    """comfy / ernie / ernie / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -4796,7 +4796,7 @@ class CivitaiImageGenComfyErnieErnieCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyErnieTurboCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / ernie / turbo / createImage) — imageGen recipe via Civitai Orchestration."""
+    """comfy / ernie / turbo / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -4899,7 +4899,7 @@ class CivitaiImageGenComfyErnieTurboCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyHidreamO1HiDreamO1ImageCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / hidream-o1 / HiDream-O1-Image / createImage) — imageGen recipe via Civitai Orchestration."""
+    """comfy / hidream-o1 / HiDream-O1-Image / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -4964,7 +4964,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageCreateImage(CivitaiRecipeNodeBa
 
 
 class CivitaiImageGenComfyHidreamO1HiDreamO1ImageEditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / hidream-o1 / HiDream-O1-Image / editImage) — imageGen recipe via Civitai Orchestration."""
+    """comfy / hidream-o1 / HiDream-O1-Image / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -5031,7 +5031,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageEditImage(CivitaiRecipeNodeBase
 
 
 class CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / hidream-o1 / HiDream-O1-Image-dev / createImage) — imageGen recipe via Civitai Orchestration."""
+    """comfy / hidream-o1 / HiDream-O1-Image-dev / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -5096,7 +5096,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevCreateImage(CivitaiRecipeNod
 
 
 class CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevEditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / hidream-o1 / HiDream-O1-Image-dev / editImage) — imageGen recipe via Civitai Orchestration."""
+    """comfy / hidream-o1 / HiDream-O1-Image-dev / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -5163,7 +5163,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevEditImage(CivitaiRecipeNodeB
 
 
 class CivitaiImageGenComfyAnimaCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / anima / createImage) — imageGen recipe via Civitai Orchestration."""
+    """comfy / anima / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -5268,7 +5268,7 @@ class CivitaiImageGenComfyAnimaCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyAnimaCreateVariant(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / anima / createVariant) — imageGen recipe via Civitai Orchestration."""
+    """comfy / anima / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -5377,7 +5377,7 @@ class CivitaiImageGenComfyAnimaCreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyLensNormalCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / lens / normal / createImage) — imageGen recipe via Civitai Orchestration."""
+    """comfy / lens / normal / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -5480,7 +5480,7 @@ class CivitaiImageGenComfyLensNormalCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyLensTurboCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / lens / turbo / createImage) — imageGen recipe via Civitai Orchestration."""
+    """comfy / lens / turbo / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -5583,7 +5583,7 @@ class CivitaiImageGenComfyLensTurboCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyIdeogram4CreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (comfy / ideogram4 / createImage) — imageGen recipe via Civitai Orchestration."""
+    """comfy / ideogram4 / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -5681,7 +5681,7 @@ class CivitaiImageGenComfyIdeogram4CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSeedream(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (seedream) — imageGen recipe via Civitai Orchestration."""
+    """seedream — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -5739,7 +5739,7 @@ class CivitaiImageGenSeedream(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenGrokCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (grok / createImage) — imageGen recipe via Civitai Orchestration."""
+    """grok / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -5805,7 +5805,7 @@ class CivitaiImageGenGrokCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenGrokEditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (grok / editImage) — imageGen recipe via Civitai Orchestration."""
+    """grok / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -5851,7 +5851,7 @@ class CivitaiImageGenGrokEditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFalQwen2CreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (fal / qwen2 / createImage) — imageGen recipe via Civitai Orchestration."""
+    """fal / qwen2 / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -5910,7 +5910,7 @@ class CivitaiImageGenFalQwen2CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFalQwen2EditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (fal / qwen2 / editImage) — imageGen recipe via Civitai Orchestration."""
+    """fal / qwen2 / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -5971,7 +5971,7 @@ class CivitaiImageGenFalQwen2EditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFalKrea2CreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (fal / krea2 / createImage) — imageGen recipe via Civitai Orchestration."""
+    """fal / krea2 / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -6025,7 +6025,7 @@ class CivitaiImageGenFalKrea2CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFalMaiImageCreateImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (fal / maiImage / createImage) — imageGen recipe via Civitai Orchestration."""
+    """fal / maiImage / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -6074,7 +6074,7 @@ class CivitaiImageGenFalMaiImageCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFalMaiImageEditImage(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (fal / maiImage / editImage) — imageGen recipe via Civitai Orchestration."""
+    """fal / maiImage / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -6436,82 +6436,82 @@ NODE_CLASS_MAPPINGS = {
 
 NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiImageBackgroundRemoval": "Civitai Image Background Removal",
-    "CivitaiImageGenOpenaiGptImage1CreateImage": "Civitai Image Gen (openai / gpt-image-1 / createImage)",
-    "CivitaiImageGenOpenaiGptImage1EditImage": "Civitai Image Gen (openai / gpt-image-1 / editImage)",
-    "CivitaiImageGenOpenaiGptImage15CreateImage": "Civitai Image Gen (openai / gpt-image-1.5 / createImage)",
-    "CivitaiImageGenOpenaiGptImage15EditImage": "Civitai Image Gen (openai / gpt-image-1.5 / editImage)",
-    "CivitaiImageGenOpenaiGptImage2CreateImage": "Civitai Image Gen (openai / gpt-image-2 / createImage)",
-    "CivitaiImageGenOpenaiGptImage2EditImage": "Civitai Image Gen (openai / gpt-image-2 / editImage)",
-    "CivitaiImageGenOpenaiDallE2CreateImage": "Civitai Image Gen (openai / dall-e-2 / createImage)",
-    "CivitaiImageGenOpenaiDallE2EditImage": "Civitai Image Gen (openai / dall-e-2 / editImage)",
-    "CivitaiImageGenOpenaiDallE3CreateImage": "Civitai Image Gen (openai / dall-e-3 / createImage)",
-    "CivitaiImageGenFlux1Kontext": "Civitai Image Gen (flux1-kontext)",
-    "CivitaiImageGenFlux2DevCreateImage": "Civitai Image Gen (flux2 / dev / createImage)",
-    "CivitaiImageGenFlux2DevEditImage": "Civitai Image Gen (flux2 / dev / editImage)",
-    "CivitaiImageGenFlux2FlexCreateImage": "Civitai Image Gen (flux2 / flex / createImage)",
-    "CivitaiImageGenFlux2FlexEditImage": "Civitai Image Gen (flux2 / flex / editImage)",
-    "CivitaiImageGenFlux2CreateImage": "Civitai Image Gen (flux2 / createImage)",
-    "CivitaiImageGenFlux2EditImage": "Civitai Image Gen (flux2 / editImage)",
-    "CivitaiImageGenFlux2KleinCreateImage": "Civitai Image Gen (flux2 / klein / createImage)",
-    "CivitaiImageGenFlux2KleinEditImage": "Civitai Image Gen (flux2 / klein / editImage)",
-    "CivitaiImageGenGoogleImagen4": "Civitai Image Gen (google / imagen4)",
-    "CivitaiImageGenGoogleNanoBananaPro": "Civitai Image Gen (google / nano-banana-pro)",
-    "CivitaiImageGenGoogleNanoBanana2": "Civitai Image Gen (google / nano-banana-2)",
-    "CivitaiImageGenWanV22Fal": "Civitai Image Gen (wan / v2.2 / fal)",
-    "CivitaiImageGenWanV225bFal": "Civitai Image Gen (wan / v2.2-5b / fal)",
-    "CivitaiImageGenWanV25FalTextToImage": "Civitai Image Gen (wan / v2.5 / fal / text-to-image)",
-    "CivitaiImageGenWanV25FalImageToImage": "Civitai Image Gen (wan / v2.5 / fal / image-to-image)",
-    "CivitaiImageGenWanV27FalCreateImage": "Civitai Image Gen (wan / v2.7 / fal / createImage)",
-    "CivitaiImageGenWanV27FalEditImage": "Civitai Image Gen (wan / v2.7 / fal / editImage)",
-    "CivitaiImageGenGemini25FlashCreateImage": "Civitai Image Gen (gemini / 2.5-flash / createImage)",
-    "CivitaiImageGenGemini25FlashEditImage": "Civitai Image Gen (gemini / 2.5-flash / editImage)",
-    "CivitaiImageGenSdcppQwen20bCreateImage": "Civitai Image Gen (sdcpp / qwen / 20b / createImage)",
-    "CivitaiImageGenSdcppQwen20bEditImage": "Civitai Image Gen (sdcpp / qwen / 20b / editImage)",
-    "CivitaiImageGenSdcppQwen20bCreateVariant": "Civitai Image Gen (sdcpp / qwen / 20b / createVariant)",
-    "CivitaiImageGenSdcppZImageTurboCreateImage": "Civitai Image Gen (sdcpp / zImage / turbo / createImage)",
-    "CivitaiImageGenSdcppZImageBaseCreateImage": "Civitai Image Gen (sdcpp / zImage / base / createImage)",
-    "CivitaiImageGenSdcppAnimaCreateImage": "Civitai Image Gen (sdcpp / anima / createImage)",
-    "CivitaiImageGenSdcppAnimaCreateVariant": "Civitai Image Gen (sdcpp / anima / createVariant)",
-    "CivitaiImageGenSdcppSd1CreateImage": "Civitai Image Gen (sdcpp / sd1 / createImage)",
-    "CivitaiImageGenSdcppSd1CreateVariant": "Civitai Image Gen (sdcpp / sd1 / createVariant)",
-    "CivitaiImageGenSdcppSdxlCreateImage": "Civitai Image Gen (sdcpp / sdxl / createImage)",
-    "CivitaiImageGenSdcppSdxlCreateVariant": "Civitai Image Gen (sdcpp / sdxl / createVariant)",
-    "CivitaiImageGenSdcppFlux1CreateImage": "Civitai Image Gen (sdcpp / flux1 / createImage)",
-    "CivitaiImageGenSdcppFlux1EditImage": "Civitai Image Gen (sdcpp / flux1 / editImage)",
-    "CivitaiImageGenSdcppFlux1CreateVariant": "Civitai Image Gen (sdcpp / flux1 / createVariant)",
-    "CivitaiImageGenSdcppFlux2DevCreateImage": "Civitai Image Gen (sdcpp / flux2Dev / createImage)",
-    "CivitaiImageGenSdcppFlux2DevEditImage": "Civitai Image Gen (sdcpp / flux2Dev / editImage)",
-    "CivitaiImageGenSdcppFlux2DevCreateVariant": "Civitai Image Gen (sdcpp / flux2Dev / createVariant)",
-    "CivitaiImageGenSdcppFlux2KleinCreateImage": "Civitai Image Gen (sdcpp / flux2Klein / createImage)",
-    "CivitaiImageGenSdcppFlux2KleinEditImage": "Civitai Image Gen (sdcpp / flux2Klein / editImage)",
-    "CivitaiImageGenSdcppFlux2KleinCreateVariant": "Civitai Image Gen (sdcpp / flux2Klein / createVariant)",
-    "CivitaiImageGenComfySd1CreateImage": "Civitai Image Gen (comfy / sd1 / createImage)",
-    "CivitaiImageGenComfySd1CreateVariant": "Civitai Image Gen (comfy / sd1 / createVariant)",
-    "CivitaiImageGenComfySdxlCreateImage": "Civitai Image Gen (comfy / sdxl / createImage)",
-    "CivitaiImageGenComfySdxlCreateVariant": "Civitai Image Gen (comfy / sdxl / createVariant)",
-    "CivitaiImageGenComfyFlux1CreateImage": "Civitai Image Gen (comfy / flux1 / createImage)",
-    "CivitaiImageGenComfyFlux1CreateVariant": "Civitai Image Gen (comfy / flux1 / createVariant)",
-    "CivitaiImageGenComfyFlux2DevCreateImage": "Civitai Image Gen (comfy / flux2Dev / createImage)",
-    "CivitaiImageGenComfyFlux2DevEditImage": "Civitai Image Gen (comfy / flux2Dev / editImage)",
-    "CivitaiImageGenComfyErnieErnieCreateImage": "Civitai Image Gen (comfy / ernie / ernie / createImage)",
-    "CivitaiImageGenComfyErnieTurboCreateImage": "Civitai Image Gen (comfy / ernie / turbo / createImage)",
-    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageCreateImage": "Civitai Image Gen (comfy / hidream-o1 / HiDream-O1-Image / createImage)",
-    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageEditImage": "Civitai Image Gen (comfy / hidream-o1 / HiDream-O1-Image / editImage)",
-    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevCreateImage": "Civitai Image Gen (comfy / hidream-o1 / HiDream-O1-Image-dev / createImage)",
-    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevEditImage": "Civitai Image Gen (comfy / hidream-o1 / HiDream-O1-Image-dev / editImage)",
-    "CivitaiImageGenComfyAnimaCreateImage": "Civitai Image Gen (comfy / anima / createImage)",
-    "CivitaiImageGenComfyAnimaCreateVariant": "Civitai Image Gen (comfy / anima / createVariant)",
-    "CivitaiImageGenComfyLensNormalCreateImage": "Civitai Image Gen (comfy / lens / normal / createImage)",
-    "CivitaiImageGenComfyLensTurboCreateImage": "Civitai Image Gen (comfy / lens / turbo / createImage)",
-    "CivitaiImageGenComfyIdeogram4CreateImage": "Civitai Image Gen (comfy / ideogram4 / createImage)",
-    "CivitaiImageGenSeedream": "Civitai Image Gen (seedream)",
-    "CivitaiImageGenGrokCreateImage": "Civitai Image Gen (grok / createImage)",
-    "CivitaiImageGenGrokEditImage": "Civitai Image Gen (grok / editImage)",
-    "CivitaiImageGenFalQwen2CreateImage": "Civitai Image Gen (fal / qwen2 / createImage)",
-    "CivitaiImageGenFalQwen2EditImage": "Civitai Image Gen (fal / qwen2 / editImage)",
-    "CivitaiImageGenFalKrea2CreateImage": "Civitai Image Gen (fal / krea2 / createImage)",
-    "CivitaiImageGenFalMaiImageCreateImage": "Civitai Image Gen (fal / maiImage / createImage)",
-    "CivitaiImageGenFalMaiImageEditImage": "Civitai Image Gen (fal / maiImage / editImage)",
+    "CivitaiImageGenOpenaiGptImage1CreateImage": "openai / gpt-image-1 / createImage",
+    "CivitaiImageGenOpenaiGptImage1EditImage": "openai / gpt-image-1 / editImage",
+    "CivitaiImageGenOpenaiGptImage15CreateImage": "openai / gpt-image-1.5 / createImage",
+    "CivitaiImageGenOpenaiGptImage15EditImage": "openai / gpt-image-1.5 / editImage",
+    "CivitaiImageGenOpenaiGptImage2CreateImage": "openai / gpt-image-2 / createImage",
+    "CivitaiImageGenOpenaiGptImage2EditImage": "openai / gpt-image-2 / editImage",
+    "CivitaiImageGenOpenaiDallE2CreateImage": "openai / dall-e-2 / createImage",
+    "CivitaiImageGenOpenaiDallE2EditImage": "openai / dall-e-2 / editImage",
+    "CivitaiImageGenOpenaiDallE3CreateImage": "openai / dall-e-3 / createImage",
+    "CivitaiImageGenFlux1Kontext": "flux1-kontext",
+    "CivitaiImageGenFlux2DevCreateImage": "flux2 / dev / createImage",
+    "CivitaiImageGenFlux2DevEditImage": "flux2 / dev / editImage",
+    "CivitaiImageGenFlux2FlexCreateImage": "flux2 / flex / createImage",
+    "CivitaiImageGenFlux2FlexEditImage": "flux2 / flex / editImage",
+    "CivitaiImageGenFlux2CreateImage": "flux2 / createImage",
+    "CivitaiImageGenFlux2EditImage": "flux2 / editImage",
+    "CivitaiImageGenFlux2KleinCreateImage": "flux2 / klein / createImage",
+    "CivitaiImageGenFlux2KleinEditImage": "flux2 / klein / editImage",
+    "CivitaiImageGenGoogleImagen4": "google / imagen4",
+    "CivitaiImageGenGoogleNanoBananaPro": "google / nano-banana-pro",
+    "CivitaiImageGenGoogleNanoBanana2": "google / nano-banana-2",
+    "CivitaiImageGenWanV22Fal": "wan / v2.2 / fal",
+    "CivitaiImageGenWanV225bFal": "wan / v2.2-5b / fal",
+    "CivitaiImageGenWanV25FalTextToImage": "wan / v2.5 / fal / text-to-image",
+    "CivitaiImageGenWanV25FalImageToImage": "wan / v2.5 / fal / image-to-image",
+    "CivitaiImageGenWanV27FalCreateImage": "wan / v2.7 / fal / createImage",
+    "CivitaiImageGenWanV27FalEditImage": "wan / v2.7 / fal / editImage",
+    "CivitaiImageGenGemini25FlashCreateImage": "gemini / 2.5-flash / createImage",
+    "CivitaiImageGenGemini25FlashEditImage": "gemini / 2.5-flash / editImage",
+    "CivitaiImageGenSdcppQwen20bCreateImage": "sdcpp / qwen / 20b / createImage",
+    "CivitaiImageGenSdcppQwen20bEditImage": "sdcpp / qwen / 20b / editImage",
+    "CivitaiImageGenSdcppQwen20bCreateVariant": "sdcpp / qwen / 20b / createVariant",
+    "CivitaiImageGenSdcppZImageTurboCreateImage": "sdcpp / zImage / turbo / createImage",
+    "CivitaiImageGenSdcppZImageBaseCreateImage": "sdcpp / zImage / base / createImage",
+    "CivitaiImageGenSdcppAnimaCreateImage": "sdcpp / anima / createImage",
+    "CivitaiImageGenSdcppAnimaCreateVariant": "sdcpp / anima / createVariant",
+    "CivitaiImageGenSdcppSd1CreateImage": "sdcpp / sd1 / createImage",
+    "CivitaiImageGenSdcppSd1CreateVariant": "sdcpp / sd1 / createVariant",
+    "CivitaiImageGenSdcppSdxlCreateImage": "sdcpp / sdxl / createImage",
+    "CivitaiImageGenSdcppSdxlCreateVariant": "sdcpp / sdxl / createVariant",
+    "CivitaiImageGenSdcppFlux1CreateImage": "sdcpp / flux1 / createImage",
+    "CivitaiImageGenSdcppFlux1EditImage": "sdcpp / flux1 / editImage",
+    "CivitaiImageGenSdcppFlux1CreateVariant": "sdcpp / flux1 / createVariant",
+    "CivitaiImageGenSdcppFlux2DevCreateImage": "sdcpp / flux2Dev / createImage",
+    "CivitaiImageGenSdcppFlux2DevEditImage": "sdcpp / flux2Dev / editImage",
+    "CivitaiImageGenSdcppFlux2DevCreateVariant": "sdcpp / flux2Dev / createVariant",
+    "CivitaiImageGenSdcppFlux2KleinCreateImage": "sdcpp / flux2Klein / createImage",
+    "CivitaiImageGenSdcppFlux2KleinEditImage": "sdcpp / flux2Klein / editImage",
+    "CivitaiImageGenSdcppFlux2KleinCreateVariant": "sdcpp / flux2Klein / createVariant",
+    "CivitaiImageGenComfySd1CreateImage": "comfy / sd1 / createImage",
+    "CivitaiImageGenComfySd1CreateVariant": "comfy / sd1 / createVariant",
+    "CivitaiImageGenComfySdxlCreateImage": "comfy / sdxl / createImage",
+    "CivitaiImageGenComfySdxlCreateVariant": "comfy / sdxl / createVariant",
+    "CivitaiImageGenComfyFlux1CreateImage": "comfy / flux1 / createImage",
+    "CivitaiImageGenComfyFlux1CreateVariant": "comfy / flux1 / createVariant",
+    "CivitaiImageGenComfyFlux2DevCreateImage": "comfy / flux2Dev / createImage",
+    "CivitaiImageGenComfyFlux2DevEditImage": "comfy / flux2Dev / editImage",
+    "CivitaiImageGenComfyErnieErnieCreateImage": "comfy / ernie / ernie / createImage",
+    "CivitaiImageGenComfyErnieTurboCreateImage": "comfy / ernie / turbo / createImage",
+    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageCreateImage": "comfy / hidream-o1 / HiDream-O1-Image / createImage",
+    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageEditImage": "comfy / hidream-o1 / HiDream-O1-Image / editImage",
+    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevCreateImage": "comfy / hidream-o1 / HiDream-O1-Image-dev / createImage",
+    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevEditImage": "comfy / hidream-o1 / HiDream-O1-Image-dev / editImage",
+    "CivitaiImageGenComfyAnimaCreateImage": "comfy / anima / createImage",
+    "CivitaiImageGenComfyAnimaCreateVariant": "comfy / anima / createVariant",
+    "CivitaiImageGenComfyLensNormalCreateImage": "comfy / lens / normal / createImage",
+    "CivitaiImageGenComfyLensTurboCreateImage": "comfy / lens / turbo / createImage",
+    "CivitaiImageGenComfyIdeogram4CreateImage": "comfy / ideogram4 / createImage",
+    "CivitaiImageGenSeedream": "seedream",
+    "CivitaiImageGenGrokCreateImage": "grok / createImage",
+    "CivitaiImageGenGrokEditImage": "grok / editImage",
+    "CivitaiImageGenFalQwen2CreateImage": "fal / qwen2 / createImage",
+    "CivitaiImageGenFalQwen2EditImage": "fal / qwen2 / editImage",
+    "CivitaiImageGenFalKrea2CreateImage": "fal / krea2 / createImage",
+    "CivitaiImageGenFalMaiImageCreateImage": "fal / maiImage / createImage",
+    "CivitaiImageGenFalMaiImageEditImage": "fal / maiImage / editImage",
     "CivitaiImageUpscaler": "Civitai Image Upscaler",
     "CivitaiTextToImage": "Civitai Text To Image",
 }

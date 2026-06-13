@@ -1,5 +1,5 @@
 class CivitaiImageGenFlux1Kontext(CivitaiRecipeNodeBase):
-    """Civitai Image Gen (flux1-kontext) — imageGen recipe via Civitai Orchestration."""
+    """flux1-kontext — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"

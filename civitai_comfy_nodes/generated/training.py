@@ -5,7 +5,7 @@ from ..base import CivitaiRecipeNodeBase, F, O
 
 
 class CivitaiImageResourceTrainingKohya(CivitaiRecipeNodeBase):
-    """Civitai Image Resource Training (kohya) — imageResourceTraining recipe via Civitai Orchestration."""
+    """kohya — imageResourceTraining recipe via Civitai Orchestration."""
 
     RECIPE = "imageResourceTraining"
     STEP_TYPE = "imageResourceTraining"
@@ -267,7 +267,7 @@ class CivitaiImageResourceTrainingKohya(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageResourceTrainingFluxDevFast(CivitaiRecipeNodeBase):
-    """Civitai Image Resource Training (flux-dev-fast) — imageResourceTraining recipe via Civitai Orchestration."""
+    """flux-dev-fast — imageResourceTraining recipe via Civitai Orchestration."""
 
     RECIPE = "imageResourceTraining"
     STEP_TYPE = "imageResourceTraining"
@@ -344,7 +344,7 @@ class CivitaiImageResourceTrainingFluxDevFast(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageResourceTrainingMusubi(CivitaiRecipeNodeBase):
-    """Civitai Image Resource Training (musubi) — imageResourceTraining recipe via Civitai Orchestration."""
+    """musubi — imageResourceTraining recipe via Civitai Orchestration."""
 
     RECIPE = "imageResourceTraining"
     STEP_TYPE = "imageResourceTraining"
@@ -513,7 +513,7 @@ class CivitaiImageResourceTrainingMusubi(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageResourceTrainingFlux2Dev(CivitaiRecipeNodeBase):
-    """Civitai Image Resource Training (flux2-dev) — imageResourceTraining recipe via Civitai Orchestration."""
+    """flux2-dev — imageResourceTraining recipe via Civitai Orchestration."""
 
     RECIPE = "imageResourceTraining"
     STEP_TYPE = "imageResourceTraining"
@@ -620,7 +620,7 @@ class CivitaiImageResourceTrainingFlux2Dev(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageResourceTrainingFlux2DevEdit(CivitaiRecipeNodeBase):
-    """Civitai Image Resource Training (flux2-dev-edit) — imageResourceTraining recipe via Civitai Orchestration."""
+    """flux2-dev-edit — imageResourceTraining recipe via Civitai Orchestration."""
 
     RECIPE = "imageResourceTraining"
     STEP_TYPE = "imageResourceTraining"
@@ -738,7 +738,7 @@ class CivitaiImageResourceTrainingFlux2DevEdit(CivitaiRecipeNodeBase):
 
 
 class CivitaiTrainingAiToolkitFlux1(CivitaiRecipeNodeBase):
-    """Civitai Training (ai-toolkit / flux1) — training recipe via Civitai Orchestration."""
+    """ai-toolkit / flux1 — training recipe via Civitai Orchestration."""
 
     RECIPE = "training"
     STEP_TYPE = "training"
@@ -995,7 +995,7 @@ class CivitaiTrainingAiToolkitFlux1(CivitaiRecipeNodeBase):
 
 
 class CivitaiTrainingAiToolkitSdxl(CivitaiRecipeNodeBase):
-    """Civitai Training (ai-toolkit / sdxl) — training recipe via Civitai Orchestration."""
+    """ai-toolkit / sdxl — training recipe via Civitai Orchestration."""
 
     RECIPE = "training"
     STEP_TYPE = "training"
@@ -1269,7 +1269,7 @@ class CivitaiTrainingAiToolkitSdxl(CivitaiRecipeNodeBase):
 
 
 class CivitaiTrainingAiToolkitSd1(CivitaiRecipeNodeBase):
-    """Civitai Training (ai-toolkit / sd1) — training recipe via Civitai Orchestration."""
+    """ai-toolkit / sd1 — training recipe via Civitai Orchestration."""
 
     RECIPE = "training"
     STEP_TYPE = "training"
@@ -1543,7 +1543,7 @@ class CivitaiTrainingAiToolkitSd1(CivitaiRecipeNodeBase):
 
 
 class CivitaiTrainingAiToolkit(CivitaiRecipeNodeBase):
-    """Civitai Training (ai-toolkit) — training recipe via Civitai Orchestration."""
+    """ai-toolkit — training recipe via Civitai Orchestration."""
 
     RECIPE = "training"
     STEP_TYPE = "training"
@@ -1803,7 +1803,7 @@ class CivitaiTrainingAiToolkit(CivitaiRecipeNodeBase):
 
 
 class CivitaiTrainingAiToolkitQwen(CivitaiRecipeNodeBase):
-    """Civitai Training (ai-toolkit / qwen) — training recipe via Civitai Orchestration."""
+    """ai-toolkit / qwen — training recipe via Civitai Orchestration."""
 
     RECIPE = "training"
     STEP_TYPE = "training"
@@ -2060,7 +2060,7 @@ class CivitaiTrainingAiToolkitQwen(CivitaiRecipeNodeBase):
 
 
 class CivitaiTrainingAiToolkitFlux2klein(CivitaiRecipeNodeBase):
-    """Civitai Training (ai-toolkit / flux2klein) — training recipe via Civitai Orchestration."""
+    """ai-toolkit / flux2klein — training recipe via Civitai Orchestration."""
 
     RECIPE = "training"
     STEP_TYPE = "training"
@@ -2325,7 +2325,7 @@ class CivitaiTrainingAiToolkitFlux2klein(CivitaiRecipeNodeBase):
 
 
 class CivitaiTrainingAiToolkitAceStep15(CivitaiRecipeNodeBase):
-    """Civitai Training (ai-toolkit / ace_step_15) — training recipe via Civitai Orchestration."""
+    """ai-toolkit / ace_step_15 — training recipe via Civitai Orchestration."""
 
     RECIPE = "training"
     STEP_TYPE = "training"
@@ -2582,7 +2582,7 @@ class CivitaiTrainingAiToolkitAceStep15(CivitaiRecipeNodeBase):
 
 
 class CivitaiTrainingAiToolkitAceStep15Xl(CivitaiRecipeNodeBase):
-    """Civitai Training (ai-toolkit / ace_step_15_xl) — training recipe via Civitai Orchestration."""
+    """ai-toolkit / ace_step_15_xl — training recipe via Civitai Orchestration."""
 
     RECIPE = "training"
     STEP_TYPE = "training"
@@ -2857,17 +2857,17 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "CivitaiImageResourceTrainingKohya": "Civitai Image Resource Training (kohya)",
-    "CivitaiImageResourceTrainingFluxDevFast": "Civitai Image Resource Training (flux-dev-fast)",
-    "CivitaiImageResourceTrainingMusubi": "Civitai Image Resource Training (musubi)",
-    "CivitaiImageResourceTrainingFlux2Dev": "Civitai Image Resource Training (flux2-dev)",
-    "CivitaiImageResourceTrainingFlux2DevEdit": "Civitai Image Resource Training (flux2-dev-edit)",
-    "CivitaiTrainingAiToolkitFlux1": "Civitai Training (ai-toolkit / flux1)",
-    "CivitaiTrainingAiToolkitSdxl": "Civitai Training (ai-toolkit / sdxl)",
-    "CivitaiTrainingAiToolkitSd1": "Civitai Training (ai-toolkit / sd1)",
-    "CivitaiTrainingAiToolkit": "Civitai Training (ai-toolkit)",
-    "CivitaiTrainingAiToolkitQwen": "Civitai Training (ai-toolkit / qwen)",
-    "CivitaiTrainingAiToolkitFlux2klein": "Civitai Training (ai-toolkit / flux2klein)",
-    "CivitaiTrainingAiToolkitAceStep15": "Civitai Training (ai-toolkit / ace_step_15)",
-    "CivitaiTrainingAiToolkitAceStep15Xl": "Civitai Training (ai-toolkit / ace_step_15_xl)",
+    "CivitaiImageResourceTrainingKohya": "kohya",
+    "CivitaiImageResourceTrainingFluxDevFast": "flux-dev-fast",
+    "CivitaiImageResourceTrainingMusubi": "musubi",
+    "CivitaiImageResourceTrainingFlux2Dev": "flux2-dev",
+    "CivitaiImageResourceTrainingFlux2DevEdit": "flux2-dev-edit",
+    "CivitaiTrainingAiToolkitFlux1": "ai-toolkit / flux1",
+    "CivitaiTrainingAiToolkitSdxl": "ai-toolkit / sdxl",
+    "CivitaiTrainingAiToolkitSd1": "ai-toolkit / sd1",
+    "CivitaiTrainingAiToolkit": "ai-toolkit",
+    "CivitaiTrainingAiToolkitQwen": "ai-toolkit / qwen",
+    "CivitaiTrainingAiToolkitFlux2klein": "ai-toolkit / flux2klein",
+    "CivitaiTrainingAiToolkitAceStep15": "ai-toolkit / ace_step_15",
+    "CivitaiTrainingAiToolkitAceStep15Xl": "ai-toolkit / ace_step_15_xl",
 }
