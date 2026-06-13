@@ -139,11 +139,11 @@ class CivitaiRecipeNodeBase:
                 )
             progress = self._report_progress(bar, workflow)
             status = workflow.get("status", "")
-            queue_pos = self._queue_position(workflow)
-            marker = (status, progress, queue_pos)
+            preceding = self._preceding_jobs(workflow)
+            marker = (status, progress, preceding)
             if marker != last_marker:
-                queue = f", queue position {queue_pos}" if queue_pos else ""
-                logger.info("Civitai workflow %s: %s (%d%%%s)", workflow_id, status, progress, queue)
+                ahead = f", {preceding} job{'' if preceding == 1 else 's'} ahead" if preceding is not None else ""
+                logger.info("Civitai workflow %s: %s, %d%%%s", workflow_id, status, progress, ahead)
                 last_marker = marker
             interval = next(intervals, POLL_MAX_INTERVAL)
             try:
@@ -182,10 +182,15 @@ class CivitaiRecipeNodeBase:
         return progress
 
     @staticmethod
-    def _queue_position(workflow: dict):
+    def _preceding_jobs(workflow: dict):
+        """How many jobs are ahead in the queue (queuePosition is an object, not a number)."""
         jobs = ((workflow.get("steps") or [{}])[0].get("jobs")) or []
-        positions = [j.get("queuePosition") for j in jobs if j.get("queuePosition") is not None]
-        return min(positions) if positions else None
+        counts = [
+            j["queuePosition"]["precedingJobs"]
+            for j in jobs
+            if isinstance(j.get("queuePosition"), dict) and j["queuePosition"].get("precedingJobs") is not None
+        ]
+        return min(counts) if counts else None
 
     def _convert_outputs(self, client: OrchestrationClient, output: dict) -> list:
         results = []

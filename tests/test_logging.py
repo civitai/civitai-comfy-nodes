@@ -7,7 +7,11 @@ class _FakeClient:
         self.calls = 0
 
     def submit_workflow(self, step_type, payload, wait=5):
-        return {"id": "wf-test", "status": "scheduled", "steps": [{"jobs": [{"queuePosition": 3}]}]}
+        return {
+            "id": "wf-test",
+            "status": "scheduled",
+            "steps": [{"jobs": [{"queuePosition": {"precedingJobs": 3, "support": "available"}}]}],
+        }
 
     def get_workflow(self, workflow_id):
         self.calls += 1
@@ -35,7 +39,6 @@ def test_run_logs_workflow_id_and_status_transitions(monkeypatch, caplog):
     assert result[-2] == "wf-test"  # workflow_id output
     text = "\n".join(caplog.messages)
     assert "submitted workflow wf-test" in text
-    assert "wf-test: scheduled" in text
-    assert "queue position 3" in text
+    assert "wf-test: scheduled, 10%, 3 jobs ahead" in text
     assert "wf-test: processing" in text
     assert "succeeded · 7 Buzz" in text
