@@ -10,6 +10,28 @@ const NODE_TARGETS = {
 };
 const TYPES = ["Checkpoint", "LORA", "TextualInversion", "VAE", "Controlnet", "Upscaler"];
 
+// Populated from /civitai/catalog/meta: { ecosystems: [{key,label}], nodeEcosystems: {NodeClass: key} }.
+let META = { ecosystems: [], nodeEcosystems: {} };
+
+// The ecosystem a node's resources must belong to. For a loader, trace its output downstream
+// (through loader chains) to the recipe node it feeds.
+function resolveEcosystem(node, seen) {
+  seen = seen || new Set();
+  if (!node || seen.has(node.id)) return "";
+  seen.add(node.id);
+  const own = META.nodeEcosystems[node.comfyClass];
+  if (own) return own;
+  for (const out of node.outputs || []) {
+    for (const linkId of out.links || []) {
+      const link = app.graph?.links?.[linkId];
+      const target = link && app.graph.getNodeById(link.target_id);
+      const eco = target && resolveEcosystem(target, seen);
+      if (eco) return eco;
+    }
+  }
+  return "";
+}
+
 let stylesInjected = false;
 function injectStyles() {
   if (stylesInjected) return;
@@ -57,8 +79,13 @@ function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-function openCatalog(targetWidget, defaultType) {
+function openCatalog(targetWidget, defaultType, defaultEcosystem) {
   injectStyles();
+  const ecoOptions =
+    `<option value="">Any ecosystem</option>` +
+    META.ecosystems
+      .map((e) => `<option value="${e.key}"${e.key === defaultEcosystem ? " selected" : ""}>${esc(e.label)}</option>`)
+      .join("");
   const backdrop = document.createElement("div");
   backdrop.className = "cvc-backdrop";
   backdrop.innerHTML = `
@@ -66,7 +93,8 @@ function openCatalog(targetWidget, defaultType) {
       <div class="cvc-head">
         <span class="cvc-title">🔍 Civitai</span>
         <input class="cvc-input" placeholder="Search Civitai models…" />
-        <select class="cvc-select">${TYPES.map((t) => `<option value="${t}"${t === defaultType ? " selected" : ""}>${t}</option>`).join("")}</select>
+        <select class="cvc-select cvc-type">${TYPES.map((t) => `<option value="${t}"${t === defaultType ? " selected" : ""}>${t}</option>`).join("")}</select>
+        <select class="cvc-select cvc-eco" title="Filter by base-model ecosystem">${ecoOptions}</select>
         <button class="cvc-close" title="Close">✕</button>
       </div>
       <div class="cvc-status"></div>
@@ -75,7 +103,8 @@ function openCatalog(targetWidget, defaultType) {
   document.body.appendChild(backdrop);
 
   const input = backdrop.querySelector(".cvc-input");
-  const select = backdrop.querySelector(".cvc-select");
+  const select = backdrop.querySelector(".cvc-type");
+  const ecoSelect = backdrop.querySelector(".cvc-eco");
   const status = backdrop.querySelector(".cvc-status");
   const grid = backdrop.querySelector(".cvc-grid");
 
@@ -96,6 +125,7 @@ function openCatalog(targetWidget, defaultType) {
     try {
       const params = new URLSearchParams({ type });
       if (query) params.set("query", query);
+      if (ecoSelect.value) params.set("ecosystem", ecoSelect.value);
       const res = await fetch(`/civitai/catalog/search?${params}`);
       const data = await res.json();
       if (myId !== reqId) return; // a newer search superseded this one
@@ -135,6 +165,7 @@ function openCatalog(targetWidget, defaultType) {
   let debounce;
   input.addEventListener("input", () => { clearTimeout(debounce); debounce = setTimeout(run, 300); });
   select.addEventListener("change", run);
+  ecoSelect.addEventListener("change", run);
   input.focus();
   run();
 }
@@ -154,11 +185,21 @@ function targetFor(node) {
 
 app.registerExtension({
   name: "civitai.catalog",
+  async setup() {
+    try {
+      META = await (await fetch("/civitai/catalog/meta")).json();
+    } catch (e) {
+      console.warn("[civitai-catalog] could not load ecosystem metadata", e);
+    }
+  },
   nodeCreated(node) {
     const target = targetFor(node);
     if (!target) return;
     // Append at the end so it never shifts the data widgets' serialization order.
-    const button = node.addWidget("button", "🔍 Browse Civitai", null, () => openCatalog(target.widget, target.type));
+    // Ecosystem is resolved at click time so it reflects the node's current wiring.
+    const button = node.addWidget("button", "🔍 Browse Civitai", null, () =>
+      openCatalog(target.widget, target.type, resolveEcosystem(node))
+    );
     button.serialize = false;
   },
 });
