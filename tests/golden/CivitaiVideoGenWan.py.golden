@@ -1,0 +1,97 @@
+class CivitaiVideoGenWan(CivitaiRecipeNodeBase):
+    """Civitai Video Gen (Wan) — videoGen recipe via Civitai Orchestration."""
+
+    RECIPE = "videoGen"
+    STEP_TYPE = "videoGen"
+    DISCRIMINATOR = {'engine': 'wan'}
+    CATEGORY = "Civitai/Video"
+    FUNCTION = "run"
+    RETURN_TYPES = ('VIDEO', 'STRING', 'STRING')
+    RETURN_NAMES = ('video', 'workflow_id', 'raw_json')
+    FIELDS = {
+        "prompt": F("prompt", "value"),
+        "version": F("version", "value"),
+        "source_image": F("sourceImage", "image_inline"),
+        "cfg_scale": F("cfgScale", "value"),
+        "frame_rate": F("frameRate", "value"),
+        "duration": F("duration", "value"),
+        "seed": F("seed", "value"),
+        "steps": F("steps", "value"),
+        "loras_json": F("loras", "json"),
+        "provider": F("provider", "value"),
+        "operation": F("operation", "value"),
+        "resolution": F("resolution", "value"),
+        "enable_safety_checker": F("enableSafetyChecker", "value"),
+        "aspect_ratio": F("aspectRatio", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "enable_prompt_expansion": F("enablePromptExpansion", "value"),
+        "audio_url": F("audioUrl", "value"),
+        "start_image": F("startImage", "image_inline"),
+        "end_image": F("endImage", "image_inline"),
+        "video_url": F("videoUrl", "value"),
+        "reference_images": F("referenceImages", "image_list"),
+        "reference_video_urls_json": F("referenceVideoUrls", "json"),
+        "multi_shots": F("multiShots", "value"),
+        "reference_image": F("referenceImage", "value"),
+        "audio_setting": F("audioSetting", "value"),
+        "images": F("images", "image_list"),
+        "use_distill": F("useDistill", "value"),
+        "use_fast_wan": F("useFastWan", "value"),
+        "interpolator_model": F("interpolatorModel", "value"),
+        "num_inference_steps": F("numInferenceSteps", "value"),
+        "shift": F("shift", "value"),
+        "use_turbo": F("useTurbo", "value"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+        "model": F("model", "value"),
+        "sampler": F("sampler", "value"),
+        "scheduler": F("scheduler", "value"),
+    }
+    OUTPUTS = (O("video", "video"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {'default': '', 'multiline': True}),
+                "version": (['v2.1', 'v2.2', 'v2.2-5b', 'v2.5', 'v2.6', 'v2.7'], {'default': 'v2.1'}),
+                "cfg_scale": ("FLOAT", {'default': 4.0, 'min': 0.0, 'max': 100.0, 'step': 0.01}),
+            },
+            "optional": {
+                "source_image": ("IMAGE", {'tooltip': 'Either A URL, A DataURL or a Base64 string'}),
+                "frame_rate": ("INT", {'default': 24, 'min': 0, 'max': 2147483647, 'step': 1}),
+                "duration": ("INT", {'tooltip': 'Duration for reference-to-video is limited to 5 or 10 seconds', 'default': 5, 'min': 1, 'max': 30, 'step': 1}),
+                "seed": ("INT", {'control_after_generate': True, 'default': 0, 'min': 0, 'max': 4294967295, 'step': 1}),
+                "steps": ("INT", {'default': 20, 'min': 10, 'max': 50, 'step': 1}),
+                "loras_json": ("STRING", {'default': '', 'multiline': True}),
+                "provider": (['', 'fal', 'comfy', 'civitai'], {'default': 'civitai'}),
+                "operation": (['', 'text-to-video', 'image-to-video', 'reference-to-video', 'edit-video'], {'default': 'text-to-video'}),
+                "resolution": (['720p', '1080p'], {'default': '1080p'}),
+                "enable_safety_checker": ("BOOLEAN", {'default': False}),
+                "aspect_ratio": (['16:9', '9:16', '1:1', '4:3', '3:4'], {'tooltip': "Aspect ratio of the generated video. If not provided, uses the input video's aspect ratio.", 'default': '16:9'}),
+                "negative_prompt": ("STRING", {'default': '', 'multiline': True}),
+                "enable_prompt_expansion": ("BOOLEAN", {'default': True}),
+                "audio_url": ("STRING", {'tooltip': 'URL of audio file (WAV/MP3, 3-30 seconds, up to 15 MB)', 'default': ''}),
+                "start_image": ("IMAGE", {'tooltip': 'First frame image URL'}),
+                "end_image": ("IMAGE", {'tooltip': 'Last frame image for first-and-last-frame-to-video'}),
+                "video_url": ("STRING", {'tooltip': 'URL of a video clip to continue from (MP4/MOV, 2-10s, max 100 MB)', 'default': ''}),
+                "reference_images": ("IMAGE", {'tooltip': 'Reference images for character/object appearance (max 20 MB each)'}),
+                "reference_video_urls_json": ("STRING", {'tooltip': 'Reference videos for character/object appearance and motion (max 100 MB each) Use @Video1, @Video2, @Video3 in the prompt to reference subjects', 'default': '', 'multiline': True}),
+                "multi_shots": ("BOOLEAN", {'default': False}),
+                "reference_image": ("STRING", {'tooltip': 'Reference image for reference-based editing', 'default': ''}),
+                "audio_setting": (['auto', 'origin'], {'tooltip': 'Audio handling: "auto" or "origin" (keep original audio)', 'default': 'auto'}),
+                "images": ("IMAGE", {}),
+                "use_distill": ("BOOLEAN", {'default': False}),
+                "use_fast_wan": ("BOOLEAN", {'default': False}),
+                "interpolator_model": (['none', 'film', 'rife'], {'default': 'film'}),
+                "num_inference_steps": ("INT", {'default': 20, 'min': 2, 'max': 50, 'step': 1}),
+                "shift": ("FLOAT", {'default': 5.0, 'min': 1.0, 'max': 20.0, 'step': 0.01}),
+                "use_turbo": ("BOOLEAN", {'default': False}),
+                "width": ("INT", {'default': 1280, 'min': 64, 'max': 2048, 'step': 1}),
+                "height": ("INT", {'default': 720, 'min': 64, 'max': 2048, 'step': 1}),
+                "model": ("STRING", {'default': ''}),
+                "sampler": (['euler', 'euler_ancestral', 'heun', 'heunpp2', 'dpm_2', 'dpm_2_ancestral', 'lms', 'dpm_fast', 'dpm_adaptive', 'dpmpp_2s_ancestral', 'dpmpp_sde', 'dpmpp_2m', 'dpmpp_2m_sde', 'dpmpp_3m_sde', 'ddpm', 'lcm', 'uni_pc', 'uni_pc_bh2'], {'default': 'euler'}),
+                "scheduler": (['normal', 'karras', 'exponential', 'sgm_uniform', 'simple', 'ddim_uniform', 'beta'], {'default': 'simple'}),
+                "api_config": ("CIVITAI_CONFIG", {"tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."}),
+            },
+        }

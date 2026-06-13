@@ -1,0 +1,37 @@
+[project]
+name = "civitai-comfy-nodes"
+version = "0.1.0"
+description = "ComfyUI custom nodes for the Civitai Orchestration API — run Civitai recipes (image/video/audio generation, training, analysis) from inside ComfyUI"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = ["requests"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+    "pillow",
+    "numpy",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "N", "UP"]
+ignore = ["E203", "N801", "N802", "N806"]
+
+[tool.ruff.lint.per-file-ignores]
+# generated widget tooltips are single string literals and routinely exceed the line limit
+"civitai_comfy_nodes/generated/*" = ["E501"]
+# F/O are the deliberate shorthand the generated FIELDS/OUTPUTS tables are written in
+"civitai_comfy_nodes/base.py" = ["E742"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "e2e: tests that call the production orchestration API (require CIVITAI_API_TOKEN)",
+]
+addopts = "-m 'not e2e'"

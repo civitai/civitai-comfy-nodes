@@ -1,0 +1,24 @@
+class CivitaiEcho(CivitaiRecipeNodeBase):
+    """Civitai Echo — echo recipe via Civitai Orchestration."""
+
+    RECIPE = "echo"
+    STEP_TYPE = "echo"
+    CATEGORY = "Civitai/Misc"
+    FUNCTION = "run"
+    RETURN_TYPES = ('STRING', 'STRING', 'STRING')
+    RETURN_NAMES = ('message', 'workflow_id', 'raw_json')
+    FIELDS = {
+        "message": F("message", "value"),
+    }
+    OUTPUTS = (O("message", "string"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "message": ("STRING", {'tooltip': 'The message to be returned in the output.', 'default': '', 'multiline': True}),
+            },
+            "optional": {
+                "api_config": ("CIVITAI_CONFIG", {"tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."}),
+            },
+        }

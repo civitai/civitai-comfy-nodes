@@ -1,0 +1,63 @@
+{
+  "_skip": [
+    "convertImage",
+    "composeMedia",
+    "videoFrameExtraction",
+    "videoMetadata",
+    "transcode",
+    "mediaHash",
+    "blobArchive",
+    "imageUpload",
+    "modelHash",
+    "modelPickleScan",
+    "modelParseMetadata",
+    "modelClamScan",
+    "preprocessImage",
+    "humanoidImageMask",
+    "batchOCRSafetyClassification",
+    "repeat",
+    "tryOnU"
+  ],
+  "videoGen": {
+    "display": {
+      "ltx2": "LTX 2",
+      "ltx2.3": "LTX 2.3",
+      "vidu-q3": "Vidu Q3",
+      "kling-v3": "Kling V3",
+      "happyHorse": "Happy Horse"
+    },
+    "skip_outputs": ["additionalVideos"]
+  },
+  "mediaCaptioning": {
+    "field_types": { "mediaUrl": "image_url" }
+  },
+  "ageClassification": {
+    "field_types": { "mediaUrl": "image_url" }
+  },
+  "wdTagging": {
+    "field_types": { "mediaUrl": "image_url" }
+  },
+  "chatCompletion": {
+    "field_types": {
+      "messages": "json",
+      "tools": "json",
+      "responseFormat": "json",
+      "stop": "json",
+      "logitBias": "json"
+    },
+    "skip_fields": ["stream", "streamOptions", "logprobs", "topLogprobs", "chatTemplateKwargs"]
+  },
+  "customComfy": {
+    "field_types": {
+      "workflow": "json",
+      "hooks": "json"
+    },
+    "skip_fields": ["sessionId"]
+  },
+  "comfy": {
+    "field_types": {
+      "comfyWorkflow": "json",
+      "imageMetadata": "json"
+    }
+  }
+}
