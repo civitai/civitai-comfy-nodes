@@ -48,7 +48,10 @@ referenced by [AIR URNs](https://developer.civitaic.com/guide/air) (e.g.
 
 ### LoRAs, ControlNets & checkpoints
 
-Instead of hand-writing JSON, use the **Civitai/Loaders** helper nodes:
+Instead of hand-writing JSON, use the **Civitai/Loaders** helper nodes. Each LoRA/checkpoint
+node has a **🔍 Browse Civitai** button that opens a searchable card grid (powered by a
+same-origin proxy to `civitai.com/api/v1/models`) — pick a resource and its AIR drops straight
+into the input.
 
 - **Civitai LoRA Loader** — set an AIR + strength (+ optional trigger word) and wire its
   `loras` output into a recipe node's `loras` / `additional_networks` input. Chain several
