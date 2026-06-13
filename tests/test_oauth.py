@@ -76,3 +76,31 @@ def test_login_without_client_id_raises(token_store, monkeypatch):
     monkeypatch.setattr(oauth, "CLIENT_ID", "")
     with pytest.raises(Exception, match="CIVITAI_API_TOKEN"):
         oauth.interactive_login()
+
+
+def test_login_wait_is_interruptible(token_store, monkeypatch):
+    # While waiting on the browser, the loop must poll ComfyUI's interrupt flag so Cancel works
+    # instead of wedging the node for the full timeout.
+    monkeypatch.setattr(oauth, "CLIENT_ID", "test-client")
+    monkeypatch.setattr(oauth, "REDIRECT_PORT", 18991)
+    monkeypatch.setattr(oauth.webbrowser, "open", lambda url: None)
+
+    class _InterruptError(Exception):
+        pass
+
+    calls = {"n": 0}
+
+    def fake_check():
+        calls["n"] += 1
+        raise _InterruptError()
+
+    monkeypatch.setattr(oauth.comfy_compat, "check_interrupted", fake_check)
+    with pytest.raises(_InterruptError):
+        oauth.interactive_login()
+    assert calls["n"] == 1  # aborted on the first poll, not after the 5-minute timeout
+
+    # the callback server was torn down (finally), so the port is free to rebind immediately
+    import http.server
+
+    srv = http.server.HTTPServer(("127.0.0.1", 18991), oauth._CallbackHandler)
+    srv.server_close()

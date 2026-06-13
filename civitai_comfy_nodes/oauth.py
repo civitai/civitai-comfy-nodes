@@ -19,6 +19,7 @@ from pathlib import Path
 
 import requests
 
+from . import comfy_compat
 from .errors import CivitaiNodeError
 
 OAUTH_BASE = os.environ.get("CIVITAI_OAUTH_BASE", "https://civitai.com")
@@ -208,6 +209,9 @@ def interactive_login() -> str:
         webbrowser.open(authorize_url)
         deadline = time.time() + LOGIN_TIMEOUT_SECONDS
         while time.time() < deadline and not _CallbackHandler.result:
+            # Honor ComfyUI's Cancel button while we wait on the browser, otherwise the node
+            # is wedged for the full timeout and the whole queue is unstoppable.
+            comfy_compat.check_interrupted()
             time.sleep(0.25)
     finally:
         server.shutdown()
