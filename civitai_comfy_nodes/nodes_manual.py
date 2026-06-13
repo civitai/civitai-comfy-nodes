@@ -205,24 +205,29 @@ class CivitaiControlNet:
         return {
             "required": {
                 "preprocessor": (CONTROLNET_PREPROCESSORS,),
+                "image": ("IMAGE", {"tooltip": "Control image (required by the orchestrator)"}),
                 "weight": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 2.0, "step": 0.05}),
                 "start_step": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
                 "end_step": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
             },
             "optional": {
-                "image": ("IMAGE", {"tooltip": "Optional control image (sent inline)"}),
                 "control_nets": ("CIVITAI_CONTROLNETS", {"tooltip": "Chain from another Civitai ControlNet"}),
             },
         }
 
-    def append(self, preprocessor, weight, start_step, end_step, image=None, control_nets=None):
+    def append(self, preprocessor, image, weight, start_step, end_step, control_nets=None):
         from . import conversions
 
         stack = list(control_nets or [])
-        entry = {"preprocessor": preprocessor, "weight": weight, "startStep": start_step, "endStep": end_step}
-        if image is not None:
-            entry["image"] = conversions.image_tensor_to_data_url(image)
-        stack.append(entry)
+        stack.append(
+            {
+                "preprocessor": preprocessor,
+                "weight": weight,
+                "startStep": start_step,
+                "endStep": end_step,
+                "image": conversions.image_tensor_to_data_url(image),
+            }
+        )
         return (stack,)
 
 
