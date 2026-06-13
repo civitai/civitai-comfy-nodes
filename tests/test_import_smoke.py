@@ -30,6 +30,16 @@ def test_generated_nodes_end_with_bookkeeping_outputs():
         assert cls.RETURN_NAMES[-2:] == ("workflow_id", "raw_json"), name
 
 
+def test_recipe_nodes_are_output_nodes():
+    # Recipe nodes must be runnable standalone (many return only STRING/JSON);
+    # CivitaiAuth is a pure config node and must NOT be an output.
+    for name, cls in NODE_CLASS_MAPPINGS.items():
+        if name == "CivitaiAuth":
+            assert getattr(cls, "OUTPUT_NODE", False) is False, name
+        else:
+            assert cls.OUTPUT_NODE is True, name
+
+
 def test_api_config_input_present_everywhere():
     for name, cls in NODE_CLASS_MAPPINGS.items():
         if name == "CivitaiAuth":

@@ -43,6 +43,10 @@ class CivitaiRecipeNodeBase:
     OUTPUTS: tuple = ()
     FUNCTION = "run"
     CATEGORY = "Civitai"
+    # Mark every recipe node as a graph output so it's runnable standalone — many recipes
+    # (echo, chat, analysis) return only STRING/JSON with no downstream sink, which would
+    # otherwise trip ComfyUI's "Prompt has no outputs" guard.
+    OUTPUT_NODE = True
 
     def run(self, api_config=None, **widgets):
         config = resolve_config(api_config)
