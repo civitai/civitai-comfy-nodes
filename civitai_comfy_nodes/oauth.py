@@ -92,6 +92,46 @@ def get_valid_access_token() -> str | None:
     return refreshed["access_token"] if refreshed else None
 
 
+def _result_page(success: bool, heading: str, subtext: str) -> bytes:
+    accent = "#4dabf7" if success else "#ff6b6b"
+    glyph = "&#10003;" if success else "&#10005;"
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Civitai &middot; ComfyUI</title>
+<style>
+  :root {{ color-scheme: dark; }}
+  body {{
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: #16181c; color: #e9ecef;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }}
+  .card {{
+    background: #1f2227; border: 1px solid #2c2f36; border-radius: 16px;
+    padding: 40px 48px; text-align: center; max-width: 420px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.45);
+  }}
+  .badge {{
+    width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; color: #fff; background: {accent};
+  }}
+  h1 {{ font-size: 20px; margin: 0 0 8px; font-weight: 600; }}
+  p {{ margin: 0; color: #adb5bd; font-size: 14px; line-height: 1.5; }}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">{glyph}</div>
+    <h1>{heading}</h1>
+    <p>{subtext}</p>
+  </div>
+</body>
+</html>""".encode()
+
+
 class _CallbackHandler(http.server.BaseHTTPRequestHandler):
     result: dict = {}
 
@@ -103,12 +143,25 @@ class _CallbackHandler(http.server.BaseHTTPRequestHandler):
             return
         params = urllib.parse.parse_qs(parsed.query)
         _CallbackHandler.result = {k: v[0] for k, v in params.items()}
+        if "error" in params:
+            body = _result_page(
+                False,
+                "Login failed",
+                params.get("error_description", params["error"])[0],
+            )
+        elif "code" in params:
+            body = _result_page(
+                True,
+                "You're signed in to Civitai",
+                "Authorization complete. You can close this tab and return to ComfyUI.",
+            )
+        else:
+            body = _result_page(False, "Login failed", "No authorization code was returned.")
         self.send_response(200)
-        self.send_header("Content-Type", "text/html")
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
         self.end_headers()
-        self.wfile.write(
-            b"<html><body><h2>Civitai login complete \xe2\x80\x94 you can close this tab.</h2></body></html>"
-        )
+        self.wfile.write(body)
 
     def log_message(self, *args):
         pass
