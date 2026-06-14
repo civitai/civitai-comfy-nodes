@@ -54,3 +54,13 @@ def test_controlnet_passthrough_and_empty_omitted():
     cn = [{"preprocessor": "canny", "weight": 1.0, "startStep": 0.0, "endStep": 1.0}]
     assert _CnNode()._build_payload(_client(), {"control_nets": cn}) == {"controlNets": cn}
     assert _CnNode()._build_payload(_client(), {"control_nets": []}) == {}
+
+
+class _StrengthMapNode(CivitaiRecipeNodeBase):
+    FIELDS = {"loras": F("loras", "lora_strength_map")}
+
+
+def test_lora_strength_map_serialization():
+    loras = [{"air": "a", "strength": 0.7, "triggerWord": "x"}, {"air": "b", "strength": 1.0}]
+    payload = _StrengthMapNode()._build_payload(_client(), {"loras": loras})
+    assert payload == {"loras": {"a": 0.7, "b": 1.0}}  # dict-of-strength, triggerWord dropped

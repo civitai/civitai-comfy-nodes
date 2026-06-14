@@ -190,12 +190,17 @@ def classify_input_field(name: str, schema: dict, hint: str | None) -> tuple[str
         kind, comfy = hinted[hint]
         return kind, comfy, f"override:{hint}"
 
-    # Network/ControlNet lists get dedicated typed sockets fed by the CivitaiLoraLoader /
-    # CivitaiControlNet helper nodes, instead of a raw JSON text widget.
-    if name in ("loras",):
-        return "lora_array", "CIVITAI_LORAS", "network:loras"
-    if name == "additionalNetworks":
-        return "network_map", "CIVITAI_LORAS", "network:additionalNetworks"
+    # Network/ControlNet inputs get dedicated typed sockets fed by the CivitaiLoraLoader /
+    # CivitaiControlNet helper nodes, instead of a raw JSON text widget. The `loras` wire shape
+    # varies by variant — an array of {air,strength} (wan/videoGen) OR a dict; the dict is either
+    # {air: strength} (sdcpp ecosystems) or {air: {strength,triggerWord}} (additionalNetworks).
+    if name in ("loras", "additionalNetworks"):
+        if type_value == "array":
+            return "lora_array", "CIVITAI_LORAS", "network:lora-array"
+        additional = schema.get("additionalProperties")
+        if isinstance(additional, dict) and additional.get("type") in ("number", "integer"):
+            return "lora_strength_map", "CIVITAI_LORAS", "network:strength-map"
+        return "network_map", "CIVITAI_LORAS", "network:network-map"
     if name == "controlNets":
         return "controlnet_array", "CIVITAI_CONTROLNETS", "network:controlNets"
 

@@ -104,6 +104,11 @@ class CivitaiRecipeNodeBase:
                 entries = [{"air": x["air"], "strength": x.get("strength", 1.0)} for x in value if x.get("air")]
                 if entries:
                     payload[field.api] = entries
+            elif field.kind == "lora_strength_map":
+                # CIVITAI_LORAS list -> {air: strength} (sdcpp ecosystems' dict-of-number loras)
+                networks = {x["air"]: x.get("strength", 1.0) for x in value if x.get("air")}
+                if networks:
+                    payload[field.api] = networks
             elif field.kind == "network_map":
                 # CIVITAI_LORAS list -> {air: {strength, triggerWord}} (the `additionalNetworks` map)
                 networks = {}

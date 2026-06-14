@@ -31,7 +31,7 @@ class CivitaiAceStepAudio(CivitaiRecipeNodeBase):
         "language_model": F("languageModel", "value"),
         "steps": F("steps", "value"),
         "cfg": F("cfg", "value"),
-        "loras": F("loras", "lora_array"),
+        "loras": F("loras", "lora_strength_map"),
     }
     OUTPUTS = (O("blob", "audio_or_video"),)
 

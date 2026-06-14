@@ -143,3 +143,11 @@ def test_network_fields_become_typed_sockets(nodes):
     assert fields["controlNets"].comfy_type == "CIVITAI_CONTROLNETS"
     wan = node_by_name(nodes, "CivitaiVideoGenWanV21Fal")
     assert {f.api: f for f in wan.fields}["loras"].kind == "lora_array"
+
+
+def test_loras_shape_is_schema_driven(nodes):
+    # sdcpp ecosystems use a dict {air: strength}; videoGen/wan uses an array of {air, strength}.
+    anima = node_by_name(nodes, "CivitaiImageGenSdcppAnimaCreateImage")
+    assert {f.api: f for f in anima.fields}["loras"].kind == "lora_strength_map"
+    wan = node_by_name(nodes, "CivitaiVideoGenWanV21Fal")
+    assert {f.api: f for f in wan.fields}["loras"].kind == "lora_array"
