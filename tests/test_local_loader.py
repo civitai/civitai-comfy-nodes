@@ -48,3 +48,39 @@ def test_cloud_only_load_returns_air_without_downloading(monkeypatch):
     monkeypatch.setattr(local_models, "download_model", boom)
     result = CivitaiCheckpointLoader().load("urn:air:x:checkpoint:civitai:1@2", prompt={}, unique_id="3")
     assert result == ("urn:air:x:checkpoint:civitai:1@2", None, None, None)
+
+
+def test_lora_loader_cloud_mode_does_not_download(monkeypatch):
+    from civitai_comfy_nodes.nodes_manual import CivitaiLoraLoader
+
+    monkeypatch.setattr(local_models, "download_model", lambda *a, **k: (_ for _ in ()).throw(AssertionError("no")))
+    stack, model, clip = CivitaiLoraLoader().load("urn:air:sdxl:lora:civitai:1@2", 0.7)
+    assert stack == [{"air": "urn:air:sdxl:lora:civitai:1@2", "strength": 0.7}]
+    assert model is None and clip is None
+
+
+def test_lora_loader_local_mode_applies_whole_stack(monkeypatch):
+    from civitai_comfy_nodes import nodes_manual
+    from civitai_comfy_nodes.nodes_manual import CivitaiLoraLoader
+
+    downloaded = []
+    applied = []
+    monkeypatch.setattr(nodes_manual, "local_models", local_models, raising=False)
+
+    def fake_download(air, folder, token):
+        downloaded.append((air, folder))
+        return f"/{air}"
+
+    monkeypatch.setattr(local_models, "download_model", fake_download)
+
+    def fake_apply(model, clip, path, strength):
+        applied.append((path, strength))
+        return f"{model}+{path}", f"{clip}+{path}"
+
+    monkeypatch.setattr(local_models, "apply_lora", fake_apply)
+    # chain two loras, then apply locally on the terminal node
+    chain, _, _ = CivitaiLoraLoader().load("urn:air:x:lora:civitai:1@2", 0.5)
+    stack, model, clip = CivitaiLoraLoader().load("urn:air:x:lora:civitai:3@4", 0.8, loras=chain, model="M", clip="C")
+    assert [a for a, _ in downloaded] == ["urn:air:x:lora:civitai:1@2", "urn:air:x:lora:civitai:3@4"]
+    assert applied == [("/urn:air:x:lora:civitai:1@2", 0.5), ("/urn:air:x:lora:civitai:3@4", 0.8)]
+    assert model.startswith("M+") and clip.startswith("C+")

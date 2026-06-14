@@ -96,3 +96,14 @@ def load_checkpoint(path: str):
         embedding_directory=folder_paths.get_folder_paths("embeddings"),
     )
     return out[0], out[1], out[2]
+
+
+def apply_lora(model, clip, path: str, strength: float):
+    """Apply a local LoRA file onto (MODEL, CLIP); returns the patched (MODEL, CLIP)."""
+    try:
+        import comfy.sd
+        import comfy.utils
+    except ImportError as e:
+        raise CivitaiNodeError("Applying a LoRA locally requires the ComfyUI runtime.") from e
+    lora = comfy.utils.load_torch_file(path, safe_load=True)
+    return comfy.sd.load_lora_for_models(model, clip, lora, strength, strength)

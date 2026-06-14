@@ -159,13 +159,16 @@ CONTROLNET_PREPROCESSORS = [
 
 
 class CivitaiLoraLoader:
-    """Build a Civitai LoRA stack by AIR. Chain several together (loras → loras), then wire the
-    final `loras` output into a recipe node's `loras` / `additional_networks` input."""
+    """Civitai LoRA loader. Cloud: chain several (loras → loras) and wire the final `loras` output
+    into a recipe node's `loras` / `additional_networks` input. Local: wire a MODEL + CLIP into the
+    last loader of a chain — it downloads every LoRA in the stack and applies them, outputting the
+    patched MODEL/CLIP for local nodes (KSampler, …). The download only happens when model+clip
+    are connected, so cloud-only use stays free."""
 
     CATEGORY = "Civitai/Loaders"
-    FUNCTION = "append"
-    RETURN_TYPES = ("CIVITAI_LORAS",)
-    RETURN_NAMES = ("loras",)
+    FUNCTION = "load"
+    RETURN_TYPES = ("CIVITAI_LORAS", "MODEL", "CLIP")
+    RETURN_NAMES = ("loras", "model", "clip")
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -177,10 +180,13 @@ class CivitaiLoraLoader:
             "optional": {
                 "trigger_word": ("STRING", {"default": "", "tooltip": "Optional trigger word / embedding token"}),
                 "loras": ("CIVITAI_LORAS", {"tooltip": "Chain from another Civitai LoRA Loader"}),
+                "model": ("MODEL", {"tooltip": "Connect a MODEL to apply the stack locally (downloads each LoRA)"}),
+                "clip": ("CLIP", {"tooltip": "Connect a CLIP to apply the stack locally"}),
+                "api_config": ("CIVITAI_CONFIG", {}),
             },
         }
 
-    def append(self, air, strength, trigger_word="", loras=None):
+    def load(self, air, strength, trigger_word="", loras=None, model=None, clip=None, api_config=None):
         stack = list(loras or [])
         air = air.strip()
         if air:
@@ -188,7 +194,20 @@ class CivitaiLoraLoader:
             if trigger_word.strip():
                 entry["triggerWord"] = trigger_word.strip()
             stack.append(entry)
-        return (stack,)
+
+        # Local mode: model + clip wired in -> download and apply the whole accumulated stack.
+        if model is not None and clip is not None and stack:
+            import os
+
+            from . import local_models, oauth
+
+            token = (api_config or {}).get("api_token") or os.environ.get("CIVITAI_API_TOKEN")
+            if not token:
+                token = oauth.get_valid_access_token()
+            for item in stack:
+                path = local_models.download_model(item["air"], folder="loras", token=token)
+                model, clip = local_models.apply_lora(model, clip, path, item.get("strength", 1.0))
+        return (stack, model, clip)
 
 
 class CivitaiControlNet:

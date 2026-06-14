@@ -5,8 +5,10 @@ from civitai_comfy_nodes.nodes_manual import CivitaiCheckpointLoader, CivitaiLor
 
 
 def test_lora_loader_chains():
-    (first,) = CivitaiLoraLoader().append("urn:air:sdxl:lora:civitai:1@2", 0.8, trigger_word="foo")
-    (second,) = CivitaiLoraLoader().append("urn:air:sdxl:lora:civitai:3@4", 1.0, loras=first)
+    # Cloud mode (no model/clip wired): builds the stack, model/clip pass through as None.
+    first, m1, c1 = CivitaiLoraLoader().load("urn:air:sdxl:lora:civitai:1@2", 0.8, trigger_word="foo")
+    second, m2, c2 = CivitaiLoraLoader().load("urn:air:sdxl:lora:civitai:3@4", 1.0, loras=first)
+    assert (m1, c1, m2, c2) == (None, None, None, None)
     assert second == [
         {"air": "urn:air:sdxl:lora:civitai:1@2", "strength": 0.8, "triggerWord": "foo"},
         {"air": "urn:air:sdxl:lora:civitai:3@4", "strength": 1.0},
@@ -14,7 +16,7 @@ def test_lora_loader_chains():
 
 
 def test_lora_loader_skips_blank_air():
-    (stack,) = CivitaiLoraLoader().append("   ", 1.0)
+    stack, model, clip = CivitaiLoraLoader().load("   ", 1.0)
     assert stack == []
 
 
