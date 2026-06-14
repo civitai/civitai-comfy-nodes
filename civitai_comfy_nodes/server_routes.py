@@ -56,4 +56,6 @@ if _server is not None:
     @_server.routes.get("/civitai/catalog/meta")
     async def _civitai_catalog_meta(request):
         ecosystems = [{"key": e["key"], "label": e["label"]} for e in catalog.ECOSYSTEMS]
-        return web.json_response({"ecosystems": ecosystems, "nodeEcosystems": node_ecosystem_map()})
+        return web.json_response(
+            {"ecosystems": ecosystems, "nodeEcosystems": node_ecosystem_map(), "types": catalog.CATALOG_TYPES}
+        )

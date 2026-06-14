@@ -64,6 +64,9 @@ function injectStyles() {
     .cvc-badges { position: absolute; left: 8px; bottom: 8px; display: flex; gap: 4px; }
     .cvc-badge { background: rgba(24,24,27,.85); color: #d4d4d8; border-radius: 5px; padding: 2px 7px;
       font-size: 11px; font-weight: 600; }
+    .cvc-link { position: absolute; right: 8px; top: 8px; background: rgba(24,24,27,.85); color: #d4d4d8;
+      border-radius: 6px; padding: 2px 8px; font-size: 13px; text-decoration: none; line-height: 1.4; }
+    .cvc-link:hover { background: #2563eb; color: #fff; }
     .cvc-meta { padding: 10px 10px 12px; min-width: 0; }
     .cvc-name { font-weight: 600; font-size: 13px; overflow: hidden; display: -webkit-box;
       -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
@@ -81,6 +84,7 @@ function esc(s) {
 
 function openCatalog(targetWidget, defaultType, defaultEcosystem) {
   injectStyles();
+  const types = META.types && META.types.length ? META.types : TYPES;
   const ecoOptions =
     `<option value="">Any ecosystem</option>` +
     META.ecosystems
@@ -93,7 +97,7 @@ function openCatalog(targetWidget, defaultType, defaultEcosystem) {
       <div class="cvc-head">
         <span class="cvc-title">🔍 Civitai</span>
         <input class="cvc-input" placeholder="Search Civitai models…" />
-        <select class="cvc-select cvc-type">${TYPES.map((t) => `<option value="${t}"${t === defaultType ? " selected" : ""}>${t}</option>`).join("")}</select>
+        <select class="cvc-select cvc-type">${types.map((t) => `<option value="${t}"${t === defaultType ? " selected" : ""}>${esc(t)}</option>`).join("")}</select>
         <select class="cvc-select cvc-eco" title="Filter by base-model ecosystem">${ecoOptions}</select>
         <button class="cvc-close" title="Close">✕</button>
       </div>
@@ -141,22 +145,34 @@ function openCatalog(targetWidget, defaultType, defaultEcosystem) {
     if (!entries.length) { grid.innerHTML = `<div class="cvc-empty">No matching resources.</div>`; return; }
     grid.innerHTML = "";
     for (const e of entries) {
-      const card = document.createElement("button");
+      const card = document.createElement("div");
       card.className = "cvc-card";
+      card.setAttribute("role", "button");
+      card.tabIndex = 0;
       const thumb = e.thumbnailUrl ? `<img src="${esc(e.thumbnailUrl)}" loading="lazy" />` : "";
+      const link = e.modelUrl
+        ? `<a class="cvc-link" href="${esc(e.modelUrl)}" target="_blank" rel="noopener" title="Open on Civitai">↗</a>`
+        : "";
       card.innerHTML = `
         <div class="cvc-thumb">${thumb}
           <div class="cvc-badges"><span class="cvc-badge">${esc(e.baseModel || e.ecosystem)}</span></div>
+          ${link}
         </div>
         <div class="cvc-meta">
           <div class="cvc-name">${esc(e.name)}</div>
           <div class="cvc-sub">${esc(e.versionName)} · ⬇ ${e.downloadCount ?? 0}</div>
         </div>`;
-      card.addEventListener("click", () => {
+      // The ↗ link opens the model page; don't let that click also pick the card.
+      card.querySelector(".cvc-link")?.addEventListener("click", (ev) => ev.stopPropagation());
+      const pick = () => {
         targetWidget.value = e.air;
         targetWidget.callback?.(e.air, app.canvas, targetWidget.node, undefined, undefined);
         app.graph?.setDirtyCanvas?.(true, true);
         close();
+      };
+      card.addEventListener("click", pick);
+      card.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); pick(); }
       });
       grid.appendChild(card);
     }

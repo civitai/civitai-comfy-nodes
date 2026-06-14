@@ -10,8 +10,45 @@ on, lowercase) to the Civitai `baseModel` strings that belong to it.
 import requests
 
 CIVITAI_MODELS_URL = "https://civitai.com/api/v1/models"
+CIVITAI_MODEL_URL = "https://civitai.com/models/{model_id}?modelVersionId={version_id}"
 USER_AGENT = "civitai-comfy-nodes/0.1 (+https://github.com/civitai/civitai-comfy-nodes)"
-CATALOG_TYPES = ["Checkpoint", "LORA", "TextualInversion", "VAE", "Controlnet", "Upscaler"]
+
+# Civitai ModelType -> AIR type segment, from civitai web app's air.ts `typeUrnMap`. The Civitai
+# `type` is NOT just lowercased (TextualInversion -> embedding, LoCon -> lycoris, Hypernetwork ->
+# hypernet); using the wrong segment yields AIRs the orchestrator can't resolve.
+TYPE_URN_MAP = {
+    "Checkpoint": "checkpoint",
+    "UNet": "unet",
+    "TextEncoder": "textencoder",
+    "CLIPVision": "clipvision",
+    "VAE": "vae",
+    "LORA": "lora",
+    "LoCon": "lycoris",
+    "DoRA": "dora",
+    "TextualInversion": "embedding",
+    "Hypernetwork": "hypernet",
+    "Controlnet": "controlnet",
+    "Upscaler": "upscaler",
+    "MotionModule": "motion",
+    "AestheticGradient": "ag",
+}
+
+# Generation-relevant types offered in the picker dropdown (in order).
+CATALOG_TYPES = [
+    "Checkpoint",
+    "UNet",
+    "VAE",
+    "TextEncoder",
+    "CLIPVision",
+    "LORA",
+    "LoCon",
+    "DoRA",
+    "TextualInversion",
+    "Hypernetwork",
+    "Controlnet",
+    "Upscaler",
+    "MotionModule",
+]
 
 # AIR ecosystem -> {label, baseModels}. AIR ecosystem strings match the orchestrator's lowercase
 # values (see TextToImageHandler: "qwen", "zimage", "zimagebase", "anima", ...).
@@ -118,10 +155,10 @@ def flatten_models(items: list, max_versions: int = 6, type_filter: str | None =
     entries = []
     for model in items or []:
         model_type = model.get("type") or ""
-        if type_filter and model_type.lower() != type_filter.lower():
+        if type_filter and model_type != type_filter:
             continue
-        lower_type = model_type.lower()
-        if not lower_type:
+        air_type = TYPE_URN_MAP.get(model_type)
+        if not air_type:  # skip non-resource types (Poses, Wildcards, Workflows, …)
             continue
         emitted = 0
         for version in model.get("modelVersions") or []:
@@ -133,7 +170,7 @@ def flatten_models(items: list, max_versions: int = 6, type_filter: str | None =
             images = version.get("images") or []
             entries.append(
                 {
-                    "air": f"urn:air:{ecosystem}:{lower_type}:civitai:{model['id']}@{version['id']}",
+                    "air": f"urn:air:{ecosystem}:{air_type}:civitai:{model['id']}@{version['id']}",
                     "name": model.get("name") or f"model {model['id']}",
                     "versionName": version.get("name") or f"v{version['id']}",
                     "ecosystem": ecosystem,
@@ -141,6 +178,9 @@ def flatten_models(items: list, max_versions: int = 6, type_filter: str | None =
                     "type": model_type,
                     "downloadCount": (model.get("stats") or {}).get("downloadCount") or 0,
                     "thumbnailUrl": images[0].get("url") if images else None,
+                    "modelId": model["id"],
+                    "versionId": version["id"],
+                    "modelUrl": CIVITAI_MODEL_URL.format(model_id=model["id"], version_id=version["id"]),
                 }
             )
             emitted += 1

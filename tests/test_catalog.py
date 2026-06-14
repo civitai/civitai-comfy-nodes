@@ -24,6 +24,25 @@ def test_flatten_builds_airs_and_skips_unknown_ecosystems():
     assert entries[0]["thumbnailUrl"] == "http://img/1.png"
     assert entries[0]["downloadCount"] == 42
     assert entries[0]["name"] == "Cool LoRA"
+    assert entries[0]["modelId"] == 100
+    assert entries[0]["versionId"] == 200
+    assert entries[0]["modelUrl"] == "https://civitai.com/models/100?modelVersionId=200"
+
+
+def test_air_type_uses_civitai_type_map_not_lowercase():
+    def air_of(model_type):
+        items = [{"id": 1, "type": model_type, "modelVersions": [{"id": 2, "baseModel": "SD 1.5"}]}]
+        return catalog.flatten_models(items)[0]["air"]
+
+    assert air_of("TextualInversion") == "urn:air:sd1:embedding:civitai:1@2"  # not :textualinversion:
+    assert air_of("LoCon") == "urn:air:sd1:lycoris:civitai:1@2"
+    assert air_of("Hypernetwork") == "urn:air:sd1:hypernet:civitai:1@2"
+    assert air_of("UNet") == "urn:air:sd1:unet:civitai:1@2"
+
+
+def test_flatten_skips_non_resource_types():
+    items = [{"id": 1, "type": "Poses", "modelVersions": [{"id": 2, "baseModel": "SD 1.5"}]}]
+    assert catalog.flatten_models(items) == []
 
 
 def test_flatten_caps_versions_and_filters_type():
