@@ -19,7 +19,8 @@ def test_lora_loader_skips_blank_air():
 
 
 def test_checkpoint_loader_trims():
-    assert CivitaiCheckpointLoader().load("  urn:air:x  ") == ("urn:air:x",)
+    # Cloud-only (no local outputs wired): returns the trimmed AIR + None model/clip/vae.
+    assert CivitaiCheckpointLoader().load("  urn:air:x  ", prompt={}, unique_id="1") == ("urn:air:x", None, None, None)
 
 
 class _ArrayNode(CivitaiRecipeNodeBase):

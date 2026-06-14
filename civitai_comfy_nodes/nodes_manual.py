@@ -232,12 +232,16 @@ class CivitaiControlNet:
 
 
 class CivitaiCheckpointLoader:
-    """Pass a Civitai checkpoint AIR into a recipe node's `model` input."""
+    """Civitai checkpoint loader. Wire `air` into a Civitai recipe node to run in the cloud, OR
+    wire model/clip/vae into local nodes (KSampler, CLIP Text Encode, …) — in that case the
+    checkpoint is downloaded from Civitai and loaded locally. The download only happens when the
+    model/clip/vae outputs are actually connected, so cloud-only use stays free."""
 
     CATEGORY = "Civitai/Loaders"
     FUNCTION = "load"
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("model",)
+    RETURN_TYPES = ("STRING", "MODEL", "CLIP", "VAE")
+    RETURN_NAMES = ("air", "model", "clip", "vae")
+    _LOCAL_SLOTS = (1, 2, 3)  # model/clip/vae output indices
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -245,13 +249,48 @@ class CivitaiCheckpointLoader:
             "required": {
                 "air": (
                     "STRING",
-                    {"default": "", "tooltip": "Checkpoint AIR, e.g. urn:air:sdxl:checkpoint:civitai:101055@128078"},
+                    {"default": "", "tooltip": "Checkpoint AIR (use the Browse Civitai button)"},
                 ),
             },
+            "optional": {"api_config": ("CIVITAI_CONFIG", {})},
+            "hidden": {"prompt": "PROMPT", "unique_id": "UNIQUE_ID"},
         }
 
-    def load(self, air):
-        return (air.strip(),)
+    @classmethod
+    def _local_outputs_consumed(cls, prompt, unique_id) -> bool:
+        """True if model/clip/vae are wired downstream (so we should download + load locally)."""
+        if not prompt or unique_id is None:
+            return False
+        uid = str(unique_id)
+        for node in prompt.values():
+            for value in (node.get("inputs") or {}).values():
+                if not (isinstance(value, list) and len(value) == 2):
+                    continue
+                if str(value[0]) == uid and value[1] in cls._LOCAL_SLOTS:
+                    return True
+        return False
+
+    @classmethod
+    def IS_CHANGED(cls, air, api_config=None, prompt=None, unique_id=None):
+        # Re-run when the local outputs get (dis)connected, not just when the AIR changes.
+        return f"{(air or '').strip()}|{cls._local_outputs_consumed(prompt, unique_id)}"
+
+    def load(self, air, api_config=None, prompt=None, unique_id=None):
+        air = (air or "").strip()
+        if not air:
+            raise CivitaiNodeError("No checkpoint AIR set — use the Browse Civitai button to pick one.")
+        model = clip = vae = None
+        if self._local_outputs_consumed(prompt, unique_id):
+            import os
+
+            from . import local_models, oauth
+
+            token = (api_config or {}).get("api_token") or os.environ.get("CIVITAI_API_TOKEN")
+            if not token:
+                token = oauth.get_valid_access_token()  # best-effort; public models need no token
+            path = local_models.download_model(air, folder="checkpoints", token=token)
+            model, clip, vae = local_models.load_checkpoint(path)
+        return (air, model, clip, vae)
 
 
 NODE_CLASS_MAPPINGS = {
