@@ -27,9 +27,27 @@ OAUTH_BASE = os.environ.get("CIVITAI_OAUTH_BASE", "https://civitai.com")
 SCOPE = 114689
 # Registered for the official "Civitai ComfyUI Nodes" OAuth app; override for your own app.
 CLIENT_ID = os.environ.get("CIVITAI_OAUTH_CLIENT_ID", "2d61872c-9aa9-4dbc-93c3-899c222842c1")
-REDIRECT_PORT = int(os.environ.get("CIVITAI_OAUTH_REDIRECT_PORT", "18188"))
-REDIRECT_URI = f"http://localhost:{REDIRECT_PORT}/civitai/callback"
+# Preferred loopback port (a registered redirect URI). If it can't bind — e.g. it's in a Windows
+# reserved range — we fall back to any free OS-assigned port, which works once the OAuth server
+# allows loopback port flexibility (RFC 8252 §7.3: match localhost redirect URIs ignoring the port).
+PREFERRED_PORT = int(os.environ.get("CIVITAI_OAUTH_REDIRECT_PORT", "18188"))
 LOGIN_TIMEOUT_SECONDS = 300
+
+
+def _bind_callback_server():
+    """Bind the loopback callback server; prefer PREFERRED_PORT, fall back to any free port.
+    Returns (server, port)."""
+    last_error = None
+    for port in (PREFERRED_PORT, 0):
+        try:
+            server = http.server.HTTPServer(("127.0.0.1", port), _CallbackHandler)
+            return server, server.server_address[1]
+        except OSError as e:
+            last_error = e
+    raise CivitaiNodeError(
+        f"Could not bind any loopback port for the Civitai OAuth callback ({last_error}). "
+        "Set CIVITAI_API_TOKEN or use a Civitai Auth node with mode=api_key instead."
+    )
 
 
 def token_store_path() -> Path:
@@ -181,29 +199,21 @@ def interactive_login() -> str:
     challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b"=").decode()
     state = secrets.token_urlsafe(16)
 
+    _CallbackHandler.result = {}
+    server, port = _bind_callback_server()
+    redirect_uri = f"http://localhost:{port}/civitai/callback"
+
     authorize_url = f"{OAUTH_BASE}/api/auth/oauth/authorize?" + urllib.parse.urlencode(
         {
             "response_type": "code",
             "client_id": CLIENT_ID,
-            "redirect_uri": REDIRECT_URI,
+            "redirect_uri": redirect_uri,
             "scope": SCOPE,
             "state": state,
             "code_challenge": challenge,
             "code_challenge_method": "S256",
         }
     )
-
-    _CallbackHandler.result = {}
-    try:
-        server = http.server.HTTPServer(("127.0.0.1", REDIRECT_PORT), _CallbackHandler)
-    except OSError as e:
-        raise CivitaiNodeError(
-            f"Could not bind the Civitai OAuth callback to localhost:{REDIRECT_PORT} ({e}). On Windows "
-            "this port is often reserved by WSL2/Hyper-V/Docker (check `netsh interface ipv4 show "
-            "excludedportrange protocol=tcp`). Easiest fix: skip OAuth and set the CIVITAI_API_TOKEN "
-            "environment variable, or use a Civitai Auth node with mode=api_key and paste a token "
-            "from https://civitai.com/user/account."
-        ) from e
 
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -238,7 +248,7 @@ def interactive_login() -> str:
             "code": result["code"],
             "code_verifier": verifier,
             "client_id": CLIENT_ID,
-            "redirect_uri": REDIRECT_URI,
+            "redirect_uri": redirect_uri,
         },
         timeout=30,
     )

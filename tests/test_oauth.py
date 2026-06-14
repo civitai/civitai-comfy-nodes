@@ -82,7 +82,7 @@ def test_login_wait_is_interruptible(token_store, monkeypatch):
     # While waiting on the browser, the loop must poll ComfyUI's interrupt flag so Cancel works
     # instead of wedging the node for the full timeout.
     monkeypatch.setattr(oauth, "CLIENT_ID", "test-client")
-    monkeypatch.setattr(oauth, "REDIRECT_PORT", 18991)
+    monkeypatch.setattr(oauth, "PREFERRED_PORT", 18991)
     monkeypatch.setattr(oauth.webbrowser, "open", lambda url: None)
 
     class _InterruptError(Exception):
@@ -104,3 +104,17 @@ def test_login_wait_is_interruptible(token_store, monkeypatch):
 
     srv = http.server.HTTPServer(("127.0.0.1", 18991), oauth._CallbackHandler)
     srv.server_close()
+
+
+def test_bind_falls_back_to_free_port(monkeypatch):
+    import http.server
+
+    blocker = http.server.HTTPServer(("127.0.0.1", 0), oauth._CallbackHandler)
+    taken = blocker.server_address[1]
+    monkeypatch.setattr(oauth, "PREFERRED_PORT", taken)  # preferred port is occupied
+    server, port = oauth._bind_callback_server()
+    try:
+        assert port != taken and port > 0  # fell back to an OS-assigned free port
+    finally:
+        server.server_close()
+        blocker.server_close()

@@ -27,15 +27,13 @@ def resolve_config(api_config: dict | None = None) -> ClientConfig:
     token = (api_config or {}).get("api_token") or os.environ.get("CIVITAI_API_TOKEN")
     if not token:
         token = oauth.get_valid_access_token()  # reuse a stored OAuth login if present
-    # The browser OAuth flow is opt-in (mode=oauth): it needs a free loopback port and a real
-    # browser, which isn't reliable on Windows (reserved ports) or headless/remote installs.
-    if not token and mode == "oauth":
+    # Automatic OAuth: sign in via the browser unless the user pinned api_key mode.
+    if not token and mode != "api_key":
         token = oauth.interactive_login()
     if not token:
         raise CivitaiNodeError(
             "No Civitai credentials. Set the CIVITAI_API_TOKEN environment variable to a token from "
-            "https://civitai.com/user/account, or add a Civitai Auth node and paste your token "
-            "(or set its mode to 'oauth' to sign in via the browser)."
+            "https://civitai.com/user/account, or add a Civitai Auth node and paste your token."
         )
 
     return ClientConfig(
