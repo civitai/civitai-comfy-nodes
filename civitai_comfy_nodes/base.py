@@ -7,6 +7,7 @@ Everything behavioral — payload building, submit, poll, blob conversion — li
 
 import json
 import logging
+import threading
 import time
 from dataclasses import dataclass
 
@@ -18,10 +19,13 @@ from .errors import CivitaiNodeError, workflow_failure_message
 # Propagates to ComfyUI's root logger, so these show in the same console as "[INFO] got prompt".
 logger = logging.getLogger("civitai_comfy_nodes")
 
-# The consumer GET /workflows/{id} endpoint ignores its `wait` param (no server-side long-poll),
-# so completion latency is bounded by this client cadence — keep it tight but cheap.
-POLL_SCHEDULE = (1, 2, 3)
-POLL_MAX_INTERVAL = 5
+# Long-poll the status GET so it returns the moment the workflow finishes. The fetch runs in a
+# background thread and is checked every INTERRUPT_TICK seconds, so ComfyUI Cancel stays responsive
+# even while the request blocks server-side. MIN_POLL_INTERVAL throttles the loop if the server
+# doesn't honor `wait` (returns immediately) so we never tight-loop the API.
+LONGPOLL_WAIT = 10
+MIN_POLL_INTERVAL = 3
+INTERRUPT_TICK = 0.5
 PROGRESS_BY_STATUS = {"unassigned": 5, "preparing": 8, "scheduled": 10, "processing": 40}
 
 
@@ -133,7 +137,6 @@ class CivitaiRecipeNodeBase:
         bar = comfy_compat.progress_bar(100)
         workflow_id = workflow.get("id", "?")
         deadline = time.time() + timeout_minutes * 60
-        intervals = iter(POLL_SCHEDULE)
         last_marker = None
         while workflow.get("status") not in TERMINAL_STATUSES:
             if time.time() > deadline:
@@ -151,22 +154,45 @@ class CivitaiRecipeNodeBase:
                 ahead = f", {preceding} job{'' if preceding == 1 else 's'} ahead" if preceding is not None else ""
                 logger.info("Civitai workflow %s: %s, %d%%%s", workflow_id, status, progress, ahead)
                 last_marker = marker
-            interval = next(intervals, POLL_MAX_INTERVAL)
             try:
-                self._interruptible_sleep(interval)
+                started = time.time()
+                workflow = self._interruptible_get(client, workflow_id, wait=LONGPOLL_WAIT)
+                # Throttle only if the server returned early without long-polling (wait unsupported).
+                if workflow.get("status") not in TERMINAL_STATUSES:
+                    self._interruptible_sleep(MIN_POLL_INTERVAL - (time.time() - started))
             except BaseException:
                 self._try_cancel(client, workflow)
                 raise
-            workflow = client.get_workflow(workflow_id)
         bar.update_absolute(100)
         return workflow
+
+    @staticmethod
+    def _interruptible_get(client: OrchestrationClient, workflow_id: str, *, wait: int) -> dict:
+        """Long-poll get_workflow in a daemon thread, polling the ComfyUI interrupt flag every tick
+        so Cancel is honored within INTERRUPT_TICK even while the request blocks server-side."""
+        box: dict = {}
+
+        def fetch():
+            try:
+                box["result"] = client.get_workflow(workflow_id, wait=wait)
+            except BaseException as exc:  # re-raised on the calling thread
+                box["error"] = exc
+
+        thread = threading.Thread(target=fetch, daemon=True)
+        thread.start()
+        while thread.is_alive():
+            comfy_compat.check_interrupted()
+            thread.join(INTERRUPT_TICK)
+        if "error" in box:
+            raise box["error"]
+        return box["result"]
 
     @staticmethod
     def _interruptible_sleep(seconds: float) -> None:
         end = time.time() + seconds
         while time.time() < end:
             comfy_compat.check_interrupted()
-            time.sleep(min(0.5, max(0.0, end - time.time())))
+            time.sleep(min(INTERRUPT_TICK, max(0.0, end - time.time())))
 
     @staticmethod
     def _try_cancel(client: OrchestrationClient, workflow: dict) -> None:

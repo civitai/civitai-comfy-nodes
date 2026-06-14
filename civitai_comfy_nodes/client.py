@@ -15,6 +15,8 @@ class OrchestrationClient:
         self.config = config
         self.session = requests.Session()
         self.session.headers["Authorization"] = f"Bearer {config.token}"
+        # Older orchestrations type GET ?wait as bool and 400 on an integer; flipped off on first 400.
+        self._get_wait_supported = True
 
     def _request(self, method: str, path: str, *, max_tries: int = 4, **kwargs) -> requests.Response:
         url = path if path.startswith("http") else f"{self.config.base_url}{path}"
@@ -24,11 +26,17 @@ class OrchestrationClient:
             response = self.session.request(method, url, **kwargs)
             if response.status_code not in RETRYABLE_STATUSES:
                 if response.status_code >= 400:
-                    raise CivitaiNodeError(http_error_message(response.status_code, response.text))
+                    self._raise_api_error(response)
                 return response
             last_response = response
             time.sleep(min(2**attempt, 15) + random.uniform(0, 1))
-        raise CivitaiNodeError(http_error_message(last_response.status_code, last_response.text))
+        self._raise_api_error(last_response)
+
+    @staticmethod
+    def _raise_api_error(response: requests.Response):
+        error = CivitaiNodeError(http_error_message(response.status_code, response.text))
+        error.status_code = response.status_code
+        raise error
 
     def submit_workflow(self, step_type: str, input_payload: dict, *, wait: int = 5, whatif: bool = False) -> dict:
         params: dict = {"wait": wait}
@@ -39,8 +47,19 @@ class OrchestrationClient:
         body = {"steps": [{"$type": step_type, "input": input_payload}]}
         return self._request("POST", "/v2/consumer/workflows", params=params, json=body).json()
 
-    def get_workflow(self, workflow_id: str) -> dict:
-        return self._request("GET", f"/v2/consumer/workflows/{workflow_id}").json()
+    def get_workflow(self, workflow_id: str, wait: int = 0) -> dict:
+        """Fetch a workflow. `wait` (seconds) long-polls: the server holds the request until the
+        workflow completes or `wait` elapses (then 202 with the current state). Falls back to a
+        plain GET if the orchestration still types `wait` as a bool (400s on an integer)."""
+        path = f"/v2/consumer/workflows/{workflow_id}"
+        if wait and self._get_wait_supported:
+            try:
+                return self._request("GET", path, params={"wait": wait}, timeout=wait + 30).json()
+            except CivitaiNodeError as e:
+                if getattr(e, "status_code", None) != 400:
+                    raise
+                self._get_wait_supported = False
+        return self._request("GET", path).json()
 
     def cancel_workflow(self, workflow_id: str) -> None:
         self._request("PUT", f"/v2/consumer/workflows/{workflow_id}", json={"status": "canceled"})

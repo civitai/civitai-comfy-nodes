@@ -31,8 +31,11 @@ converts blob outputs to native Comfy types.
   synchronous, return output-only, and cancel the workflow when the connection drops
   (~100s gateway timeout in prod kills long jobs). Always submit
   `POST /v2/consumer/workflows?wait=5` with `{"steps":[{"$type":"<recipe>","input":{...}}]}`.
-- `GET /v2/consumer/workflows/{id}` `wait` is a boolean, not seconds — poll with
-  client-side sleeps (the base class slices sleeps for Comfy interrupt handling).
+- `GET /v2/consumer/workflows/{id}` `wait` is seconds — it long-polls (returns when the
+  workflow finishes or after `wait`s with a 202). The base class runs the long-poll in a
+  daemon thread and polls the Comfy interrupt flag every 0.5s, so Cancel stays responsive
+  while the request blocks; a min-interval throttle avoids tight-looping if the server
+  returns early without honoring `wait`.
 - Cancel = `PUT /v2/consumer/workflows/{id}` with `{"status": "canceled"}`.
 - Blob signed URLs expire; refresh via `POST /v2/consumer/blobs/{blobId}/refresh`.
 - Discriminated inputs are recursive (`engine` → `model`/`ecosystem`/`version` → `operation`).

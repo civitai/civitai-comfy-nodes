@@ -13,7 +13,7 @@ class _FakeClient:
             "steps": [{"jobs": [{"queuePosition": {"precedingJobs": 3, "support": "available"}}]}],
         }
 
-    def get_workflow(self, workflow_id):
+    def get_workflow(self, workflow_id, wait=0):
         self.calls += 1
         if self.calls == 1:
             return {"id": workflow_id, "status": "processing", "steps": [{"jobs": [{"estimatedProgressRate": 0.5}]}]}
