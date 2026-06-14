@@ -75,7 +75,7 @@ CIVITAI_API_TOKEN=... .venv/bin/python -m pytest -m e2e -o addopts="" tests/test
 UPDATE_GOLDEN=1 .venv/bin/python -m pytest tests/test_emit_golden.py  # after intended emit changes
 ```
 
-E2E note: the echo test costs 1 Buzz; the textToImage test uses `whatif=true` and spends nothing.
+E2E note: the textToImage test uses `whatif=true` and spends nothing.
 
 ## Testing in a real ComfyUI
 

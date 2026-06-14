@@ -38,9 +38,9 @@ discriminator variant is its own node so it shows only the inputs that variant a
 - **Civitai/Video** — Video Gen (one node per engine: Wan, Kling, Vidu, Veo3, LTX, Sora, …), Upscaler, Interpolation, Enhancement
 - **Civitai/Audio** — Text To Speech, Transcription, Audio Captioning, ACE Step Audio
 - **Civitai/Text** — Chat Completion (plus a simple single-turn wrapper), Prompt Enhancement, Media Captioning
-- **Civitai/Analysis** — Media Rating, WD Tagging, XGuard Moderation, Age Classification
+- **Civitai/Analysis** — Media Rating, WD Tagging, XGuard Moderation
 - **Civitai/Training** — Training, Image Resource Training
-- **Civitai/Misc** — Comfy, Custom Comfy (run a raw ComfyUI workflow on Civitai's workers), Echo
+- **Civitai/Misc** — Poly Gen (3D mesh generation)
 - **Civitai/Loaders** — LoRA Loader, ControlNet, Checkpoint Loader (see below)
 
 Every node returns its media outputs as native Comfy types (IMAGE/VIDEO/AUDIO) plus

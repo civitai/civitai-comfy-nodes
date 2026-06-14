@@ -4,92 +4,6 @@
 from ..base import CivitaiRecipeNodeBase, F, O
 
 
-class CivitaiAgeClassification(CivitaiRecipeNodeBase):
-    """Civitai Age Classification — ageClassification recipe via Civitai Orchestration."""
-
-    RECIPE = "ageClassification"
-    STEP_TYPE = "ageClassification"
-    CATEGORY = "Civitai/Analysis"
-    FUNCTION = "run"
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING")
-    RETURN_NAMES = (
-        "labels",
-        "has_minor",
-        "num_predictions",
-        "num_flagged",
-        "face_recognition_faces",
-        "face_recognition_num_faces",
-        "face_recognition_num_unique_people",
-        "face_recognition_available",
-        "workflow_id",
-        "raw_json",
-    )
-    FIELDS = {
-        "model": F("model", "value"),
-        "media_url": F("mediaUrl", "image_url"),
-        "face_detection_threshold": F("faceDetectionThreshold", "value"),
-        "person_detection_threshold": F("personDetectionThreshold", "value"),
-    }
-    OUTPUTS = (
-        O("labels", "json"),
-        O("hasMinor", "string"),
-        O("numPredictions", "string"),
-        O("numFlagged", "string"),
-        O("faceRecognitionFaces", "json"),
-        O("faceRecognitionNumFaces", "string"),
-        O("faceRecognitionNumUniquePeople", "string"),
-        O("faceRecognitionAvailable", "string"),
-    )
-
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "media_url": (
-                    "IMAGE",
-                    {
-                        "tooltip": "The URL of the media to classify. This can either be a URL to an image or a video or a ZIP containing multiple images"
-                    },
-                ),
-            },
-            "optional": {
-                "model": (
-                    "STRING",
-                    {
-                        "tooltip": "An optional model to use for age classification. If not provided, the default model will determined by the worker",
-                        "default": "",
-                    },
-                ),
-                "face_detection_threshold": (
-                    "FLOAT",
-                    {
-                        "tooltip": "Optional face detection confidence threshold. Defaults to 0.25 if not provided.",
-                        "default": 0.0,
-                        "min": 0.0,
-                        "max": 2147483647.0,
-                        "step": 0.01,
-                    },
-                ),
-                "person_detection_threshold": (
-                    "FLOAT",
-                    {
-                        "tooltip": "Optional person detection confidence threshold. Defaults to 0.35 if not provided.",
-                        "default": 0.0,
-                        "min": 0.0,
-                        "max": 2147483647.0,
-                        "step": 0.01,
-                    },
-                ),
-                "api_config": (
-                    "CIVITAI_CONFIG",
-                    {
-                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
-                    },
-                ),
-            },
-        }
-
-
 class CivitaiMediaRating(CivitaiRecipeNodeBase):
     """Civitai Media Rating — mediaRating recipe via Civitai Orchestration."""
 
@@ -196,7 +110,6 @@ class CivitaiWdTagging(CivitaiRecipeNodeBase):
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("tags", "rating", "workflow_id", "raw_json")
     FIELDS = {
-        "model": F("model", "value"),
         "media_url": F("mediaUrl", "image_url"),
         "threshold": F("threshold", "value"),
         "prompt": F("prompt", "value"),
@@ -213,7 +126,6 @@ class CivitaiWdTagging(CivitaiRecipeNodeBase):
                 "media_url": ("IMAGE", {"tooltip": "The URL of the media to tag (image or video)."}),
             },
             "optional": {
-                "model": ("STRING", {"tooltip": 'The model to use for tagging (e.g., "wd14-vit.v1").', "default": ""}),
                 "threshold": (
                     "FLOAT",
                     {
@@ -375,7 +287,6 @@ class CivitaiXGuardModerationText(CivitaiRecipeNodeBase):
 
 
 NODE_CLASS_MAPPINGS = {
-    "CivitaiAgeClassification": CivitaiAgeClassification,
     "CivitaiMediaRating": CivitaiMediaRating,
     "CivitaiWdTagging": CivitaiWdTagging,
     "CivitaiXGuardModerationPrompt": CivitaiXGuardModerationPrompt,
@@ -383,7 +294,6 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "CivitaiAgeClassification": "Civitai Age Classification",
     "CivitaiMediaRating": "Civitai Media Rating",
     "CivitaiWdTagging": "Civitai Wd Tagging",
     "CivitaiXGuardModerationPrompt": "prompt",

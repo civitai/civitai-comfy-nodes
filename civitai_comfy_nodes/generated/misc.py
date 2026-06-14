@@ -4,151 +4,6 @@
 from ..base import CivitaiRecipeNodeBase, F, O
 
 
-class CivitaiComfy(CivitaiRecipeNodeBase):
-    """Civitai Comfy — comfy recipe via Civitai Orchestration."""
-
-    RECIPE = "comfy"
-    STEP_TYPE = "comfy"
-    CATEGORY = "Civitai/Misc"
-    FUNCTION = "run"
-    RETURN_TYPES = ("STRING", "STRING", "STRING")
-    RETURN_NAMES = ("blobs", "workflow_id", "raw_json")
-    FIELDS = {
-        "comfy_workflow_json": F("comfyWorkflow", "json"),
-        "quantity": F("quantity", "value"),
-        "image_metadata_json": F("imageMetadata", "json"),
-        "use_spine_comfy": F("useSpineComfy", "value"),
-    }
-    OUTPUTS = (O("blobs", "json"),)
-
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "comfy_workflow_json": (
-                    "STRING",
-                    {"tooltip": "Get the comfy workflow that needs to be executed", "default": "", "multiline": True},
-                ),
-            },
-            "optional": {
-                "quantity": (
-                    "INT",
-                    {
-                        "tooltip": "The number of jobs to start with this workflow.",
-                        "default": 1,
-                        "min": 1,
-                        "max": 100,
-                        "step": 1,
-                    },
-                ),
-                "image_metadata_json": (
-                    "STRING",
-                    {
-                        "tooltip": "External metadata that will be stored with the image",
-                        "default": "",
-                        "multiline": True,
-                    },
-                ),
-                "use_spine_comfy": (
-                    "BOOLEAN",
-                    {"tooltip": "Opt-into using the spine controller exclusively", "default": False},
-                ),
-                "api_config": (
-                    "CIVITAI_CONFIG",
-                    {
-                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
-                    },
-                ),
-            },
-        }
-
-
-class CivitaiCustomComfy(CivitaiRecipeNodeBase):
-    """Civitai Custom Comfy — customComfy recipe via Civitai Orchestration."""
-
-    RECIPE = "customComfy"
-    STEP_TYPE = "customComfy"
-    CATEGORY = "Civitai/Misc"
-    FUNCTION = "run"
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
-    RETURN_NAMES = ("workflow", "assets", "workflow_id", "raw_json")
-    FIELDS = {
-        "resources_json": F("resources", "json"),
-        "workflow_json": F("workflow", "json"),
-        "hooks_json": F("hooks", "json"),
-    }
-    OUTPUTS = (
-        O("workflow", "json"),
-        O("assets", "json"),
-    )
-
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "resources_json": (
-                    "STRING",
-                    {
-                        "tooltip": "All resources the workflow needs, declared explicitly as AIR URNs. Includes checkpoint/lora/vae models AND `comfy:nodepack` URNs for runtime-installable custom nodes (e.g. `urn:air:comfy:nodepack:comfyregistry:kijai/comfyui-kjnodes@1.4.0`). Anything the workflow references that isn't listed here will fail at load time inside ComfyUI.",
-                        "default": "",
-                        "multiline": True,
-                    },
-                ),
-                "workflow_json": (
-                    "STRING",
-                    {
-                        "tooltip": "The raw ComfyUI workflow graph. Forwarded opaquely to the worker; the orchestrator does not inspect or validate node contents.",
-                        "default": "",
-                        "multiline": True,
-                    },
-                ),
-            },
-            "optional": {
-                "hooks_json": ("STRING", {"default": "", "multiline": True}),
-                "api_config": (
-                    "CIVITAI_CONFIG",
-                    {
-                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
-                    },
-                ),
-            },
-        }
-
-
-class CivitaiEcho(CivitaiRecipeNodeBase):
-    """Civitai Echo — echo recipe via Civitai Orchestration."""
-
-    RECIPE = "echo"
-    STEP_TYPE = "echo"
-    CATEGORY = "Civitai/Misc"
-    FUNCTION = "run"
-    RETURN_TYPES = ("STRING", "STRING", "STRING")
-    RETURN_NAMES = ("message", "workflow_id", "raw_json")
-    FIELDS = {
-        "message": F("message", "value"),
-    }
-    OUTPUTS = (O("message", "string"),)
-
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "message": (
-                    "STRING",
-                    {"tooltip": "The message to be returned in the output.", "default": "", "multiline": True},
-                ),
-            },
-            "optional": {
-                "api_config": (
-                    "CIVITAI_CONFIG",
-                    {
-                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
-                    },
-                ),
-            },
-        }
-
-
 class CivitaiPolyGenFalMeshyTextTo3D(CivitaiRecipeNodeBase):
     """fal / meshy / textTo3D — polyGen recipe via Civitai Orchestration."""
 
@@ -264,17 +119,11 @@ class CivitaiPolyGenFalMeshyImageTo3D(CivitaiRecipeNodeBase):
 
 
 NODE_CLASS_MAPPINGS = {
-    "CivitaiComfy": CivitaiComfy,
-    "CivitaiCustomComfy": CivitaiCustomComfy,
-    "CivitaiEcho": CivitaiEcho,
     "CivitaiPolyGenFalMeshyTextTo3D": CivitaiPolyGenFalMeshyTextTo3D,
     "CivitaiPolyGenFalMeshyImageTo3D": CivitaiPolyGenFalMeshyImageTo3D,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "CivitaiComfy": "Civitai Comfy",
-    "CivitaiCustomComfy": "Civitai Custom Comfy",
-    "CivitaiEcho": "Civitai Echo",
     "CivitaiPolyGenFalMeshyTextTo3D": "fal / meshy / textTo3D",
     "CivitaiPolyGenFalMeshyImageTo3D": "fal / meshy / imageTo3D",
 }

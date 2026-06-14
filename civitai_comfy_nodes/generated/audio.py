@@ -286,91 +286,6 @@ class CivitaiAudioCaptioning(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiTextToSpeechCustom(CivitaiRecipeNodeBase):
-    """custom — textToSpeech recipe via Civitai Orchestration."""
-
-    RECIPE = "textToSpeech"
-    STEP_TYPE = "textToSpeech"
-    DISCRIMINATOR = {"engine": "custom"}
-    CATEGORY = "Civitai/Audio/custom"
-    FUNCTION = "run"
-    RETURN_TYPES = ("AUDIO", "STRING", "STRING", "STRING", "STRING")
-    RETURN_NAMES = ("audio_blob", "model_type", "speaker", "workflow_id", "raw_json")
-    FIELDS = {
-        "text": F("text", "value"),
-        "language": F("language", "value"),
-        "ref_audio_url": F("refAudioUrl", "audio_url"),
-        "ref_text": F("refText", "value"),
-        "x_vector_only_mode": F("xVectorOnlyMode", "value"),
-        "speaker": F("speaker", "value"),
-        "instruct": F("instruct", "value"),
-        "max_new_tokens": F("maxNewTokens", "value"),
-    }
-    OUTPUTS = (
-        O("audioBlob", "audio"),
-        O("modelType", "string"),
-        O("speaker", "string"),
-    )
-
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "text": (
-                    "STRING",
-                    {"tooltip": "The text to synthesize into speech.", "default": "", "multiline": True},
-                ),
-                "x_vector_only_mode": (
-                    "BOOLEAN",
-                    {
-                        "tooltip": "If true, uses only speaker embedding for Base mode (ref_text not required).",
-                        "default": False,
-                    },
-                ),
-            },
-            "optional": {
-                "language": (
-                    "STRING",
-                    {"tooltip": 'Target language (e.g., "English", "Chinese"). Defaults to "Auto".', "default": ""},
-                ),
-                "ref_audio_url": (
-                    "AUDIO",
-                    {
-                        "tooltip": "Reference audio URL for Base voice-cloning mode. Accepts AIR URNs (existing resources) or HTTP(S) URLs."
-                    },
-                ),
-                "ref_text": (
-                    "STRING",
-                    {
-                        "tooltip": "Transcript of the reference audio. Required for Base mode unless XVectorOnlyMode is true.",
-                        "default": "",
-                    },
-                ),
-                "speaker": (
-                    ["", "aiden", "dylan", "eric", "ono_anna", "ryan", "serena", "sohee", "uncle_fu", "vivian"],
-                    {"tooltip": "Built-in speaker name for CustomVoice mode.", "default": ""},
-                ),
-                "instruct": ("STRING", {"tooltip": "Optional style instruction for CustomVoice mode.", "default": ""}),
-                "max_new_tokens": (
-                    "INT",
-                    {
-                        "tooltip": "Optional generation cap for max tokens.",
-                        "default": 0,
-                        "min": 0,
-                        "max": 2147483647,
-                        "step": 1,
-                    },
-                ),
-                "api_config": (
-                    "CIVITAI_CONFIG",
-                    {
-                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
-                    },
-                ),
-            },
-        }
-
-
 class CivitaiTextToSpeechVllmOmniQwen3Base(CivitaiRecipeNodeBase):
     """qwen3 / base — textToSpeech recipe via Civitai Orchestration."""
 
@@ -682,7 +597,6 @@ class CivitaiTranscription(CivitaiRecipeNodeBase):
 NODE_CLASS_MAPPINGS = {
     "CivitaiAceStepAudio": CivitaiAceStepAudio,
     "CivitaiAudioCaptioning": CivitaiAudioCaptioning,
-    "CivitaiTextToSpeechCustom": CivitaiTextToSpeechCustom,
     "CivitaiTextToSpeechVllmOmniQwen3Base": CivitaiTextToSpeechVllmOmniQwen3Base,
     "CivitaiTextToSpeechVllmOmniQwen3CustomVoice": CivitaiTextToSpeechVllmOmniQwen3CustomVoice,
     "CivitaiTextToSpeechVllmOmniQwen3VoiceDesign": CivitaiTextToSpeechVllmOmniQwen3VoiceDesign,
@@ -693,7 +607,6 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiAceStepAudio": "Civitai Ace Step Audio",
     "CivitaiAudioCaptioning": "Civitai Audio Captioning",
-    "CivitaiTextToSpeechCustom": "custom",
     "CivitaiTextToSpeechVllmOmniQwen3Base": "qwen3 / base",
     "CivitaiTextToSpeechVllmOmniQwen3CustomVoice": "qwen3 / customVoice",
     "CivitaiTextToSpeechVllmOmniQwen3VoiceDesign": "qwen3 / voiceDesign",

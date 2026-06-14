@@ -1,10 +1,9 @@
 """End-to-end tests against the production orchestration API.
 
 Run explicitly: CIVITAI_API_TOKEN=... pytest -m e2e tests/test_e2e.py
-The echo round-trip costs 1 Buzz; the textToImage check uses whatif and spends nothing.
+The textToImage check uses whatif and spends nothing.
 """
 
-import json
 import os
 
 import pytest
@@ -13,15 +12,6 @@ pytestmark = [
     pytest.mark.e2e,
     pytest.mark.skipif(not os.environ.get("CIVITAI_API_TOKEN"), reason="CIVITAI_API_TOKEN not set"),
 ]
-
-
-def test_echo_round_trip():
-    from civitai_comfy_nodes.generated.misc import CivitaiEcho
-
-    message, workflow_id, raw_json = CivitaiEcho().run(message="civitai-comfy-nodes e2e")
-    assert message == "civitai-comfy-nodes e2e"
-    assert workflow_id
-    assert json.loads(raw_json)["status"] == "succeeded"
 
 
 def test_text_to_image_whatif_costs_without_spending():

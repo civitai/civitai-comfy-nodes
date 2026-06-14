@@ -5582,104 +5582,6 @@ class CivitaiImageGenComfyLensTurboCreateImage(CivitaiRecipeNodeBase):
         }
 
 
-class CivitaiImageGenComfyIdeogram4CreateImage(CivitaiRecipeNodeBase):
-    """ideogram4 / createImage — imageGen recipe via Civitai Orchestration."""
-
-    RECIPE = "imageGen"
-    STEP_TYPE = "imageGen"
-    DISCRIMINATOR = {"engine": "comfy", "ecosystem": "ideogram4", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/ideogram4"
-    FUNCTION = "run"
-    RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
-    RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
-    FIELDS = {
-        "output_format": F("outputFormat", "value"),
-        "image_metadata": F("imageMetadata", "value"),
-        "prompt": F("prompt", "value"),
-        "sampler": F("sampler", "value"),
-        "steps": F("steps", "value"),
-        "cfg_scale": F("cfgScale", "value"),
-        "seed": F("seed", "value"),
-        "quantity": F("quantity", "value"),
-        "loras": F("loras", "lora_strength_map"),
-        "diffusion_model": F("diffusionModel", "value"),
-        "unconditional_diffusion_model": F("unconditionalDiffusionModel", "value"),
-        "width": F("width", "value"),
-        "height": F("height", "value"),
-    }
-    OUTPUTS = (
-        O("images", "image_list"),
-        O("errors", "json"),
-    )
-
-    @classmethod
-    def INPUT_TYPES(cls):
-        return {
-            "required": {
-                "prompt": ("STRING", {"default": "", "multiline": True}),
-            },
-            "optional": {
-                "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
-                "image_metadata": (
-                    "STRING",
-                    {"tooltip": "External metadata that will be stored with the image", "default": ""},
-                ),
-                "sampler": (
-                    [
-                        "",
-                        "euler",
-                        "euler_ancestral",
-                        "euler_cfg_pp",
-                        "euler_ancestral_cfg_pp",
-                        "heun",
-                        "heunpp2",
-                        "dpm_2",
-                        "dpm_2_ancestral",
-                        "lms",
-                        "dpm_fast",
-                        "dpm_adaptive",
-                        "dpmpp_2s_ancestral",
-                        "dpmpp_2s_ancestral_cfg_pp",
-                        "dpmpp_sde",
-                        "dpmpp_sde_gpu",
-                        "dpmpp_2m",
-                        "dpmpp_2m_cfg_pp",
-                        "dpmpp_2m_sde",
-                        "dpmpp_2m_sde_gpu",
-                        "dpmpp_3m_sde",
-                        "dpmpp_3m_sde_gpu",
-                        "ddpm",
-                        "lcm",
-                        "ipndm",
-                        "ipndm_v",
-                        "deis",
-                        "ddim",
-                        "uni_pc",
-                        "uni_pc_bh2",
-                        "res_multistep",
-                        "er_sde",
-                    ],
-                    {"default": ""},
-                ),
-                "steps": ("INT", {"default": 12, "min": 1, "max": 150, "step": 1}),
-                "cfg_scale": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 30.0, "step": 0.01}),
-                "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
-                "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
-                "loras": ("CIVITAI_LORAS", {}),
-                "diffusion_model": ("STRING", {"default": ""}),
-                "unconditional_diffusion_model": ("STRING", {"default": ""}),
-                "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
-                "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
-                "api_config": (
-                    "CIVITAI_CONFIG",
-                    {
-                        "tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."
-                    },
-                ),
-            },
-        }
-
-
 class CivitaiImageGenSeedream(CivitaiRecipeNodeBase):
     """seedream — imageGen recipe via Civitai Orchestration."""
 
@@ -6421,7 +6323,6 @@ NODE_CLASS_MAPPINGS = {
     "CivitaiImageGenComfyAnimaCreateVariant": CivitaiImageGenComfyAnimaCreateVariant,
     "CivitaiImageGenComfyLensNormalCreateImage": CivitaiImageGenComfyLensNormalCreateImage,
     "CivitaiImageGenComfyLensTurboCreateImage": CivitaiImageGenComfyLensTurboCreateImage,
-    "CivitaiImageGenComfyIdeogram4CreateImage": CivitaiImageGenComfyIdeogram4CreateImage,
     "CivitaiImageGenSeedream": CivitaiImageGenSeedream,
     "CivitaiImageGenGrokCreateImage": CivitaiImageGenGrokCreateImage,
     "CivitaiImageGenGrokEditImage": CivitaiImageGenGrokEditImage,
@@ -6503,7 +6404,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiImageGenComfyAnimaCreateVariant": "anima / comfy / createVariant",
     "CivitaiImageGenComfyLensNormalCreateImage": "lens / normal / createImage",
     "CivitaiImageGenComfyLensTurboCreateImage": "lens / turbo / createImage",
-    "CivitaiImageGenComfyIdeogram4CreateImage": "ideogram4 / createImage",
     "CivitaiImageGenSeedream": "seedream",
     "CivitaiImageGenGrokCreateImage": "grok / createImage",
     "CivitaiImageGenGrokEditImage": "grok / editImage",

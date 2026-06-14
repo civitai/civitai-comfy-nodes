@@ -16,7 +16,11 @@
     "humanoidImageMask",
     "batchOCRSafetyClassification",
     "repeat",
-    "tryOnU"
+    "tryOnU",
+    "ageClassification",
+    "comfy",
+    "customComfy",
+    "echo"
   ],
   "videoGen": {
     "display": {
@@ -28,14 +32,18 @@
     },
     "skip_outputs": ["additionalVideos"]
   },
+  "imageGen": {
+    "skip_variants": [{ "engine": "comfy", "ecosystem": "ideogram4", "operation": "createImage" }]
+  },
+  "textToSpeech": {
+    "skip_variants": [{ "engine": "custom" }]
+  },
   "mediaCaptioning": {
     "field_types": { "mediaUrl": "image_url" }
   },
-  "ageClassification": {
-    "field_types": { "mediaUrl": "image_url" }
-  },
   "wdTagging": {
-    "field_types": { "mediaUrl": "image_url" }
+    "field_types": { "mediaUrl": "image_url" },
+    "skip_fields": ["model"]
   },
   "chatCompletion": {
     "field_types": {
@@ -46,18 +54,5 @@
       "logitBias": "json"
     },
     "skip_fields": ["stream", "streamOptions", "logprobs", "topLogprobs", "chatTemplateKwargs"]
-  },
-  "customComfy": {
-    "field_types": {
-      "workflow": "json",
-      "hooks": "json"
-    },
-    "skip_fields": ["sessionId"]
-  },
-  "comfy": {
-    "field_types": {
-      "comfyWorkflow": "json",
-      "imageMetadata": "json"
-    }
   }
 }

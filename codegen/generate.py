@@ -41,12 +41,8 @@ MODULES = {
     "mediaRating": ("analysis", "Civitai/Analysis"),
     "wdTagging": ("analysis", "Civitai/Analysis"),
     "xGuardModeration": ("analysis", "Civitai/Analysis"),
-    "ageClassification": ("analysis", "Civitai/Analysis"),
     "training": ("training", "Civitai/Training"),
     "imageResourceTraining": ("training", "Civitai/Training"),
-    "comfy": ("misc", "Civitai/Misc"),
-    "customComfy": ("misc", "Civitai/Misc"),
-    "echo": ("misc", "Civitai/Misc"),
     "polyGen": ("misc", "Civitai/Misc"),
 }
 
@@ -113,7 +109,11 @@ def build_nodes(spec: dict, overrides: dict) -> list[ir.NodeIR]:
             props, required, _ = ir.merge_allof_chain(spec, input_schema)
             variants = [_Variant(fixed=[], combos={}, props=props, required=set(required))]
 
+        skip_variants = recipe_overrides.get("skip_variants", [])
         for variant in variants:
+            fixed_dict = {p: k for p, k in variant.fixed}
+            if any(all(fixed_dict.get(k) == v for k, v in sel.items()) for sel in skip_variants):
+                continue
             base = f"Civitai{ir.pascal_case(recipe)}" + "".join(ir.pascal_case(k) for _, k in variant.fixed)
             pending.append((recipe, variant, outputs, recipe_overrides, base))
 
