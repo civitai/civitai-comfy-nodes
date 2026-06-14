@@ -23,8 +23,8 @@ class CivitaiAuth:
                     ["auto", "api_key", "oauth"],
                     {
                         "default": "auto",
-                        "tooltip": "auto: api_token > env > stored OAuth > browser login. "
-                        "api_key: never trigger a browser login. oauth: ignore api_token input.",
+                        "tooltip": "auto: api_token field > CIVITAI_API_TOKEN env > stored OAuth (no browser). "
+                        "api_key: same, never any browser. oauth: sign in via the browser if no token is found.",
                     },
                 ),
             },

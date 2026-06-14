@@ -198,8 +198,11 @@ def interactive_login() -> str:
         server = http.server.HTTPServer(("127.0.0.1", REDIRECT_PORT), _CallbackHandler)
     except OSError as e:
         raise CivitaiNodeError(
-            f"Could not open localhost port {REDIRECT_PORT} for the Civitai OAuth callback ({e}). "
-            "Close whatever is using it, or set CIVITAI_API_TOKEN instead."
+            f"Could not bind the Civitai OAuth callback to localhost:{REDIRECT_PORT} ({e}). On Windows "
+            "this port is often reserved by WSL2/Hyper-V/Docker (check `netsh interface ipv4 show "
+            "excludedportrange protocol=tcp`). Easiest fix: skip OAuth and set the CIVITAI_API_TOKEN "
+            "environment variable, or use a Civitai Auth node with mode=api_key and paste a token "
+            "from https://civitai.com/user/account."
         ) from e
 
     thread = threading.Thread(target=server.serve_forever, daemon=True)

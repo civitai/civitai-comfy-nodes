@@ -23,14 +23,19 @@ def resolve_config(api_config: dict | None = None) -> ClientConfig:
     allow_mature = bool((api_config or {}).get("allow_mature_content", False))
     timeout_minutes = float((api_config or {}).get("timeout_minutes") or os.environ.get("CIVITAI_COMFY_TIMEOUT", 30))
 
+    mode = (api_config or {}).get("mode", "auto")
     token = (api_config or {}).get("api_token") or os.environ.get("CIVITAI_API_TOKEN")
     if not token:
-        token = oauth.get_valid_access_token()
-    if not token and (api_config or {}).get("mode", "auto") != "api_key":
+        token = oauth.get_valid_access_token()  # reuse a stored OAuth login if present
+    # The browser OAuth flow is opt-in (mode=oauth): it needs a free loopback port and a real
+    # browser, which isn't reliable on Windows (reserved ports) or headless/remote installs.
+    if not token and mode == "oauth":
         token = oauth.interactive_login()
     if not token:
         raise CivitaiNodeError(
-            "No Civitai credentials found. Connect a Civitai Auth node, set CIVITAI_API_TOKEN, or log in via OAuth."
+            "No Civitai credentials. Set the CIVITAI_API_TOKEN environment variable to a token from "
+            "https://civitai.com/user/account, or add a Civitai Auth node and paste your token "
+            "(or set its mode to 'oauth' to sign in via the browser)."
         )
 
     return ClientConfig(
