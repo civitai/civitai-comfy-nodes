@@ -65,8 +65,7 @@ class CivitaiRecipeNodeBase:
         if workflow.get("status") != "succeeded":
             raise CivitaiNodeError(workflow_failure_message(workflow))
 
-        cost = (workflow.get("cost") or {}).get("total")
-        logger.info("Civitai workflow %s succeeded%s", workflow_id, f" · {cost} Buzz" if cost is not None else "")
+        logger.info("Civitai workflow %s succeeded%s", workflow_id, self._cost_summary(workflow))
         step = (workflow.get("steps") or [{}])[0]
         output = step.get("output") or {}
         results = self._convert_outputs(client, output)
@@ -185,6 +184,23 @@ class CivitaiRecipeNodeBase:
             progress += int(55 * max(rates, default=0))
         bar.update_absolute(progress)
         return progress
+
+    # Buzz wallet (accountType) -> display name; the colour IS the Buzz currency.
+    _BUZZ_WALLETS = {"yellow": "Yellow", "blue": "Blue", "green": "Green", "fakeRed": "Red"}
+
+    @classmethod
+    def _cost_summary(cls, workflow: dict) -> str:
+        """' — 16 Blue Buzz' from the workflow's transaction list (the actual charges per wallet)."""
+        transactions = ((workflow.get("transactions") or {}).get("list")) or []
+        parts = []
+        for t in transactions:
+            wallet = cls._BUZZ_WALLETS.get(t.get("accountType"), str(t.get("accountType") or "?"))
+            suffix = " refunded" if t.get("type") == "credit" else ""
+            parts.append(f"{t.get('amount')} {wallet} Buzz{suffix}")
+        if parts:
+            return " — " + ", ".join(parts)
+        total = (workflow.get("cost") or {}).get("total")
+        return f" — {total} Buzz" if total is not None else ""
 
     @staticmethod
     def _preceding_jobs(workflow: dict):

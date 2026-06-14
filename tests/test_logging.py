@@ -17,7 +17,13 @@ class _FakeClient:
         self.calls += 1
         if self.calls == 1:
             return {"id": workflow_id, "status": "processing", "steps": [{"jobs": [{"estimatedProgressRate": 0.5}]}]}
-        return {"id": workflow_id, "status": "succeeded", "steps": [{"output": {}}], "cost": {"total": 7}}
+        return {
+            "id": workflow_id,
+            "status": "succeeded",
+            "steps": [{"output": {}}],
+            "cost": {"total": 7},
+            "transactions": {"list": [{"type": "debit", "amount": 7, "accountType": "blue"}]},
+        }
 
 
 class _Node(base.CivitaiRecipeNodeBase):
@@ -41,4 +47,4 @@ def test_run_logs_workflow_id_and_status_transitions(monkeypatch, caplog):
     assert "submitted workflow wf-test" in text
     assert "wf-test: scheduled, 10%, 3 jobs ahead" in text
     assert "wf-test: processing" in text
-    assert "succeeded · 7 Buzz" in text
+    assert "succeeded — 7 Blue Buzz" in text
