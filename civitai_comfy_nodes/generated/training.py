@@ -738,12 +738,12 @@ class CivitaiImageResourceTrainingFlux2DevEdit(CivitaiRecipeNodeBase):
 
 
 class CivitaiTrainingAiToolkitFlux1(CivitaiRecipeNodeBase):
-    """ai-toolkit / flux1 — training recipe via Civitai Orchestration."""
+    """flux1 — training recipe via Civitai Orchestration."""
 
     RECIPE = "training"
     STEP_TYPE = "training"
     DISCRIMINATOR = {"engine": "ai-toolkit", "ecosystem": "flux1"}
-    CATEGORY = "Civitai/Training/ai-toolkit"
+    CATEGORY = "Civitai/Training/flux1"
     FUNCTION = "run"
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("moderation_status", "epochs", "workflow_id", "raw_json")
@@ -995,12 +995,12 @@ class CivitaiTrainingAiToolkitFlux1(CivitaiRecipeNodeBase):
 
 
 class CivitaiTrainingAiToolkitSdxl(CivitaiRecipeNodeBase):
-    """ai-toolkit / sdxl — training recipe via Civitai Orchestration."""
+    """sdxl — training recipe via Civitai Orchestration."""
 
     RECIPE = "training"
     STEP_TYPE = "training"
     DISCRIMINATOR = {"engine": "ai-toolkit", "ecosystem": "sdxl"}
-    CATEGORY = "Civitai/Training/ai-toolkit"
+    CATEGORY = "Civitai/Training/sdxl"
     FUNCTION = "run"
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("moderation_status", "epochs", "workflow_id", "raw_json")
@@ -1269,12 +1269,12 @@ class CivitaiTrainingAiToolkitSdxl(CivitaiRecipeNodeBase):
 
 
 class CivitaiTrainingAiToolkitSd1(CivitaiRecipeNodeBase):
-    """ai-toolkit / sd1 — training recipe via Civitai Orchestration."""
+    """sd1 — training recipe via Civitai Orchestration."""
 
     RECIPE = "training"
     STEP_TYPE = "training"
     DISCRIMINATOR = {"engine": "ai-toolkit", "ecosystem": "sd1"}
-    CATEGORY = "Civitai/Training/ai-toolkit"
+    CATEGORY = "Civitai/Training/sd1"
     FUNCTION = "run"
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("moderation_status", "epochs", "workflow_id", "raw_json")
@@ -1803,12 +1803,12 @@ class CivitaiTrainingAiToolkit(CivitaiRecipeNodeBase):
 
 
 class CivitaiTrainingAiToolkitQwen(CivitaiRecipeNodeBase):
-    """ai-toolkit / qwen — training recipe via Civitai Orchestration."""
+    """qwen — training recipe via Civitai Orchestration."""
 
     RECIPE = "training"
     STEP_TYPE = "training"
     DISCRIMINATOR = {"engine": "ai-toolkit", "ecosystem": "qwen"}
-    CATEGORY = "Civitai/Training/ai-toolkit"
+    CATEGORY = "Civitai/Training/qwen"
     FUNCTION = "run"
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("moderation_status", "epochs", "workflow_id", "raw_json")
@@ -2060,12 +2060,12 @@ class CivitaiTrainingAiToolkitQwen(CivitaiRecipeNodeBase):
 
 
 class CivitaiTrainingAiToolkitFlux2klein(CivitaiRecipeNodeBase):
-    """ai-toolkit / flux2klein — training recipe via Civitai Orchestration."""
+    """flux2klein — training recipe via Civitai Orchestration."""
 
     RECIPE = "training"
     STEP_TYPE = "training"
     DISCRIMINATOR = {"engine": "ai-toolkit", "ecosystem": "flux2klein"}
-    CATEGORY = "Civitai/Training/ai-toolkit"
+    CATEGORY = "Civitai/Training/flux2klein"
     FUNCTION = "run"
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("moderation_status", "epochs", "workflow_id", "raw_json")
@@ -2325,12 +2325,12 @@ class CivitaiTrainingAiToolkitFlux2klein(CivitaiRecipeNodeBase):
 
 
 class CivitaiTrainingAiToolkitAceStep15(CivitaiRecipeNodeBase):
-    """ai-toolkit / ace_step_15 — training recipe via Civitai Orchestration."""
+    """ace_step_15 — training recipe via Civitai Orchestration."""
 
     RECIPE = "training"
     STEP_TYPE = "training"
     DISCRIMINATOR = {"engine": "ai-toolkit", "ecosystem": "ace_step_15"}
-    CATEGORY = "Civitai/Training/ai-toolkit"
+    CATEGORY = "Civitai/Training/ace_step_15"
     FUNCTION = "run"
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("moderation_status", "epochs", "workflow_id", "raw_json")
@@ -2582,12 +2582,12 @@ class CivitaiTrainingAiToolkitAceStep15(CivitaiRecipeNodeBase):
 
 
 class CivitaiTrainingAiToolkitAceStep15Xl(CivitaiRecipeNodeBase):
-    """ai-toolkit / ace_step_15_xl — training recipe via Civitai Orchestration."""
+    """ace_step_15_xl — training recipe via Civitai Orchestration."""
 
     RECIPE = "training"
     STEP_TYPE = "training"
     DISCRIMINATOR = {"engine": "ai-toolkit", "ecosystem": "ace_step_15_xl"}
-    CATEGORY = "Civitai/Training/ai-toolkit"
+    CATEGORY = "Civitai/Training/ace_step_15_xl"
     FUNCTION = "run"
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("moderation_status", "epochs", "workflow_id", "raw_json")
@@ -2862,12 +2862,12 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiImageResourceTrainingMusubi": "musubi",
     "CivitaiImageResourceTrainingFlux2Dev": "flux2-dev",
     "CivitaiImageResourceTrainingFlux2DevEdit": "flux2-dev-edit",
-    "CivitaiTrainingAiToolkitFlux1": "ai-toolkit / flux1",
-    "CivitaiTrainingAiToolkitSdxl": "ai-toolkit / sdxl",
-    "CivitaiTrainingAiToolkitSd1": "ai-toolkit / sd1",
+    "CivitaiTrainingAiToolkitFlux1": "flux1",
+    "CivitaiTrainingAiToolkitSdxl": "sdxl",
+    "CivitaiTrainingAiToolkitSd1": "sd1",
     "CivitaiTrainingAiToolkit": "ai-toolkit",
-    "CivitaiTrainingAiToolkitQwen": "ai-toolkit / qwen",
-    "CivitaiTrainingAiToolkitFlux2klein": "ai-toolkit / flux2klein",
-    "CivitaiTrainingAiToolkitAceStep15": "ai-toolkit / ace_step_15",
-    "CivitaiTrainingAiToolkitAceStep15Xl": "ai-toolkit / ace_step_15_xl",
+    "CivitaiTrainingAiToolkitQwen": "qwen",
+    "CivitaiTrainingAiToolkitFlux2klein": "flux2klein",
+    "CivitaiTrainingAiToolkitAceStep15": "ace_step_15",
+    "CivitaiTrainingAiToolkitAceStep15Xl": "ace_step_15_xl",
 }

@@ -1755,12 +1755,12 @@ class CivitaiImageGenGemini25FlashEditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppQwen20bCreateImage(CivitaiRecipeNodeBase):
-    """sdcpp / qwen / 20b / createImage — imageGen recipe via Civitai Orchestration."""
+    """qwen / 20b / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "qwen", "model": "20b", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/qwen"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -1855,12 +1855,12 @@ class CivitaiImageGenSdcppQwen20bCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppQwen20bEditImage(CivitaiRecipeNodeBase):
-    """sdcpp / qwen / 20b / editImage — imageGen recipe via Civitai Orchestration."""
+    """qwen / 20b / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "qwen", "model": "20b", "operation": "editImage"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/qwen"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -1957,12 +1957,12 @@ class CivitaiImageGenSdcppQwen20bEditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppQwen20bCreateVariant(CivitaiRecipeNodeBase):
-    """sdcpp / qwen / 20b / createVariant — imageGen recipe via Civitai Orchestration."""
+    """qwen / 20b / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "qwen", "model": "20b", "operation": "createVariant"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/qwen"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -2061,12 +2061,12 @@ class CivitaiImageGenSdcppQwen20bCreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppZImageTurboCreateImage(CivitaiRecipeNodeBase):
-    """sdcpp / zImage / turbo / createImage — imageGen recipe via Civitai Orchestration."""
+    """zImage / turbo / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "zImage", "model": "turbo", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/zImage"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -2163,12 +2163,12 @@ class CivitaiImageGenSdcppZImageTurboCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppZImageBaseCreateImage(CivitaiRecipeNodeBase):
-    """sdcpp / zImage / base / createImage — imageGen recipe via Civitai Orchestration."""
+    """zImage / base / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "zImage", "model": "base", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/zImage"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -2265,12 +2265,12 @@ class CivitaiImageGenSdcppZImageBaseCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppAnimaCreateImage(CivitaiRecipeNodeBase):
-    """sdcpp / anima / createImage — imageGen recipe via Civitai Orchestration."""
+    """anima / sdcpp / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "anima", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/anima/sdcpp"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -2365,12 +2365,12 @@ class CivitaiImageGenSdcppAnimaCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppAnimaCreateVariant(CivitaiRecipeNodeBase):
-    """sdcpp / anima / createVariant — imageGen recipe via Civitai Orchestration."""
+    """anima / sdcpp / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "anima", "operation": "createVariant"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/anima/sdcpp"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -2469,12 +2469,12 @@ class CivitaiImageGenSdcppAnimaCreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppSd1CreateImage(CivitaiRecipeNodeBase):
-    """sdcpp / sd1 / createImage — imageGen recipe via Civitai Orchestration."""
+    """sd1 / sdcpp / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "sd1", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/sd1/sdcpp"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -2577,12 +2577,12 @@ class CivitaiImageGenSdcppSd1CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppSd1CreateVariant(CivitaiRecipeNodeBase):
-    """sdcpp / sd1 / createVariant — imageGen recipe via Civitai Orchestration."""
+    """sd1 / sdcpp / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "sd1", "operation": "createVariant"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/sd1/sdcpp"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -2689,12 +2689,12 @@ class CivitaiImageGenSdcppSd1CreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppSdxlCreateImage(CivitaiRecipeNodeBase):
-    """sdcpp / sdxl / createImage — imageGen recipe via Civitai Orchestration."""
+    """sdxl / sdcpp / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "sdxl", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/sdxl/sdcpp"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -2795,12 +2795,12 @@ class CivitaiImageGenSdcppSdxlCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppSdxlCreateVariant(CivitaiRecipeNodeBase):
-    """sdcpp / sdxl / createVariant — imageGen recipe via Civitai Orchestration."""
+    """sdxl / sdcpp / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "sdxl", "operation": "createVariant"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/sdxl/sdcpp"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -2905,12 +2905,12 @@ class CivitaiImageGenSdcppSdxlCreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppFlux1CreateImage(CivitaiRecipeNodeBase):
-    """sdcpp / flux1 / createImage — imageGen recipe via Civitai Orchestration."""
+    """flux1 / sdcpp / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "flux1", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/flux1/sdcpp"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -3011,12 +3011,12 @@ class CivitaiImageGenSdcppFlux1CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppFlux1EditImage(CivitaiRecipeNodeBase):
-    """sdcpp / flux1 / editImage — imageGen recipe via Civitai Orchestration."""
+    """flux1 / sdcpp / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "flux1", "operation": "editImage"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/flux1/sdcpp"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -3119,12 +3119,12 @@ class CivitaiImageGenSdcppFlux1EditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppFlux1CreateVariant(CivitaiRecipeNodeBase):
-    """sdcpp / flux1 / createVariant — imageGen recipe via Civitai Orchestration."""
+    """flux1 / sdcpp / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "flux1", "operation": "createVariant"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/flux1/sdcpp"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -3229,12 +3229,12 @@ class CivitaiImageGenSdcppFlux1CreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppFlux2DevCreateImage(CivitaiRecipeNodeBase):
-    """sdcpp / flux2Dev / createImage — imageGen recipe via Civitai Orchestration."""
+    """flux2Dev / sdcpp / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "flux2Dev", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/flux2Dev/sdcpp"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -3327,12 +3327,12 @@ class CivitaiImageGenSdcppFlux2DevCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppFlux2DevEditImage(CivitaiRecipeNodeBase):
-    """sdcpp / flux2Dev / editImage — imageGen recipe via Civitai Orchestration."""
+    """flux2Dev / sdcpp / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "flux2Dev", "operation": "editImage"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/flux2Dev/sdcpp"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -3427,12 +3427,12 @@ class CivitaiImageGenSdcppFlux2DevEditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppFlux2DevCreateVariant(CivitaiRecipeNodeBase):
-    """sdcpp / flux2Dev / createVariant — imageGen recipe via Civitai Orchestration."""
+    """flux2Dev / sdcpp / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "flux2Dev", "operation": "createVariant"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/flux2Dev/sdcpp"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -3529,12 +3529,12 @@ class CivitaiImageGenSdcppFlux2DevCreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppFlux2KleinCreateImage(CivitaiRecipeNodeBase):
-    """sdcpp / flux2Klein / createImage — imageGen recipe via Civitai Orchestration."""
+    """flux2Klein / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "flux2Klein", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/flux2Klein"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -3629,12 +3629,12 @@ class CivitaiImageGenSdcppFlux2KleinCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppFlux2KleinEditImage(CivitaiRecipeNodeBase):
-    """sdcpp / flux2Klein / editImage — imageGen recipe via Civitai Orchestration."""
+    """flux2Klein / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "flux2Klein", "operation": "editImage"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/flux2Klein"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -3731,12 +3731,12 @@ class CivitaiImageGenSdcppFlux2KleinEditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenSdcppFlux2KleinCreateVariant(CivitaiRecipeNodeBase):
-    """sdcpp / flux2Klein / createVariant — imageGen recipe via Civitai Orchestration."""
+    """flux2Klein / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "sdcpp", "ecosystem": "flux2Klein", "operation": "createVariant"}
-    CATEGORY = "Civitai/Image/sdcpp"
+    CATEGORY = "Civitai/Image/flux2Klein"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -3835,12 +3835,12 @@ class CivitaiImageGenSdcppFlux2KleinCreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfySd1CreateImage(CivitaiRecipeNodeBase):
-    """comfy / sd1 / createImage — imageGen recipe via Civitai Orchestration."""
+    """sd1 / comfy / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "comfy", "ecosystem": "sd1", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/sd1/comfy"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -3944,12 +3944,12 @@ class CivitaiImageGenComfySd1CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfySd1CreateVariant(CivitaiRecipeNodeBase):
-    """comfy / sd1 / createVariant — imageGen recipe via Civitai Orchestration."""
+    """sd1 / comfy / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "comfy", "ecosystem": "sd1", "operation": "createVariant"}
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/sd1/comfy"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -4057,12 +4057,12 @@ class CivitaiImageGenComfySd1CreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfySdxlCreateImage(CivitaiRecipeNodeBase):
-    """comfy / sdxl / createImage — imageGen recipe via Civitai Orchestration."""
+    """sdxl / comfy / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "comfy", "ecosystem": "sdxl", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/sdxl/comfy"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -4164,12 +4164,12 @@ class CivitaiImageGenComfySdxlCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfySdxlCreateVariant(CivitaiRecipeNodeBase):
-    """comfy / sdxl / createVariant — imageGen recipe via Civitai Orchestration."""
+    """sdxl / comfy / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "comfy", "ecosystem": "sdxl", "operation": "createVariant"}
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/sdxl/comfy"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -4275,12 +4275,12 @@ class CivitaiImageGenComfySdxlCreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyFlux1CreateImage(CivitaiRecipeNodeBase):
-    """comfy / flux1 / createImage — imageGen recipe via Civitai Orchestration."""
+    """flux1 / comfy / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "comfy", "ecosystem": "flux1", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/flux1/comfy"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -4380,12 +4380,12 @@ class CivitaiImageGenComfyFlux1CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyFlux1CreateVariant(CivitaiRecipeNodeBase):
-    """comfy / flux1 / createVariant — imageGen recipe via Civitai Orchestration."""
+    """flux1 / comfy / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "comfy", "ecosystem": "flux1", "operation": "createVariant"}
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/flux1/comfy"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -4489,12 +4489,12 @@ class CivitaiImageGenComfyFlux1CreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyFlux2DevCreateImage(CivitaiRecipeNodeBase):
-    """comfy / flux2Dev / createImage — imageGen recipe via Civitai Orchestration."""
+    """flux2Dev / comfy / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "comfy", "ecosystem": "flux2Dev", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/flux2Dev/comfy"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -4590,12 +4590,12 @@ class CivitaiImageGenComfyFlux2DevCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyFlux2DevEditImage(CivitaiRecipeNodeBase):
-    """comfy / flux2Dev / editImage — imageGen recipe via Civitai Orchestration."""
+    """flux2Dev / comfy / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "comfy", "ecosystem": "flux2Dev", "operation": "editImage"}
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/flux2Dev/comfy"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -4693,12 +4693,12 @@ class CivitaiImageGenComfyFlux2DevEditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyErnieErnieCreateImage(CivitaiRecipeNodeBase):
-    """comfy / ernie / ernie / createImage — imageGen recipe via Civitai Orchestration."""
+    """ernie / ernie / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "comfy", "ecosystem": "ernie", "model": "ernie", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/ernie"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -4796,12 +4796,12 @@ class CivitaiImageGenComfyErnieErnieCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyErnieTurboCreateImage(CivitaiRecipeNodeBase):
-    """comfy / ernie / turbo / createImage — imageGen recipe via Civitai Orchestration."""
+    """ernie / turbo / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "comfy", "ecosystem": "ernie", "model": "turbo", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/ernie"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -4899,7 +4899,7 @@ class CivitaiImageGenComfyErnieTurboCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyHidreamO1HiDreamO1ImageCreateImage(CivitaiRecipeNodeBase):
-    """comfy / hidream-o1 / HiDream-O1-Image / createImage — imageGen recipe via Civitai Orchestration."""
+    """hidream-o1 / HiDream-O1-Image / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -4909,7 +4909,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageCreateImage(CivitaiRecipeNodeBa
         "model": "HiDream-O1-Image",
         "operation": "createImage",
     }
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/hidream-o1"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -4964,7 +4964,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageCreateImage(CivitaiRecipeNodeBa
 
 
 class CivitaiImageGenComfyHidreamO1HiDreamO1ImageEditImage(CivitaiRecipeNodeBase):
-    """comfy / hidream-o1 / HiDream-O1-Image / editImage — imageGen recipe via Civitai Orchestration."""
+    """hidream-o1 / HiDream-O1-Image / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -4974,7 +4974,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageEditImage(CivitaiRecipeNodeBase
         "model": "HiDream-O1-Image",
         "operation": "editImage",
     }
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/hidream-o1"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -5031,7 +5031,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageEditImage(CivitaiRecipeNodeBase
 
 
 class CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevCreateImage(CivitaiRecipeNodeBase):
-    """comfy / hidream-o1 / HiDream-O1-Image-dev / createImage — imageGen recipe via Civitai Orchestration."""
+    """hidream-o1 / HiDream-O1-Image-dev / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -5041,7 +5041,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevCreateImage(CivitaiRecipeNod
         "model": "HiDream-O1-Image-dev",
         "operation": "createImage",
     }
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/hidream-o1"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -5096,7 +5096,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevCreateImage(CivitaiRecipeNod
 
 
 class CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevEditImage(CivitaiRecipeNodeBase):
-    """comfy / hidream-o1 / HiDream-O1-Image-dev / editImage — imageGen recipe via Civitai Orchestration."""
+    """hidream-o1 / HiDream-O1-Image-dev / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
@@ -5106,7 +5106,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevEditImage(CivitaiRecipeNodeB
         "model": "HiDream-O1-Image-dev",
         "operation": "editImage",
     }
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/hidream-o1"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -5163,12 +5163,12 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevEditImage(CivitaiRecipeNodeB
 
 
 class CivitaiImageGenComfyAnimaCreateImage(CivitaiRecipeNodeBase):
-    """comfy / anima / createImage — imageGen recipe via Civitai Orchestration."""
+    """anima / comfy / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "comfy", "ecosystem": "anima", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/anima/comfy"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -5268,12 +5268,12 @@ class CivitaiImageGenComfyAnimaCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyAnimaCreateVariant(CivitaiRecipeNodeBase):
-    """comfy / anima / createVariant — imageGen recipe via Civitai Orchestration."""
+    """anima / comfy / createVariant — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "comfy", "ecosystem": "anima", "operation": "createVariant"}
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/anima/comfy"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -5377,12 +5377,12 @@ class CivitaiImageGenComfyAnimaCreateVariant(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyLensNormalCreateImage(CivitaiRecipeNodeBase):
-    """comfy / lens / normal / createImage — imageGen recipe via Civitai Orchestration."""
+    """lens / normal / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "comfy", "ecosystem": "lens", "model": "normal", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/lens"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -5480,12 +5480,12 @@ class CivitaiImageGenComfyLensNormalCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyLensTurboCreateImage(CivitaiRecipeNodeBase):
-    """comfy / lens / turbo / createImage — imageGen recipe via Civitai Orchestration."""
+    """lens / turbo / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "comfy", "ecosystem": "lens", "model": "turbo", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/lens"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -5583,12 +5583,12 @@ class CivitaiImageGenComfyLensTurboCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenComfyIdeogram4CreateImage(CivitaiRecipeNodeBase):
-    """comfy / ideogram4 / createImage — imageGen recipe via Civitai Orchestration."""
+    """ideogram4 / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "comfy", "ecosystem": "ideogram4", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/comfy"
+    CATEGORY = "Civitai/Image/ideogram4"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -6465,45 +6465,45 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiImageGenWanV27FalEditImage": "wan / v2.7 / fal / editImage",
     "CivitaiImageGenGemini25FlashCreateImage": "gemini / 2.5-flash / createImage",
     "CivitaiImageGenGemini25FlashEditImage": "gemini / 2.5-flash / editImage",
-    "CivitaiImageGenSdcppQwen20bCreateImage": "sdcpp / qwen / 20b / createImage",
-    "CivitaiImageGenSdcppQwen20bEditImage": "sdcpp / qwen / 20b / editImage",
-    "CivitaiImageGenSdcppQwen20bCreateVariant": "sdcpp / qwen / 20b / createVariant",
-    "CivitaiImageGenSdcppZImageTurboCreateImage": "sdcpp / zImage / turbo / createImage",
-    "CivitaiImageGenSdcppZImageBaseCreateImage": "sdcpp / zImage / base / createImage",
-    "CivitaiImageGenSdcppAnimaCreateImage": "sdcpp / anima / createImage",
-    "CivitaiImageGenSdcppAnimaCreateVariant": "sdcpp / anima / createVariant",
-    "CivitaiImageGenSdcppSd1CreateImage": "sdcpp / sd1 / createImage",
-    "CivitaiImageGenSdcppSd1CreateVariant": "sdcpp / sd1 / createVariant",
-    "CivitaiImageGenSdcppSdxlCreateImage": "sdcpp / sdxl / createImage",
-    "CivitaiImageGenSdcppSdxlCreateVariant": "sdcpp / sdxl / createVariant",
-    "CivitaiImageGenSdcppFlux1CreateImage": "sdcpp / flux1 / createImage",
-    "CivitaiImageGenSdcppFlux1EditImage": "sdcpp / flux1 / editImage",
-    "CivitaiImageGenSdcppFlux1CreateVariant": "sdcpp / flux1 / createVariant",
-    "CivitaiImageGenSdcppFlux2DevCreateImage": "sdcpp / flux2Dev / createImage",
-    "CivitaiImageGenSdcppFlux2DevEditImage": "sdcpp / flux2Dev / editImage",
-    "CivitaiImageGenSdcppFlux2DevCreateVariant": "sdcpp / flux2Dev / createVariant",
-    "CivitaiImageGenSdcppFlux2KleinCreateImage": "sdcpp / flux2Klein / createImage",
-    "CivitaiImageGenSdcppFlux2KleinEditImage": "sdcpp / flux2Klein / editImage",
-    "CivitaiImageGenSdcppFlux2KleinCreateVariant": "sdcpp / flux2Klein / createVariant",
-    "CivitaiImageGenComfySd1CreateImage": "comfy / sd1 / createImage",
-    "CivitaiImageGenComfySd1CreateVariant": "comfy / sd1 / createVariant",
-    "CivitaiImageGenComfySdxlCreateImage": "comfy / sdxl / createImage",
-    "CivitaiImageGenComfySdxlCreateVariant": "comfy / sdxl / createVariant",
-    "CivitaiImageGenComfyFlux1CreateImage": "comfy / flux1 / createImage",
-    "CivitaiImageGenComfyFlux1CreateVariant": "comfy / flux1 / createVariant",
-    "CivitaiImageGenComfyFlux2DevCreateImage": "comfy / flux2Dev / createImage",
-    "CivitaiImageGenComfyFlux2DevEditImage": "comfy / flux2Dev / editImage",
-    "CivitaiImageGenComfyErnieErnieCreateImage": "comfy / ernie / ernie / createImage",
-    "CivitaiImageGenComfyErnieTurboCreateImage": "comfy / ernie / turbo / createImage",
-    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageCreateImage": "comfy / hidream-o1 / HiDream-O1-Image / createImage",
-    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageEditImage": "comfy / hidream-o1 / HiDream-O1-Image / editImage",
-    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevCreateImage": "comfy / hidream-o1 / HiDream-O1-Image-dev / createImage",
-    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevEditImage": "comfy / hidream-o1 / HiDream-O1-Image-dev / editImage",
-    "CivitaiImageGenComfyAnimaCreateImage": "comfy / anima / createImage",
-    "CivitaiImageGenComfyAnimaCreateVariant": "comfy / anima / createVariant",
-    "CivitaiImageGenComfyLensNormalCreateImage": "comfy / lens / normal / createImage",
-    "CivitaiImageGenComfyLensTurboCreateImage": "comfy / lens / turbo / createImage",
-    "CivitaiImageGenComfyIdeogram4CreateImage": "comfy / ideogram4 / createImage",
+    "CivitaiImageGenSdcppQwen20bCreateImage": "qwen / 20b / createImage",
+    "CivitaiImageGenSdcppQwen20bEditImage": "qwen / 20b / editImage",
+    "CivitaiImageGenSdcppQwen20bCreateVariant": "qwen / 20b / createVariant",
+    "CivitaiImageGenSdcppZImageTurboCreateImage": "zImage / turbo / createImage",
+    "CivitaiImageGenSdcppZImageBaseCreateImage": "zImage / base / createImage",
+    "CivitaiImageGenSdcppAnimaCreateImage": "anima / sdcpp / createImage",
+    "CivitaiImageGenSdcppAnimaCreateVariant": "anima / sdcpp / createVariant",
+    "CivitaiImageGenSdcppSd1CreateImage": "sd1 / sdcpp / createImage",
+    "CivitaiImageGenSdcppSd1CreateVariant": "sd1 / sdcpp / createVariant",
+    "CivitaiImageGenSdcppSdxlCreateImage": "sdxl / sdcpp / createImage",
+    "CivitaiImageGenSdcppSdxlCreateVariant": "sdxl / sdcpp / createVariant",
+    "CivitaiImageGenSdcppFlux1CreateImage": "flux1 / sdcpp / createImage",
+    "CivitaiImageGenSdcppFlux1EditImage": "flux1 / sdcpp / editImage",
+    "CivitaiImageGenSdcppFlux1CreateVariant": "flux1 / sdcpp / createVariant",
+    "CivitaiImageGenSdcppFlux2DevCreateImage": "flux2Dev / sdcpp / createImage",
+    "CivitaiImageGenSdcppFlux2DevEditImage": "flux2Dev / sdcpp / editImage",
+    "CivitaiImageGenSdcppFlux2DevCreateVariant": "flux2Dev / sdcpp / createVariant",
+    "CivitaiImageGenSdcppFlux2KleinCreateImage": "flux2Klein / createImage",
+    "CivitaiImageGenSdcppFlux2KleinEditImage": "flux2Klein / editImage",
+    "CivitaiImageGenSdcppFlux2KleinCreateVariant": "flux2Klein / createVariant",
+    "CivitaiImageGenComfySd1CreateImage": "sd1 / comfy / createImage",
+    "CivitaiImageGenComfySd1CreateVariant": "sd1 / comfy / createVariant",
+    "CivitaiImageGenComfySdxlCreateImage": "sdxl / comfy / createImage",
+    "CivitaiImageGenComfySdxlCreateVariant": "sdxl / comfy / createVariant",
+    "CivitaiImageGenComfyFlux1CreateImage": "flux1 / comfy / createImage",
+    "CivitaiImageGenComfyFlux1CreateVariant": "flux1 / comfy / createVariant",
+    "CivitaiImageGenComfyFlux2DevCreateImage": "flux2Dev / comfy / createImage",
+    "CivitaiImageGenComfyFlux2DevEditImage": "flux2Dev / comfy / editImage",
+    "CivitaiImageGenComfyErnieErnieCreateImage": "ernie / ernie / createImage",
+    "CivitaiImageGenComfyErnieTurboCreateImage": "ernie / turbo / createImage",
+    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageCreateImage": "hidream-o1 / HiDream-O1-Image / createImage",
+    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageEditImage": "hidream-o1 / HiDream-O1-Image / editImage",
+    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevCreateImage": "hidream-o1 / HiDream-O1-Image-dev / createImage",
+    "CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevEditImage": "hidream-o1 / HiDream-O1-Image-dev / editImage",
+    "CivitaiImageGenComfyAnimaCreateImage": "anima / comfy / createImage",
+    "CivitaiImageGenComfyAnimaCreateVariant": "anima / comfy / createVariant",
+    "CivitaiImageGenComfyLensNormalCreateImage": "lens / normal / createImage",
+    "CivitaiImageGenComfyLensTurboCreateImage": "lens / turbo / createImage",
+    "CivitaiImageGenComfyIdeogram4CreateImage": "ideogram4 / createImage",
     "CivitaiImageGenSeedream": "seedream",
     "CivitaiImageGenGrokCreateImage": "grok / createImage",
     "CivitaiImageGenGrokEditImage": "grok / editImage",

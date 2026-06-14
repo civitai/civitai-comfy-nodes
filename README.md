@@ -28,9 +28,11 @@ Headless/remote ComfyUI installs should use the env var.
 
 ## Nodes
 
-~160 nodes under the **Civitai** category, generated from the orchestration OpenAPI spec. Engines
-with many variants are split into one node per ecosystem/operation (e.g. `Civitai/Image/sdcpp/zImage
-Turbo · Create Image`) so each node shows only the inputs that variant actually uses:
+~160 nodes under the **Civitai** category, generated from the orchestration OpenAPI spec. The menu
+is organized **ecosystem-first** — `Civitai/<media>/<ecosystem>[/<engine>]/…` — with the engine
+(sdcpp/comfy) shown as a sub-level only when an ecosystem is reachable through more than one engine
+(e.g. `Civitai/Image/zImage › zImage / turbo / createImage`, `Civitai/Image/anima/sdcpp`). Each
+discriminator variant is its own node so it shows only the inputs that variant actually uses:
 
 - **Civitai/Image** — Text To Image, Image Gen (one node per engine: Flux2, OpenAI, Google, Seedream, …), Upscaler, Background Removal
 - **Civitai/Video** — Video Gen (one node per engine: Wan, Kling, Vidu, Veo3, LTX, Sora, …), Upscaler, Interpolation, Enhancement

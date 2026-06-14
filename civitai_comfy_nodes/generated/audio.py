@@ -372,12 +372,12 @@ class CivitaiTextToSpeechCustom(CivitaiRecipeNodeBase):
 
 
 class CivitaiTextToSpeechVllmOmniQwen3Base(CivitaiRecipeNodeBase):
-    """vllm-omni / qwen3 / base — textToSpeech recipe via Civitai Orchestration."""
+    """qwen3 / base — textToSpeech recipe via Civitai Orchestration."""
 
     RECIPE = "textToSpeech"
     STEP_TYPE = "textToSpeech"
     DISCRIMINATOR = {"engine": "vllm-omni", "ecosystem": "qwen3", "operation": "base"}
-    CATEGORY = "Civitai/Audio/vllm-omni"
+    CATEGORY = "Civitai/Audio/qwen3"
     FUNCTION = "run"
     RETURN_TYPES = ("AUDIO", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("audio_blob", "model_type", "speaker", "workflow_id", "raw_json")
@@ -447,12 +447,12 @@ class CivitaiTextToSpeechVllmOmniQwen3Base(CivitaiRecipeNodeBase):
 
 
 class CivitaiTextToSpeechVllmOmniQwen3CustomVoice(CivitaiRecipeNodeBase):
-    """vllm-omni / qwen3 / customVoice — textToSpeech recipe via Civitai Orchestration."""
+    """qwen3 / customVoice — textToSpeech recipe via Civitai Orchestration."""
 
     RECIPE = "textToSpeech"
     STEP_TYPE = "textToSpeech"
     DISCRIMINATOR = {"engine": "vllm-omni", "ecosystem": "qwen3", "operation": "customVoice"}
-    CATEGORY = "Civitai/Audio/vllm-omni"
+    CATEGORY = "Civitai/Audio/qwen3"
     FUNCTION = "run"
     RETURN_TYPES = ("AUDIO", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("audio_blob", "model_type", "speaker", "workflow_id", "raw_json")
@@ -512,12 +512,12 @@ class CivitaiTextToSpeechVllmOmniQwen3CustomVoice(CivitaiRecipeNodeBase):
 
 
 class CivitaiTextToSpeechVllmOmniQwen3VoiceDesign(CivitaiRecipeNodeBase):
-    """vllm-omni / qwen3 / voiceDesign — textToSpeech recipe via Civitai Orchestration."""
+    """qwen3 / voiceDesign — textToSpeech recipe via Civitai Orchestration."""
 
     RECIPE = "textToSpeech"
     STEP_TYPE = "textToSpeech"
     DISCRIMINATOR = {"engine": "vllm-omni", "ecosystem": "qwen3", "operation": "voiceDesign"}
-    CATEGORY = "Civitai/Audio/vllm-omni"
+    CATEGORY = "Civitai/Audio/qwen3"
     FUNCTION = "run"
     RETURN_TYPES = ("AUDIO", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("audio_blob", "model_type", "speaker", "workflow_id", "raw_json")
@@ -575,12 +575,12 @@ class CivitaiTextToSpeechVllmOmniQwen3VoiceDesign(CivitaiRecipeNodeBase):
 
 
 class CivitaiTextToSpeechVllmOmniOmnivoice(CivitaiRecipeNodeBase):
-    """vllm-omni / omnivoice — textToSpeech recipe via Civitai Orchestration."""
+    """omnivoice — textToSpeech recipe via Civitai Orchestration."""
 
     RECIPE = "textToSpeech"
     STEP_TYPE = "textToSpeech"
     DISCRIMINATOR = {"engine": "vllm-omni", "ecosystem": "omnivoice"}
-    CATEGORY = "Civitai/Audio/vllm-omni"
+    CATEGORY = "Civitai/Audio/omnivoice"
     FUNCTION = "run"
     RETURN_TYPES = ("AUDIO", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("audio_blob", "model_type", "speaker", "workflow_id", "raw_json")
@@ -694,9 +694,9 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiAceStepAudio": "Civitai Ace Step Audio",
     "CivitaiAudioCaptioning": "Civitai Audio Captioning",
     "CivitaiTextToSpeechCustom": "custom",
-    "CivitaiTextToSpeechVllmOmniQwen3Base": "vllm-omni / qwen3 / base",
-    "CivitaiTextToSpeechVllmOmniQwen3CustomVoice": "vllm-omni / qwen3 / customVoice",
-    "CivitaiTextToSpeechVllmOmniQwen3VoiceDesign": "vllm-omni / qwen3 / voiceDesign",
-    "CivitaiTextToSpeechVllmOmniOmnivoice": "vllm-omni / omnivoice",
+    "CivitaiTextToSpeechVllmOmniQwen3Base": "qwen3 / base",
+    "CivitaiTextToSpeechVllmOmniQwen3CustomVoice": "qwen3 / customVoice",
+    "CivitaiTextToSpeechVllmOmniQwen3VoiceDesign": "qwen3 / voiceDesign",
+    "CivitaiTextToSpeechVllmOmniOmnivoice": "omnivoice",
     "CivitaiTranscription": "Civitai Transcription",
 }

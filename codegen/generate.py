@@ -120,11 +120,43 @@ def build_nodes(spec: dict, overrides: dict) -> list[ir.NodeIR]:
     # A fixed path is ambiguous when a deeper discriminator collapsed into more than one dropdown
     # group (e.g. fal/qwen2 split into create-ops vs edit-ops); name those by the group's lead op.
     ambiguous = {base for base, n in Counter(p[4] for p in pending).items() if n > 1}
+
+    # How many engines serve each (recipe, ecosystem) — drives whether the engine is shown as its
+    # own menu sub-level (only when an ecosystem is reachable through more than one engine).
+    engines_by_eco: dict = {}
+    for recipe, variant, _outputs, _ro, _base in pending:
+        fd = dict(variant.fixed)
+        if "ecosystem" in fd:
+            engines_by_eco.setdefault((recipe, fd["ecosystem"]), set()).add(fd.get("engine"))
+
     used: set[str] = set()
     nodes = []
     for recipe, variant, outputs, recipe_overrides, base in pending:
-        nodes.append(assemble_node(spec, recipe, variant, outputs, recipe_overrides, base, base in ambiguous, used))
+        nodes.append(
+            assemble_node(
+                spec, recipe, variant, outputs, recipe_overrides, base, base in ambiguous, used, engines_by_eco
+            )
+        )
     return nodes
+
+
+def _menu_facets(fixed: list) -> tuple[str | None, str | None, list]:
+    """Split a variant's discriminator path into (ecosystem, engine, rest) for menu placement.
+
+    The spec nests engine -> ecosystem (sdcpp/comfy span many ecosystems) while cloud engines
+    *are* the ecosystem. To present one consistent ecosystem-first tree:
+      - ecosystem = the nested `ecosystem` discriminator if present, else the top discriminator value.
+      - engine    = the `engine` value, surfaced only when a distinct `ecosystem` level exists.
+      - rest      = the remaining deeper facets (model/version/provider/operation), in order.
+    """
+    if not fixed:
+        return None, None, []
+    fd = dict(fixed)
+    if "ecosystem" in fd:
+        rest = [k for p, k in fixed if p not in ("engine", "ecosystem")]
+        return fd["ecosystem"], fd.get("engine"), rest
+    top_prop, top_key = fixed[0]
+    return top_key, None, [k for _p, k in fixed[1:]]
 
 
 def expand_collapse(spec: dict, ref_or_schema, resolved: frozenset) -> list[_Variant]:
@@ -237,6 +269,7 @@ def assemble_node(
     base_name: str,
     ambiguous: bool,
     used: set,
+    engines_by_eco: dict,
 ) -> ir.NodeIR:
     module, base_category = MODULES[recipe]
     display_overrides = recipe_overrides.get("display", {})
@@ -245,24 +278,40 @@ def assemble_node(
     decided = {p for p, _ in variant.fixed} | set(variant.combos)
 
     fixed_dict = {p: key for p, key in variant.fixed}
-    path_labels = [display_overrides.get(key, key) for _, key in variant.fixed]
+
+    def disp(key):
+        return display_overrides.get(key, key)
+
+    eco_key, engine_facet, rest_keys = _menu_facets(variant.fixed)
+    show_engine = engine_facet is not None and len(engines_by_eco.get((recipe, eco_key), ())) > 1
+
+    path_labels = []
+    if eco_key is not None:
+        path_labels.append(disp(eco_key))
+        if show_engine:
+            path_labels.append(disp(engine_facet))
+        path_labels.extend(disp(k) for k in rest_keys)
+
     combo_reps = [keys[0] for keys, _default in variant.combos.values()]
 
     class_name = base_name
     if ambiguous and combo_reps:
         class_name = base_name + "".join(ir.pascal_case(k) for k in combo_reps)
-        path_labels = path_labels + [display_overrides.get(k, k) for k in combo_reps]
+        path_labels = path_labels + [disp(k) for k in combo_reps]
     suffix = 2
     while class_name in used:
         class_name = f"{base_name}{suffix}"
         suffix += 1
     used.add(class_name)
 
-    # Variant nodes are titled by their discriminator path alone — the recipe + engine are already
-    # the category submenu (Civitai/Image/sdcpp), so repeating them in the title is redundant.
-    # Non-discriminated nodes keep a descriptive name (e.g. "Civitai Text To Image").
+    # Variant nodes are titled by their discriminator path (ecosystem-first), which doubles as the
+    # category submenu (Civitai/Image/<ecosystem>[/<engine>]). Non-discriminated nodes keep a
+    # descriptive name (e.g. "Civitai Text To Image").
     display_name = " / ".join(path_labels) if path_labels else f"Civitai {ir.title_case(recipe)}"
-    category = f"{base_category}/{path_labels[0]}" if path_labels else base_category
+    if eco_key is None:
+        category = base_category
+    else:
+        category = f"{base_category}/{disp(eco_key)}" + (f"/{disp(engine_facet)}" if show_engine else "")
 
     node = ir.NodeIR(
         class_name=class_name,
