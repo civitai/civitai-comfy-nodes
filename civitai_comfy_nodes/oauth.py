@@ -27,25 +27,34 @@ OAUTH_BASE = os.environ.get("CIVITAI_OAUTH_BASE", "https://civitai.com")
 SCOPE = 114689
 # Registered for the official "Civitai ComfyUI Nodes" OAuth app; override for your own app.
 CLIENT_ID = os.environ.get("CIVITAI_OAUTH_CLIENT_ID", "2d61872c-9aa9-4dbc-93c3-899c222842c1")
-# Preferred loopback port (a registered redirect URI). If it can't bind — e.g. it's in a Windows
-# reserved range — we fall back to any free OS-assigned port, which works once the OAuth server
-# allows loopback port flexibility (RFC 8252 §7.3: match localhost redirect URIs ignoring the port).
-PREFERRED_PORT = int(os.environ.get("CIVITAI_OAUTH_REDIRECT_PORT", "18188"))
+# Loopback callback ports the client tries, in order. EVERY one must be a registered redirect URI
+# on the OAuth app. They're spread across the range so a Windows reserved block (excluded port
+# range, the cause of WinError 10013) is very unlikely to cover them all. Override with
+# CIVITAI_OAUTH_REDIRECT_PORTS (comma-separated) if you register a different set.
+DEFAULT_PORTS = [18188, 7853, 12793, 23117, 31247, 41983]
 LOGIN_TIMEOUT_SECONDS = 300
 
 
+def _candidate_ports() -> list[int]:
+    override = os.environ.get("CIVITAI_OAUTH_REDIRECT_PORTS") or os.environ.get("CIVITAI_OAUTH_REDIRECT_PORT")
+    if override:
+        return [int(p) for p in override.replace(",", " ").split()]
+    return DEFAULT_PORTS
+
+
 def _bind_callback_server():
-    """Bind the loopback callback server; prefer PREFERRED_PORT, fall back to any free port.
-    Returns (server, port)."""
+    """Bind the loopback callback server on the first free candidate port. Returns (server, port)."""
+    ports = _candidate_ports()
     last_error = None
-    for port in (PREFERRED_PORT, 0):
+    for port in ports:
         try:
             server = http.server.HTTPServer(("127.0.0.1", port), _CallbackHandler)
-            return server, server.server_address[1]
+            return server, port
         except OSError as e:
             last_error = e
     raise CivitaiNodeError(
-        f"Could not bind any loopback port for the Civitai OAuth callback ({last_error}). "
+        f"Could not bind any of the Civitai OAuth callback ports {ports} ({last_error}). On Windows these "
+        "may all be in a reserved range (`netsh interface ipv4 show excludedportrange protocol=tcp`). "
         "Set CIVITAI_API_TOKEN or use a Civitai Auth node with mode=api_key instead."
     )
 

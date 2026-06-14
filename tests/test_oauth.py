@@ -82,7 +82,7 @@ def test_login_wait_is_interruptible(token_store, monkeypatch):
     # While waiting on the browser, the loop must poll ComfyUI's interrupt flag so Cancel works
     # instead of wedging the node for the full timeout.
     monkeypatch.setattr(oauth, "CLIENT_ID", "test-client")
-    monkeypatch.setattr(oauth, "PREFERRED_PORT", 18991)
+    monkeypatch.setattr(oauth, "_candidate_ports", lambda: [18991])
     monkeypatch.setattr(oauth.webbrowser, "open", lambda url: None)
 
     class _InterruptError(Exception):
@@ -106,15 +106,23 @@ def test_login_wait_is_interruptible(token_store, monkeypatch):
     srv.server_close()
 
 
-def test_bind_falls_back_to_free_port(monkeypatch):
+def test_bind_tries_next_candidate_when_first_is_taken(monkeypatch):
     import http.server
 
     blocker = http.server.HTTPServer(("127.0.0.1", 0), oauth._CallbackHandler)
     taken = blocker.server_address[1]
-    monkeypatch.setattr(oauth, "PREFERRED_PORT", taken)  # preferred port is occupied
+    probe = http.server.HTTPServer(("127.0.0.1", 0), oauth._CallbackHandler)
+    free = probe.server_address[1]
+    probe.server_close()
+    monkeypatch.setattr(oauth, "_candidate_ports", lambda: [taken, free])
     server, port = oauth._bind_callback_server()
     try:
-        assert port != taken and port > 0  # fell back to an OS-assigned free port
+        assert port == free  # skipped the occupied port, bound the next candidate
     finally:
         server.server_close()
         blocker.server_close()
+
+
+def test_candidate_ports_env_override(monkeypatch):
+    monkeypatch.setenv("CIVITAI_OAUTH_REDIRECT_PORTS", "1234, 5678 9012")
+    assert oauth._candidate_ports() == [1234, 5678, 9012]
