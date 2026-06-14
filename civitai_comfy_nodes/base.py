@@ -18,8 +18,10 @@ from .errors import CivitaiNodeError, workflow_failure_message
 # Propagates to ComfyUI's root logger, so these show in the same console as "[INFO] got prompt".
 logger = logging.getLogger("civitai_comfy_nodes")
 
-POLL_SCHEDULE = (2, 2, 5, 5, 10, 15)
-POLL_MAX_INTERVAL = 30
+# The consumer GET /workflows/{id} endpoint ignores its `wait` param (no server-side long-poll),
+# so completion latency is bounded by this client cadence — keep it tight but cheap.
+POLL_SCHEDULE = (1, 2, 3)
+POLL_MAX_INTERVAL = 5
 PROGRESS_BY_STATUS = {"unassigned": 5, "preparing": 8, "scheduled": 10, "processing": 40}
 
 
