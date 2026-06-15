@@ -503,8 +503,8 @@ function setupLoraRows(node) {
   }
   loraState(node);
   // Default to a sane width (and recover from any stale over-wide size) before the first measure.
-  const w = node.size?.[0] || 0;
-  if (w < 360 || w > 720) node.setSize?.([380, node.size?.[1] || 140]);
+  const currentWidth = node.size?.[0] || 0;
+  if (currentWidth < 360 || currentWidth > 720) node.setSize?.([380, node.size?.[1] || 140]);
   renderLoraRows(node);
   const origConfigure = node.onConfigure;
   node.onConfigure = function () {
