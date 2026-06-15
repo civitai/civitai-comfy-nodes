@@ -30,7 +30,9 @@ function injectStyles() {
     .cvg-card { position: relative; background: #1f1f23; border: 1px solid #27272a; border-radius: 9px;
       overflow: hidden; aspect-ratio: 1; cursor: pointer; }
     .cvg-card:hover { border-color: #2563eb; }
-    .cvg-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .cvg-card .cvg-media { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .cvg-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+      font-size: 30px; color: #71717a; background: #111113; }
     .cvg-badge { position: absolute; left: 5px; top: 5px; background: rgba(24,24,27,.85); color: #d4d4d8;
       border-radius: 5px; padding: 1px 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
     .cvg-add { position: absolute; right: 5px; bottom: 5px; width: 24px; height: 24px; border-radius: 6px;
@@ -192,15 +194,29 @@ function openLightbox(media, item) {
   document.body.appendChild(lb);
 }
 
+function thumbHtml(media) {
+  // VideoBlob/AudioBlob/3D have no preview image — render a first-frame <video> or a glyph instead.
+  if (media.kind === "video")
+    return `<video class="cvg-media" src="${esc(media.url)}#t=0.5" muted loop playsinline preload="metadata"></video>`;
+  if (media.kind === "audio") return `<div class="cvg-ph">♪</div>`;
+  if (media.kind === "model3d") return `<div class="cvg-ph">3D</div>`;
+  return `<img class="cvg-media" loading="lazy" src="${esc(media.previewUrl || media.url)}" />`;
+}
+
 function card(media, item) {
   const el = document.createElement("div");
   el.className = "cvg-card";
   el.draggable = true;
-  el.innerHTML = `<img loading="lazy" src="${esc(media.previewUrl || media.url)}" />
+  el.innerHTML = `${thumbHtml(media)}
     <span class="cvg-badge">${esc(media.kind)}</span>
     <button class="cvg-add" title="Add to canvas">＋</button>`;
-  el.querySelector("img").addEventListener("click", () => openLightbox(media, item));
+  el.addEventListener("click", (e) => { if (!e.target.closest(".cvg-add")) openLightbox(media, item); });
   el.querySelector(".cvg-add").addEventListener("click", (e) => { e.stopPropagation(); addToCanvas(media); });
+  const video = el.querySelector("video");
+  if (video) {
+    el.addEventListener("mouseenter", () => video.play?.().catch(() => {}));
+    el.addEventListener("mouseleave", () => { video.pause?.(); video.currentTime = 0; });
+  }
   el.addEventListener("dragstart", (e) => {
     e.dataTransfer.setData("application/x-civitai-media", JSON.stringify(media));
     e.dataTransfer.effectAllowed = "copy";
