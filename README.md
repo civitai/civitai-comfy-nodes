@@ -67,9 +67,11 @@ resource. Recipe nodes themselves have no Browse button — change a model by wi
   Checkpoint's `ckpt_name`). The model downloads into the matching ComfyUI folder **only when `path`
   is connected**, so AIR/cloud-only use never downloads. Drop it in front of any loader — no need to
   replace it.
-- **Civitai LoRA Selector** — set an AIR + strength (+ optional trigger word) and wire its `loras`
-  output into a recipe node's `loras` / `additional_networks` input. Chain several (`loras` →
-  `loras`) to stack multiple LoRAs.
+- **Civitai LoRA Selector** — holds **multiple LoRAs in one node**: each row has an enable toggle,
+  the model (pick/replace via Browse Civitai), a strength, and an optional trigger word; **＋ Add
+  LoRA** appends another. Wire its `loras` output into a recipe node's `loras` /
+  `additional_networks` input (chain another selector via the `loras` input to combine stacks). Wire
+  MODEL + CLIP to also download & apply the enabled LoRAs locally.
 - **Civitai Embedding Selector** — pick textual-inversion embeddings; chain (`embeddings` →
   `embeddings`) and wire into a recipe node's `embeddings` input.
 - **Civitai ControlNet** — pick a preprocessor, weight, step range, optional control image; chain

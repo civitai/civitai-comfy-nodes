@@ -118,8 +118,6 @@ class CivitaiChatSimple(CivitaiRecipeNodeBase):
         return {"ui": output.get("ui", {}), "result": (text, workflow_id, raw_json)}
 
 
-AIR_EXAMPLE = "urn:air:sdxl:lora:civitai:328553@368189"
-
 CONTROLNET_PREPROCESSORS = [
     "canny",
     "mlsd",
@@ -160,11 +158,13 @@ CONTROLNET_PREPROCESSORS = [
 
 
 class CivitaiLoraLoader:
-    """Civitai LoRA selector. Cloud: chain several (loras → loras) and wire the final `loras` output
-    into a recipe node's `loras` / `additional_networks` input. Local: wire a MODEL + CLIP into the
-    last selector of a chain — it downloads every LoRA in the stack and applies them, outputting the
-    patched MODEL/CLIP for local nodes (KSampler, …). The download only happens when model+clip
-    are connected, so cloud-only use stays free."""
+    """Civitai multi-LoRA selector. One node holds any number of LoRAs — each with an enable toggle,
+    AIR (picked via Browse Civitai), strength and optional trigger word — managed by the rows UI in
+    `web/civitai-catalog.js`, which serializes them into the hidden `loras_json` widget. Wire the
+    `loras` output into a recipe node's `loras` / `additional_networks` input (chain another selector
+    via the `loras` input to combine). Connect MODEL + CLIP to also download every enabled LoRA and
+    apply it locally for KSampler etc.; the download only happens when model+clip are wired, so
+    cloud-only use stays free."""
 
     CATEGORY = "Civitai/Loaders"
     FUNCTION = "load"
@@ -175,25 +175,37 @@ class CivitaiLoraLoader:
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "air": ("STRING", {"default": "", "tooltip": f"LoRA AIR, e.g. {AIR_EXAMPLE}"}),
-                "strength": ("FLOAT", {"default": 1.0, "min": -10.0, "max": 10.0, "step": 0.05}),
+                # Managed by the rows UI; hidden on the node. JSON: [{air, strength, triggerWord, on}, ...]
+                "loras_json": ("STRING", {"default": "[]"}),
             },
             "optional": {
-                "trigger_word": ("STRING", {"default": "", "tooltip": "Optional trigger word / embedding token"}),
-                "loras": ("CIVITAI_LORAS", {"tooltip": "Chain from another Civitai LoRA Loader"}),
+                "loras": ("CIVITAI_LORAS", {"tooltip": "Chain from another Civitai LoRA selector"}),
                 "model": ("MODEL", {"tooltip": "Connect a MODEL to apply the stack locally (downloads each LoRA)"}),
                 "clip": ("CLIP", {"tooltip": "Connect a CLIP to apply the stack locally"}),
                 "api_config": ("CIVITAI_CONFIG", {}),
             },
         }
 
-    def load(self, air, strength, trigger_word="", loras=None, model=None, clip=None, api_config=None):
+    @staticmethod
+    def _parse_rows(loras_json):
+        try:
+            rows = json.loads(loras_json) if loras_json else []
+        except (TypeError, ValueError):
+            return []
+        return rows if isinstance(rows, list) else []
+
+    def load(self, loras_json="[]", loras=None, model=None, clip=None, api_config=None):
         stack = list(loras or [])
-        air = air.strip()
-        if air:
-            entry = {"air": air, "strength": strength}
-            if trigger_word.strip():
-                entry["triggerWord"] = trigger_word.strip()
+        for row in self._parse_rows(loras_json):
+            if not isinstance(row, dict) or row.get("on") is False:
+                continue
+            air = (row.get("air") or "").strip()
+            if not air:
+                continue
+            entry = {"air": air, "strength": float(row.get("strength", 1.0))}
+            trigger = (row.get("triggerWord") or "").strip()
+            if trigger:
+                entry["triggerWord"] = trigger
             stack.append(entry)
 
         # Local mode: model + clip wired in -> download and apply the whole accumulated stack.

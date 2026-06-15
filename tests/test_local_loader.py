@@ -77,11 +77,17 @@ def test_select_downloads_to_air_folder_when_path_wired(monkeypatch):
     assert air == "urn:air:sdxl:lora:civitai:1@2"
 
 
+def _rows(*entries):
+    import json
+
+    return json.dumps([{"air": air, "strength": strength, "on": True} for air, strength in entries])
+
+
 def test_lora_loader_cloud_mode_does_not_download(monkeypatch):
     from civitai_comfy_nodes.nodes_manual import CivitaiLoraLoader
 
     monkeypatch.setattr(local_models, "download_model", lambda *a, **k: (_ for _ in ()).throw(AssertionError("no")))
-    stack, model, clip = CivitaiLoraLoader().load("urn:air:sdxl:lora:civitai:1@2", 0.7)
+    stack, model, clip = CivitaiLoraLoader().load(loras_json=_rows(("urn:air:sdxl:lora:civitai:1@2", 0.7)))
     assert stack == [{"air": "urn:air:sdxl:lora:civitai:1@2", "strength": 0.7}]
     assert model is None and clip is None
 
@@ -105,9 +111,12 @@ def test_lora_loader_local_mode_applies_whole_stack(monkeypatch):
         return f"{model}+{path}", f"{clip}+{path}"
 
     monkeypatch.setattr(local_models, "apply_lora", fake_apply)
-    # chain two loras, then apply locally on the terminal node
-    chain, _, _ = CivitaiLoraLoader().load("urn:air:x:lora:civitai:1@2", 0.5)
-    stack, model, clip = CivitaiLoraLoader().load("urn:air:x:lora:civitai:3@4", 0.8, loras=chain, model="M", clip="C")
+    # two loras in one node's rows, applied locally
+    stack, model, clip = CivitaiLoraLoader().load(
+        loras_json=_rows(("urn:air:x:lora:civitai:1@2", 0.5), ("urn:air:x:lora:civitai:3@4", 0.8)),
+        model="M",
+        clip="C",
+    )
     assert [a for a, _ in downloaded] == ["urn:air:x:lora:civitai:1@2", "urn:air:x:lora:civitai:3@4"]
     assert applied == [("/urn:air:x:lora:civitai:1@2", 0.5), ("/urn:air:x:lora:civitai:3@4", 0.8)]
     assert model.startswith("M+") and clip.startswith("C+")

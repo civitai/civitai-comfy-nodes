@@ -7,10 +7,11 @@
 import { app } from "../../scripts/app.js";
 
 const NODE_TARGETS = {
-  CivitaiLoraLoader: { widget: "air", type: "LORA" },
   CivitaiModelSelector: { widget: "air", type: "Checkpoint" },
   CivitaiEmbeddingSelector: { widget: "air", type: "TextualInversion" },
 };
+// The multi-LoRA node manages its own rows UI (see setupLoraRows) rather than a single `air` widget.
+const LORA_NODE = "CivitaiLoraLoader";
 const TYPES = ["Checkpoint", "LORA", "TextualInversion", "VAE", "Controlnet", "Upscaler"];
 
 // Populated from /civitai/catalog/meta: { ecosystems: [{key,label}], nodeEcosystems: {NodeClass: key} }.
@@ -116,6 +117,28 @@ function injectStyles() {
       text-overflow: ellipsis; white-space: nowrap; }
     .cvc-np.cvc-np-empty { cursor: default; }
     .cvc-np.cvc-np-empty .cvc-np-name { color: #a1a1aa; font-weight: 500; }
+    .cvl { display: flex; flex-direction: column; gap: 5px; box-sizing: border-box; width: 100%; height: 100%;
+      padding: 4px 2px; overflow: hidden; font: 12px system-ui, sans-serif; }
+    .cvl-rows { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+    .cvl-row { display: flex; align-items: center; gap: 6px; background: #1f1f23; border: 1px solid #27272a;
+      border-radius: 7px; padding: 3px 6px; box-sizing: border-box; }
+    .cvl-row.cvl-off { opacity: .45; }
+    .cvl-on { flex: 0 0 auto; cursor: pointer; margin: 0; }
+    .cvl-thumb { width: 22px; height: 22px; border-radius: 4px; object-fit: cover; background: #111113; flex: 0 0 auto; }
+    .cvl-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      cursor: pointer; color: #e4e4e7; }
+    .cvl-name:hover { color: #60a5fa; }
+    .cvl-tw { width: 76px; flex: 0 0 auto; box-sizing: border-box; background: #27272a; color: #e4e4e7;
+      border: 1px solid #3f3f46; border-radius: 5px; padding: 2px 5px; font: inherit; }
+    .cvl-str { width: 52px; flex: 0 0 auto; box-sizing: border-box; background: #27272a; color: #e4e4e7;
+      border: 1px solid #3f3f46; border-radius: 5px; padding: 2px 4px; font: inherit; text-align: right; }
+    .cvl-x { flex: 0 0 auto; background: transparent; border: none; color: #a1a1aa; cursor: pointer;
+      font-size: 14px; line-height: 1; padding: 0 2px; }
+    .cvl-x:hover { color: #f87171; }
+    .cvl-add { background: #27272a; color: #e4e4e7; border: 1px dashed #3f3f46; border-radius: 7px;
+      padding: 6px; cursor: pointer; font: inherit; flex: 0 0 auto; }
+    .cvl-add:hover { border-color: #2563eb; color: #fff; }
+    .cvl-empty { color: #71717a; text-align: center; padding: 6px 0; }
   `;
   const style = document.createElement("style");
   style.textContent = css;
@@ -126,7 +149,8 @@ function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-function openCatalog(targetWidget, defaultType, defaultEcosystem) {
+// openCatalog({ type, ecosystem, onPick }) — onPick(entry) receives the chosen catalogue entry.
+function openCatalog({ type: defaultType, ecosystem: defaultEcosystem, onPick }) {
   injectStyles();
   const types = META.types && META.types.length ? META.types : TYPES;
   const ecoOptions =
@@ -209,13 +233,7 @@ function openCatalog(targetWidget, defaultType, defaultEcosystem) {
       // The ↗ link opens the model page; don't let that click also pick the card.
       card.querySelector(".cvc-link")?.addEventListener("click", (ev) => ev.stopPropagation());
       const pick = () => {
-        const node = targetWidget.node;
-        if (node) {
-          node.properties = node.properties || {};
-          node.properties.civitai_model = e; // metadata for the on-node preview (persists in the graph)
-        }
-        targetWidget.value = e.air;
-        targetWidget.callback?.(e.air, app.canvas, node, undefined, undefined);
+        onPick?.(e);
         app.graph?.setDirtyCanvas?.(true, true);
         close();
       };
@@ -327,6 +345,151 @@ function setupPreview(node, airWidget) {
   refreshPreview(node, airWidget);
 }
 
+// ── Multi-LoRA rows widget (one node holds many LoRAs: toggle / browse / strength / trigger) ──────
+const LORA_ROW_H = 30;
+
+function airTail(air) {
+  const s = String(air || "");
+  return s.split("@")[0].split(":").pop() || s;
+}
+
+function loraJsonWidget(node) {
+  return node.widgets?.find((w) => w.name === "loras_json");
+}
+
+function loraRows(node) {
+  const w = loraJsonWidget(node);
+  try {
+    const v = JSON.parse(w?.value || "[]");
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLoraRows(node, rows) {
+  const w = loraJsonWidget(node);
+  if (w) {
+    w.value = JSON.stringify(rows);
+    w.callback?.(w.value);
+  }
+}
+
+function loraState(node) {
+  if (node.__cvlState) return node.__cvlState;
+  injectStyles();
+  const el = document.createElement("div");
+  el.className = "cvl";
+  el.innerHTML = `<div class="cvl-rows"></div><button class="cvl-add">＋ Add LoRA</button>`;
+  const widget = node.addDOMWidget("civitai_loras", "loras", el, { serialize: false });
+  widget.computeSize = (width) => {
+    const n = loraRows(node).length;
+    const rowsH = (n || 1) * LORA_ROW_H; // a single "empty" line when no rows
+    return [width, 8 + rowsH + 34];
+  };
+  el.querySelector(".cvl-add").addEventListener("click", () =>
+    openCatalog({
+      type: "LORA",
+      ecosystem: resolveEcosystem(node),
+      onPick: (e) => {
+        const rows = loraRows(node);
+        rows.push({
+          air: e.air, name: e.name, strength: 1.0, triggerWord: "", on: true,
+          thumbnailUrl: e.thumbnailUrl, versionName: e.versionName, baseModel: e.baseModel,
+        });
+        commitLoraRows(node, rows);
+      },
+    })
+  );
+  node.__cvlState = { widget, el };
+  return node.__cvlState;
+}
+
+function commitLoraRows(node, rows) {
+  writeLoraRows(node, rows);
+  renderLoraRows(node);
+}
+
+function renderLoraRows(node) {
+  const st = loraState(node);
+  const rows = loraRows(node);
+  const list = st.el.querySelector(".cvl-rows");
+  list.innerHTML = "";
+  if (!rows.length) {
+    const empty = document.createElement("div");
+    empty.className = "cvl-empty";
+    empty.textContent = "No LoRAs yet — add one below.";
+    list.appendChild(empty);
+  }
+  rows.forEach((row, i) => {
+    const r = document.createElement("div");
+    r.className = "cvl-row" + (row.on === false ? " cvl-off" : "");
+    const thumb = row.thumbnailUrl ? `<img class="cvl-thumb" src="${esc(row.thumbnailUrl)}" />` : "";
+    r.innerHTML =
+      `<input type="checkbox" class="cvl-on" ${row.on === false ? "" : "checked"} title="Enable / disable" />` +
+      thumb +
+      `<div class="cvl-name" title="${esc(row.air)} — click to change">${esc(row.name || airTail(row.air))}</div>` +
+      `<input class="cvl-tw" placeholder="trigger" value="${esc(row.triggerWord || "")}" title="Trigger word" />` +
+      `<input class="cvl-str" type="number" step="0.05" value="${esc(row.strength ?? 1.0)}" title="Strength" />` +
+      `<button class="cvl-x" title="Remove">✕</button>`;
+    r.querySelector(".cvl-on").addEventListener("change", (e) => {
+      row.on = e.target.checked;
+      r.classList.toggle("cvl-off", !e.target.checked);
+      writeLoraRows(node, rows);
+    });
+    r.querySelector(".cvl-name").addEventListener("click", () =>
+      openCatalog({
+        type: "LORA",
+        ecosystem: resolveEcosystem(node),
+        onPick: (e) => {
+          Object.assign(row, {
+            air: e.air, name: e.name,
+            thumbnailUrl: e.thumbnailUrl, versionName: e.versionName, baseModel: e.baseModel,
+          });
+          commitLoraRows(node, rows);
+        },
+      })
+    );
+    r.querySelector(".cvl-tw").addEventListener("change", (e) => {
+      row.triggerWord = e.target.value;
+      writeLoraRows(node, rows);
+    });
+    r.querySelector(".cvl-str").addEventListener("change", (e) => {
+      row.strength = parseFloat(e.target.value);
+      if (Number.isNaN(row.strength)) row.strength = 1.0;
+      writeLoraRows(node, rows);
+    });
+    r.querySelector(".cvl-x").addEventListener("click", () => {
+      rows.splice(i, 1);
+      commitLoraRows(node, rows);
+    });
+    list.appendChild(r);
+  });
+  // grow the node to fit the current rows
+  const h = st.widget.computeSize(node.size?.[0] || 360)[1];
+  node.setSize?.([Math.max(node.size?.[0] || 0, 360), node.computeSize?.()[1] || h]);
+  node.setDirtyCanvas?.(true, true);
+}
+
+function setupLoraRows(node) {
+  const w = loraJsonWidget(node);
+  if (w) {
+    // The JSON string is the serialized source of truth; hide its raw widget, show the rows UI.
+    w.hidden = true;
+    w.type = "hidden";
+    w.computeSize = () => [0, -4];
+  }
+  loraState(node);
+  renderLoraRows(node);
+  if ((node.size?.[0] || 0) < 360) node.setSize?.([360, node.size?.[1] || 140]);
+  const origConfigure = node.onConfigure;
+  node.onConfigure = function () {
+    const r = origConfigure?.apply(this, arguments);
+    renderLoraRows(node);
+    return r;
+  };
+}
+
 function targetFor(node) {
   // Only the dedicated Civitai selector nodes get a Browse button. Recipe nodes take their models
   // via CIVITAI_AIR sockets (wire a Model Selector), so there's no model widget to attach to.
@@ -348,6 +511,10 @@ app.registerExtension({
     }
   },
   nodeCreated(node) {
+    if (node.comfyClass === LORA_NODE) {
+      setupLoraRows(node);
+      return;
+    }
     const target = targetFor(node);
     if (!target) return;
     setupPreview(node, target.widget);
@@ -355,7 +522,16 @@ app.registerExtension({
     // Type + ecosystem are resolved at click time so they reflect the node's current wiring
     // (a Model Selector feeding a `vae` socket on an sd1 node defaults to VAE / sd1).
     const button = node.addWidget("button", "🔍 Browse Civitai", null, () =>
-      openCatalog(target.widget, resolveModelType(node) || target.type, resolveEcosystem(node))
+      openCatalog({
+        type: resolveModelType(node) || target.type,
+        ecosystem: resolveEcosystem(node),
+        onPick: (e) => {
+          node.properties = node.properties || {};
+          node.properties.civitai_model = e; // metadata for the on-node preview (persists in the graph)
+          target.widget.value = e.air;
+          target.widget.callback?.(e.air, app.canvas, node, undefined, undefined);
+        },
+      })
     );
     button.serialize = false;
   },

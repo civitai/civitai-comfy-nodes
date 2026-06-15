@@ -1,23 +1,40 @@
+import json
+
 from civitai_comfy_nodes.base import CivitaiRecipeNodeBase, F
 from civitai_comfy_nodes.client import OrchestrationClient
 from civitai_comfy_nodes.config import ClientConfig
 from civitai_comfy_nodes.nodes_manual import CivitaiLoraLoader
 
 
-def test_lora_loader_chains():
-    # Cloud mode (no model/clip wired): builds the stack, model/clip pass through as None.
-    first, m1, c1 = CivitaiLoraLoader().load("urn:air:sdxl:lora:civitai:1@2", 0.8, trigger_word="foo")
-    second, m2, c2 = CivitaiLoraLoader().load("urn:air:sdxl:lora:civitai:3@4", 1.0, loras=first)
-    assert (m1, c1, m2, c2) == (None, None, None, None)
-    assert second == [
+def test_lora_loader_builds_stack_from_rows():
+    # Cloud mode (no model/clip wired): builds the stack from the rows JSON, model/clip pass as None.
+    rows = json.dumps(
+        [
+            {"air": "urn:air:sdxl:lora:civitai:1@2", "strength": 0.8, "triggerWord": "foo", "on": True},
+            {"air": "urn:air:sdxl:lora:civitai:3@4", "strength": 1.0},  # `on` defaults to enabled
+            {"air": "urn:air:sdxl:lora:civitai:5@6", "strength": 1.0, "on": False},  # disabled -> skipped
+            {"air": "   ", "on": True},  # blank -> skipped
+        ]
+    )
+    stack, model, clip = CivitaiLoraLoader().load(loras_json=rows)
+    assert (model, clip) == (None, None)
+    assert stack == [
         {"air": "urn:air:sdxl:lora:civitai:1@2", "strength": 0.8, "triggerWord": "foo"},
         {"air": "urn:air:sdxl:lora:civitai:3@4", "strength": 1.0},
     ]
 
 
-def test_lora_loader_skips_blank_air():
-    stack, model, clip = CivitaiLoraLoader().load("   ", 1.0)
-    assert stack == []
+def test_lora_loader_chains_from_input():
+    first = [{"air": "a", "strength": 0.5}]
+    rows = json.dumps([{"air": "b", "strength": 1.0, "on": True}])
+    stack, _m, _c = CivitaiLoraLoader().load(loras_json=rows, loras=first)
+    assert stack == [{"air": "a", "strength": 0.5}, {"air": "b", "strength": 1.0}]
+
+
+def test_lora_loader_tolerates_empty_and_bad_json():
+    assert CivitaiLoraLoader().load(loras_json="[]")[0] == []
+    assert CivitaiLoraLoader().load(loras_json="not json")[0] == []
+    assert CivitaiLoraLoader().load()[0] == []
 
 
 class _ArrayNode(CivitaiRecipeNodeBase):
