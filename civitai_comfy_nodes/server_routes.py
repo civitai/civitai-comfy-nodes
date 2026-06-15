@@ -1,9 +1,13 @@
-"""Registers same-origin proxy routes so the catalog picker JS can search Civitai (no CORS)
-and learn each node's expected ecosystem. No-op when imported outside ComfyUI (e.g. pytest)."""
+"""Registers same-origin proxy routes so the catalog picker JS can search Civitai (no CORS), the
+Civitai sidebar can list the user's generations, and each node learns its expected ecosystem.
+No-op when imported outside ComfyUI (e.g. pytest)."""
 
 import asyncio
+import os
+import uuid
 
 from . import catalog
+from .errors import CivitaiAuthError
 
 try:
     from aiohttp import web
@@ -12,6 +16,119 @@ try:
     _server = PromptServer.instance
 except Exception:
     _server = None
+
+
+# ── Generation gallery: flatten workflows → media items (pure; unit-tested without ComfyUI) ──────
+
+_BLOB_KINDS = {"image", "video", "audio", "model3d"}
+
+
+def _walk_blobs(node):
+    """Yield blob-shaped dicts anywhere in a step output, without recursing into a blob itself."""
+    if isinstance(node, dict):
+        if node.get("type") in _BLOB_KINDS and ("url" in node or "previewUrl" in node or "id" in node):
+            yield node
+            return
+        for value in node.values():
+            yield from _walk_blobs(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from _walk_blobs(value)
+
+
+def flatten_generations(workflows: list, kinds: set | None = None) -> list:
+    """Slim a workflow list down to displayable media items, dropping blocked/unavailable blobs and
+    workflows with no usable media. Generic blob-walk handles image/video/audio/3D step outputs."""
+    items = []
+    for workflow in workflows:
+        media = []
+        for step in workflow.get("steps") or []:
+            for blob in _walk_blobs(step.get("output")):
+                if blob.get("available") is False or blob.get("blockedReason"):
+                    continue
+                if kinds and blob.get("type") not in kinds:
+                    continue
+                url = blob.get("url")
+                preview = blob.get("previewUrl") or url
+                if not (url or preview):
+                    continue
+                media.append(
+                    {
+                        "kind": blob.get("type"),
+                        "url": url,
+                        "previewUrl": preview,
+                        "width": blob.get("width"),
+                        "height": blob.get("height"),
+                        "blobId": blob.get("id"),
+                    }
+                )
+        if not media:
+            continue
+        items.append(
+            {
+                "workflowId": workflow.get("id"),
+                "createdAt": workflow.get("createdAt"),
+                "status": workflow.get("status"),
+                "cost": (workflow.get("cost") or {}).get("total"),
+                "media": media,
+                "meta": workflow.get("metadata") or {},
+            }
+        )
+    return items
+
+
+def _guess_ext(kind: str, data: bytes) -> str:
+    head = data[:12]
+    if head.startswith(b"\x89PNG"):
+        return ".png"
+    if head.startswith(b"\xff\xd8\xff"):
+        return ".jpg"
+    if head[:4] == b"RIFF" and head[8:12] == b"WEBP":
+        return ".webp"
+    if head[:4] == b"GIF8":
+        return ".gif"
+    if head[4:8] == b"ftyp":
+        return ".mp4"
+    if head.startswith(b"fLaC"):
+        return ".flac"
+    if head.startswith(b"ID3") or head[:2] == b"\xff\xfb":
+        return ".mp3"
+    if head[:4] == b"glTF":
+        return ".glb"
+    return {"image": ".png", "video": ".mp4", "audio": ".flac", "model3d": ".glb"}.get(kind, ".bin")
+
+
+def _new_client(*, interactive: bool = False):
+    from .client import OrchestrationClient
+    from .config import resolve_config
+
+    return OrchestrationClient(resolve_config(interactive=interactive))
+
+
+def _list_generations(cursor: str | None, take: int) -> dict:
+    return _new_client().query_workflows(cursor=cursor, take=take)
+
+
+def _validate_and_save_key(key: str) -> None:
+    from . import oauth
+    from .client import OrchestrationClient
+    from .config import ClientConfig, base_url
+
+    OrchestrationClient(ClientConfig(base_url=base_url(), token=key)).query_workflows(take=1)  # 401s if invalid
+    oauth.save_api_key(key)
+
+
+def _import_blob(blob_id: str | None, url: str | None, kind: str) -> dict:
+    import folder_paths  # ComfyUI runtime
+
+    client = _new_client()
+    data = client.download_blob({"id": blob_id, "url": url})
+    safe = "".join(c for c in (blob_id or uuid.uuid4().hex) if c.isalnum() or c in "-_")[:48]
+    name = f"civitai_{safe}{_guess_ext(kind, data)}"
+    path = os.path.join(folder_paths.get_input_directory(), name)
+    with open(path, "wb") as handle:
+        handle.write(data)
+    return {"name": name, "subfolder": "", "type": "input"}
 
 
 def node_ecosystem_map() -> dict:
@@ -59,3 +176,77 @@ if _server is not None:
         return web.json_response(
             {"ecosystems": ecosystems, "nodeEcosystems": node_ecosystem_map(), "types": catalog.CATALOG_TYPES}
         )
+
+    @_server.routes.get("/civitai/auth/status")
+    async def _civitai_auth_status(request):
+        from .config import auth_state
+
+        token, source = auth_state()
+        return web.json_response({"authenticated": bool(token), "source": source})
+
+    @_server.routes.post("/civitai/auth/api-key")
+    async def _civitai_auth_api_key(request):
+        body = await request.json()
+        key = (body.get("apiKey") or "").strip()
+        if not key:
+            return web.json_response({"error": "API key is empty"}, status=400)
+        loop = asyncio.get_event_loop()
+        try:
+            await loop.run_in_executor(None, lambda: _validate_and_save_key(key))
+        except Exception as e:  # invalid/rejected key
+            return web.json_response({"error": f"Key rejected: {e}"}, status=401)
+        return web.json_response({"ok": True})
+
+    @_server.routes.post("/civitai/auth/login")
+    async def _civitai_auth_login(request):
+        from . import oauth
+
+        loop = asyncio.get_event_loop()
+        try:
+            await loop.run_in_executor(None, oauth.interactive_login)
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=502)
+        return web.json_response({"ok": True})
+
+    @_server.routes.post("/civitai/auth/logout")
+    async def _civitai_auth_logout(request):
+        from . import oauth
+
+        oauth.clear_credentials()
+        return web.json_response({"ok": True})
+
+    @_server.routes.get("/civitai/workflows/list")
+    async def _civitai_workflows_list(request):
+        cursor = request.query.get("cursor") or None
+        kinds = request.query.get("kinds")
+        kind_set = set(kinds.split(",")) if kinds else None
+        try:
+            take = max(1, min(int(request.query.get("take", "60")), 200))
+        except ValueError:
+            take = 60
+        loop = asyncio.get_event_loop()
+        try:
+            data = await loop.run_in_executor(None, lambda: _list_generations(cursor, take))
+        except CivitaiAuthError:
+            return web.json_response({"error": "auth_required"}, status=401)
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=502)
+        items = flatten_generations(data.get("items") or [], kind_set)
+        return web.json_response({"next": data.get("next"), "items": items})
+
+    @_server.routes.post("/civitai/workflows/import")
+    async def _civitai_workflows_import(request):
+        body = await request.json()
+        blob_id = body.get("blobId")
+        url = body.get("url")
+        kind = body.get("kind") or "image"
+        if not (blob_id or url):
+            return web.json_response({"error": "blobId or url required"}, status=400)
+        loop = asyncio.get_event_loop()
+        try:
+            result = await loop.run_in_executor(None, lambda: _import_blob(blob_id, url, kind))
+        except CivitaiAuthError:
+            return web.json_response({"error": "auth_required"}, status=401)
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=502)
+        return web.json_response(result)

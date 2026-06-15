@@ -5,6 +5,11 @@ class CivitaiNodeError(Exception):
     """Raised for any Civitai orchestration failure; the message is shown in the ComfyUI error popup."""
 
 
+class CivitaiAuthError(CivitaiNodeError):
+    """No credential is available and interactive login was disabled (e.g. a server-side proxy
+    route). Callers surface this as an 'auth required' state instead of blocking on a browser login."""
+
+
 def http_error_message(status_code: int, body_text: str) -> str:
     detail = body_text
     field_errors = ""

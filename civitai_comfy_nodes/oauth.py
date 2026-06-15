@@ -81,6 +81,38 @@ def _save_tokens(tokens: dict) -> None:
     path.chmod(0o600)
 
 
+def api_key_store_path() -> Path:
+    override = os.environ.get("CIVITAI_COMFY_API_KEY_STORE")
+    if override:
+        return Path(override)
+    return Path.home() / ".civitai" / "comfy-api-key"
+
+
+def stored_api_key() -> str | None:
+    """A manually-entered API key persisted by the sidebar 'connect' flow (or None)."""
+    try:
+        key = api_key_store_path().read_text().strip()
+    except FileNotFoundError:
+        return None
+    return key or None
+
+
+def save_api_key(key: str) -> None:
+    path = api_key_store_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(key.strip())
+    path.chmod(0o600)
+
+
+def clear_credentials() -> None:
+    """Remove the stored manual API key and OAuth tokens (the sidebar 'disconnect')."""
+    for path in (api_key_store_path(), token_store_path()):
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            pass
+
+
 def _store_token_response(payload: dict) -> dict:
     tokens = {
         "access_token": payload["access_token"],

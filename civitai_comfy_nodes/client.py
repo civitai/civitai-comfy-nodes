@@ -47,6 +47,31 @@ class OrchestrationClient:
         body = {"steps": [{"$type": step_type, "input": input_payload}]}
         return self._request("POST", "/v2/consumer/workflows", params=params, json=body).json()
 
+    def query_workflows(
+        self,
+        *,
+        cursor: str | None = None,
+        take: int = 60,
+        exclude_failed: bool = True,
+        hide_mature: bool | None = None,
+        from_date: str | None = None,
+        to_date: str | None = None,
+    ) -> dict:
+        """List the caller's own workflows newest-first (scoped to the token's user). Returns
+        `{"next": <cursor|None>, "items": [workflow, ...]}`; pass `next` back as `cursor` to page."""
+        params: dict = {"take": take}
+        if cursor:
+            params["cursor"] = cursor
+        if exclude_failed:
+            params["excludeFailed"] = "true"
+        if hide_mature is not None:
+            params["hideMatureContent"] = "true" if hide_mature else "false"
+        if from_date:
+            params["fromDate"] = from_date
+        if to_date:
+            params["toDate"] = to_date
+        return self._request("GET", "/v2/consumer/workflows", params=params).json()
+
     def get_workflow(self, workflow_id: str, wait: int = 0) -> dict:
         """Fetch a workflow. `wait` (seconds) long-polls: the server holds the request until the
         workflow completes or `wait` elapses (then 202 with the current state). Falls back to a
