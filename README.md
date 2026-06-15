@@ -1,5 +1,9 @@
 # civitai-comfy-nodes
 
+> ⚠️ **Under active development — not yet available in preview.** This repo is a
+> work in progress: nodes, APIs, and behavior may change without notice, and it
+> is not yet released for public preview. Use at your own risk.
+
 ComfyUI custom nodes for the [Civitai Orchestration API](https://developer.civitaic.com/orchestration/).
 Run Civitai's cloud recipes — image/video/audio generation, upscaling, training, captioning,
 moderation — as nodes inside any local ComfyUI graph. No local GPU or model downloads needed;
