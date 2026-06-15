@@ -438,7 +438,8 @@ function renderLoraRows(node) {
       `<input type="checkbox" class="cvl-on" ${row.on === false ? "" : "checked"} title="Enable / disable" />` +
       thumb +
       `<div class="cvl-name" title="${esc(row.air)} — click to change">${esc(row.name || airTail(row.air))}</div>` +
-      `<input class="cvl-tw" placeholder="trigger" value="${esc(row.triggerWord || "")}" title="Trigger word" />` +
+      `<input class="cvl-tw" placeholder="keywords" value="${esc(row.triggerWord || "")}" ` +
+      `title="The LoRA's trained words — add these to your prompt to invoke it. The LoRA itself applies by strength regardless; this field is just a reminder (the generator ignores it for LoRAs)." />` +
       `<input class="cvl-str" type="number" step="0.05" value="${esc(row.strength ?? 1.0)}" title="Strength" />` +
       `<button class="cvl-x" title="Remove">✕</button>`;
     r.querySelector(".cvl-on").addEventListener("change", (e) => {

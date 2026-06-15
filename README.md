@@ -68,12 +68,19 @@ resource. Recipe nodes themselves have no Browse button — change a model by wi
   is connected**, so AIR/cloud-only use never downloads. Drop it in front of any loader — no need to
   replace it.
 - **Civitai LoRA Selector** — holds **multiple LoRAs in one node**: each row has an enable toggle,
-  the model (pick/replace via Browse Civitai), a strength, and an optional trigger word; **＋ Add
-  LoRA** appends another. Wire its `loras` output into a recipe node's `loras` /
-  `additional_networks` input (chain another selector via the `loras` input to combine stacks). Wire
-  MODEL + CLIP to also download & apply the enabled LoRAs locally.
+  the model (pick/replace via Browse Civitai), a strength, and a **keywords** field; **＋ Add LoRA**
+  appends another. Wire its `loras` output into a recipe node's `loras` / `additional_networks` input
+  (chain another selector via the `loras` input to combine stacks). Wire MODEL + CLIP to also
+  download & apply the enabled LoRAs locally. The **keywords** field is auto-filled from the LoRA's
+  trained words purely as a reminder — a LoRA applies by its AIR + strength, so the generator
+  **ignores** these words; to actually invoke the trained concept, paste them into your recipe node's
+  **prompt**.
 - **Civitai Embedding Selector** — pick textual-inversion embeddings; chain (`embeddings` →
-  `embeddings`) and wire into a recipe node's `embeddings` input.
+  `embeddings`) and wire into a recipe node's `embeddings` input. Embeddings **apply automatically**
+  (the sdcpp pipeline prepends each one to the positive prompt), so no trigger word is needed. To use
+  a **negative** embedding, reference it by its model name in the recipe node's **negative prompt** —
+  that places it on the negative side instead. (Only sdcpp ecosystems — sd1/sdxl — expose an
+  `embeddings` input.)
 - **Civitai ControlNet** — pick a preprocessor, weight, step range, optional control image; chain
   and wire into a recipe node's `control_nets` input.
 
