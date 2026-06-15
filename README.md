@@ -21,7 +21,8 @@ Nodes resolve credentials in this order:
 
 1. A connected **Civitai Auth** node (explicit token / base URL / mature-content / timeout overrides)
 2. The `CIVITAI_API_TOKEN` environment variable ([create an API key](https://civitai.com/user/account))
-3. A stored OAuth login (`~/.civitai/comfy-oauth.json`, auto-refreshed)
+3. A stored API key (`~/.civitai/comfy-api-key`) or OAuth login (`~/.civitai/comfy-oauth.json`,
+   auto-refreshed) — both can be set from the **Civitai sidebar's connect panel** (no env var needed)
 4. An interactive browser login (OAuth + PKCE) — requires `CIVITAI_OAUTH_CLIENT_ID` to be configured
 
 Headless/remote ComfyUI installs should use the env var.
@@ -53,8 +54,9 @@ referenced by [AIR URNs](https://developer.civitaic.com/guide/air) (e.g.
 Recipe nodes expose their model references as typed **sockets**, not text widgets — `model`/`vae`
 are `CIVITAI_AIR`, `loras` is `CIVITAI_LORAS`, `embeddings` is `CIVITAI_EMBEDDINGS`. You fill them by
 wiring a **Civitai/Loaders** selector node; each selector has a **🔍 Browse Civitai** button (a
-searchable card grid via a same-origin proxy to `civitai.com/api/v1/models`). Recipe nodes
-themselves have no Browse button — change a model by wiring a selector.
+searchable card grid of generation-capable models via a same-origin proxy to
+`civitai.com/api/v1/models`) and shows an on-node preview (thumbnail + name) of its current
+resource. Recipe nodes themselves have no Browse button — change a model by wiring a selector.
 
 - **Civitai Model Selector** — pick a model; it outputs the `air` (wire into a recipe node's `model`
   / `vae` socket) plus a `path` you wire into a *standard* loader's file widget (e.g. Load
@@ -70,6 +72,16 @@ themselves have no Browse button — change a model by wiring a selector.
   and wire into a recipe node's `control_nets` input.
 
 `chat messages` and other freeform structures remain JSON text inputs.
+
+## Browse your generations
+
+The **Civitai** sidebar tab (the logo icon in the left rail) lists your Civitai generation history —
+every workflow you've run, across all media types and sources (web / API / ComfyUI) — pulled from
+the orchestrator and scoped to your account. Filter by media kind, scroll to paginate, and click any
+result for a lightbox. Pull a result back into the graph three ways: **add to canvas** (creates the
+matching loader node — image→`LoadImage`, video/audio/3D→their loaders — wired to the imported file),
+**fill** a selected loader node, or **drag** a thumbnail onto the canvas. If no credentials are
+configured, the tab shows a connect panel (OAuth sign-in or paste an API key).
 
 ## Development
 
