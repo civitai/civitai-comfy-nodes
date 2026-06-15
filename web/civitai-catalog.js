@@ -109,7 +109,7 @@ function injectStyles() {
     .cvc-np-thumb { width: 54px; height: 54px; flex: 0 0 auto; border-radius: 7px; overflow: hidden;
       background: #111113; display: flex; align-items: center; justify-content: center; color: #52525b; font-size: 20px; }
     .cvc-np-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .cvc-np-meta { min-width: 0; flex: 1; }
+    .cvc-np-meta { min-width: 0; flex: 1; overflow: hidden; }
     .cvc-np-name { font-weight: 600; font-size: 12px; color: #e4e4e7; overflow: hidden;
       text-overflow: ellipsis; white-space: nowrap; }
     .cvc-np-sub { font-size: 11px; color: #a1a1aa; margin-top: 3px; overflow: hidden;
@@ -247,7 +247,13 @@ function previewState(node) {
     `<div class="cvc-np-thumb">🖼</div>` +
     `<div class="cvc-np-meta"><div class="cvc-np-name"></div><div class="cvc-np-sub"></div></div>`;
   const widget = node.addDOMWidget("civitai_model_preview", "preview", el, { serialize: false });
-  widget.computeSize = (width) => [width, PREVIEW_HEIGHT];
+  // Pin the element to the allocated widget width so a long model name truncates (ellipsis) instead
+  // of growing the box past the node — the inner flex needs a *definite* width to shrink against, and
+  // a freshly-picked node doesn't get one until a resize otherwise.
+  widget.computeSize = (width) => {
+    if (typeof width === "number" && width > 0) el.style.width = `${width}px`;
+    return [width, PREVIEW_HEIGHT];
+  };
   el.addEventListener("click", () => {
     const url = node.__cvcPreview?.entry?.modelUrl;
     if (url) window.open(url, "_blank", "noopener");
