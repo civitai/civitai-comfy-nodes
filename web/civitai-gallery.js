@@ -18,6 +18,8 @@ function injectStyles() {
   if (stylesInjected) return;
   stylesInjected = true;
   const css = `
+    .cvg-civitai-icon::before { content: ""; display: inline-block; width: 1.25em; height: 1.25em;
+      vertical-align: -0.22em; background: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjAgMjMiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PGxpbmVhckdyYWRpZW50IGlkPSJhIiB4MT0iMCIgeTE9IjAiIHgyPSIwIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMDgxNjkyIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMWUwNDNjIi8+PC9saW5lYXJHcmFkaWVudD48bGluZWFyR3JhZGllbnQgaWQ9ImIiIHgxPSIwIiB5MT0iMCIgeDI9IjAiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiMxMjg0ZjciLz48c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwYTIwYzkiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cGF0aCBkPSJNMCw1Ljc0N0wwLDE3LjI0MUwxMCwyMi45ODlMMjAsMTcuMjQxTDIwLDUuNzQ3TDEwLDBMMCw1Ljc0N1oiIGZpbGw9InVybCgjYSkiLz48cGF0aCBkPSJNMTAsMy41NjNMMTYuNzgyLDcuNDcxTDE2Ljc4MiwxNS40MDJMMTAsMTkuMzFMMy4xMDMsMTUuNDAyTDMuMTAzLDcuNDcxTDEwLDMuNTYzTTEwLDBMMCw1Ljc0N0wwLDE3LjI0MUwxMCwyMi45ODlMMjAsMTcuMjQxTDIwLDUuNzQ3QzE5Ljg4NSw1Ljc0NyAxMCwwIDEwLDBaIiBmaWxsPSJ1cmwoI2IpIi8+PHBhdGggZD0iTTExLjgzOSwxMi41ODZMOS44ODUsMTMuNzM2TDcuOTMxLDEyLjU4Nkw3LjkzMSwxMC40MDJMOS44ODUsOS4yNTNMMTEuODM5LDEwLjQwMkwxNC4yNTMsMTAuNDAyTDE0LjI1Myw5LjAyM0w5Ljg4NSw2LjQ5NEw1LjYzMiw5LjAyM0w1LjYzMiwxMy45NjZMMTAsMTYuNDk0TDE0LjM2OCwxMy45NjZMMTQuMzY4LDEyLjU4NkwxMS44MzksMTIuNTg2WiIgZmlsbD0iI2ZmZiIvPjwvc3ZnPgo=") center/contain no-repeat; }
     .cvg-root { display: flex; flex-direction: column; height: 100%; color: #e4e4e7;
       font: 13px system-ui, sans-serif; box-sizing: border-box; }
     .cvg-bar { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-bottom: 1px solid #27272a; }
@@ -389,7 +391,7 @@ app.registerExtension({
     try {
       app.extensionManager.registerSidebarTab({
         id: "civitai.generated",
-        icon: "pi pi-images",
+        icon: "cvg-civitai-icon",
         title: "Civitai",
         tooltip: "Your Civitai generations",
         type: "custom",
