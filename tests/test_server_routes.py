@@ -5,7 +5,9 @@ def _wf(steps, **extra):
     return {"id": "6-1", "status": "Succeeded", "createdAt": "2026-06-14T00:00:00Z", "steps": steps, **extra}
 
 
-def test_flatten_keeps_available_media_drops_rest():
+def test_flatten_detects_concrete_blobs_without_type_field():
+    # The real shape: concrete ImageBlob[]/VideoBlob carry NO `type` discriminator — kind must come
+    # from the property name. (This is the bug where only base-`Blob` audio showed up.)
     workflows = [
         _wf(
             [
@@ -13,46 +15,52 @@ def test_flatten_keeps_available_media_drops_rest():
                     "$type": "imageGen",
                     "output": {
                         "images": [
-                            {"type": "image", "id": "b1", "available": True, "url": "u1", "previewUrl": "p1"},
-                            {"type": "image", "id": "b2", "available": False, "url": "u2"},  # unavailable
-                            {"type": "image", "id": "b3", "blockedReason": "nsfw", "url": "u3"},  # blocked
+                            {"id": "b1", "available": True, "url": "u1", "previewUrl": "p1", "width": 512},
+                            {"id": "b2", "available": False, "url": "u2"},  # unavailable -> dropped
+                            {"id": "b3", "available": True, "blockedReason": "nsfw", "url": "u3"},  # blocked -> dropped
                         ]
                     },
                 }
             ],
             cost={"total": 16},
         ),
-        _wf([{"$type": "vid", "output": {"video": {"type": "video", "id": "v1", "available": True, "url": "vu"}}}]),
-        _wf([{"$type": "echo", "output": {"message": "hi"}}]),  # no media -> dropped entirely
+        _wf([{"$type": "vid", "output": {"video": {"id": "v1", "available": True, "url": "vu"}}}]),
+        _wf([{"$type": "echo", "output": {"message": "hi"}}]),  # no blobs -> dropped
     ]
     items = sr.flatten_generations(workflows)
     assert len(items) == 2
     img = items[0]
     assert img["workflowId"] == "6-1" and img["cost"] == 16
     assert [m["blobId"] for m in img["media"]] == ["b1"]
-    assert img["media"][0]["kind"] == "image" and img["media"][0]["previewUrl"] == "p1"
-    assert items[1]["media"][0]["kind"] == "video"
+    assert img["media"][0]["kind"] == "image"  # inferred from the "images" property name
+    assert items[1]["media"][0]["kind"] == "video"  # inferred from "video"
     assert items[1]["media"][0]["previewUrl"] == "vu"  # falls back to url when no previewUrl
 
 
-def test_flatten_handles_audio_and_3d_and_kind_filter():
+def test_flatten_uses_type_field_when_present():
+    # Base-`Blob` outputs (e.g. aceStepAudio) DO carry a polymorphic `type`; trust it over the name.
+    workflows = [_wf([{"output": {"blob": {"type": "audio", "id": "au", "available": True, "url": "auu"}}}])]
+    assert sr.flatten_generations(workflows)[0]["media"][0]["kind"] == "audio"
+
+
+def test_flatten_kind_inference_and_filter():
     workflows = [
         _wf(
             [
                 {
                     "output": {
-                        "images": [{"type": "image", "id": "a", "available": True, "url": "u"}],
-                        "audio": {"type": "audio", "id": "au", "available": True, "url": "auu"},
-                        "model": {"type": "model3d", "id": "m", "available": True, "url": "mu"},
+                        "images": [{"id": "a", "available": True, "url": "u"}],
+                        "video": {"id": "v", "available": True, "url": "vu"},
+                        "model": {"id": "m", "available": True, "url": "mu"},
                     }
                 }
             ]
         )
     ]
-    everything = sr.flatten_generations(workflows)[0]["media"]
-    assert {m["kind"] for m in everything} == {"image", "audio", "model3d"}
-    only_audio = sr.flatten_generations(workflows, kinds={"audio"})
-    assert [m["kind"] for m in only_audio[0]["media"]] == ["audio"]
+    kinds = {m["kind"] for m in sr.flatten_generations(workflows)[0]["media"]}
+    assert kinds == {"image", "video", "model3d"}
+    only_video = sr.flatten_generations(workflows, kinds={"video"})
+    assert [m["kind"] for m in only_video[0]["media"]] == ["video"]
 
 
 def test_guess_ext_sniffs_magic_bytes():

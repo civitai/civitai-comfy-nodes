@@ -23,17 +23,35 @@ except Exception:
 _BLOB_KINDS = {"image", "video", "audio", "model3d"}
 
 
-def _walk_blobs(node):
-    """Yield blob-shaped dicts anywhere in a step output, without recursing into a blob itself."""
+def _walk_blobs(node, key=None):
+    """Yield (blob, containing_key) for every blob anywhere in a step output. A blob is any dict with
+    the required Blob fields (`id` + `available`); the `type` discriminator is NOT reliable because
+    System.Text.Json only writes it when a property is declared as the base `Blob` — concrete
+    `ImageBlob`/`VideoBlob` outputs carry no `type` field, so kind comes from the property name."""
     if isinstance(node, dict):
-        if node.get("type") in _BLOB_KINDS and ("url" in node or "previewUrl" in node or "id" in node):
-            yield node
+        if "id" in node and "available" in node:
+            yield node, key
             return
-        for value in node.values():
-            yield from _walk_blobs(value)
+        for k, value in node.items():
+            yield from _walk_blobs(value, k)
     elif isinstance(node, list):
         for value in node:
-            yield from _walk_blobs(value)
+            yield from _walk_blobs(value, key)
+
+
+def _blob_kind(blob: dict, key: str | None) -> str:
+    """image | video | audio | model3d — from the polymorphic `type` if present, else the property name."""
+    declared = blob.get("type")
+    if declared in _BLOB_KINDS:
+        return declared
+    name = (key or "").lower()
+    if "video" in name:
+        return "video"
+    if "audio" in name:
+        return "audio"
+    if "model" in name or "fbx" in name or "3d" in name:
+        return "model3d"
+    return "image"  # images, frames, thumbnails, samples, and the lone `ImageBlob Blob` field
 
 
 def flatten_generations(workflows: list, kinds: set | None = None) -> list:
@@ -43,18 +61,19 @@ def flatten_generations(workflows: list, kinds: set | None = None) -> list:
     for workflow in workflows:
         media = []
         for step in workflow.get("steps") or []:
-            for blob in _walk_blobs(step.get("output")):
+            for blob, key in _walk_blobs(step.get("output")):
                 if blob.get("available") is False or blob.get("blockedReason"):
-                    continue
-                if kinds and blob.get("type") not in kinds:
                     continue
                 url = blob.get("url")
                 preview = blob.get("previewUrl") or url
                 if not (url or preview):
                     continue
+                kind = _blob_kind(blob, key)
+                if kinds and kind not in kinds:
+                    continue
                 media.append(
                     {
-                        "kind": blob.get("type"),
+                        "kind": kind,
                         "url": url,
                         "previewUrl": preview,
                         "width": blob.get("width"),
