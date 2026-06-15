@@ -1,7 +1,7 @@
-// Civitai catalogue picker for the civitai-comfy-nodes pack. Adds a "Browse Civitai"
-// button to the LoRA/Checkpoint loader nodes (and AIR `model` widgets) that opens a
-// searchable card grid — pick a resource and its AIR drops straight into the widget.
-// Backed by the pack's same-origin /civitai/catalog/search proxy (no CORS).
+// Civitai catalogue picker for the civitai-comfy-nodes pack. Adds a "Browse Civitai" button to the
+// selector nodes (Model / LoRA / Embedding) that opens a searchable card grid — pick a resource and
+// its AIR drops into the node's `air` widget. The picker defaults its type + ecosystem from where
+// the selector is wired. Backed by the pack's same-origin /civitai/catalog/search proxy (no CORS).
 import { app } from "../../scripts/app.js";
 
 const NODE_TARGETS = {
@@ -31,6 +31,35 @@ function resolveEcosystem(node, seen) {
     }
   }
   return "";
+}
+
+// Map the recipe input a Model Selector's `air` feeds (model/vae_model/clip_l_model/…) to a Civitai
+// catalogue type, so the picker defaults to the model type that socket actually needs. Most-specific
+// patterns first; the fallback is Checkpoint (covers `model`, `language_model`, …).
+const AIR_TYPE_BY_INPUT = [
+  [/clip[_-]?vision|clipvision/, "CLIPVision"],
+  [/control/, "Controlnet"],
+  [/upscal/, "Upscaler"],
+  [/vae/, "VAE"],
+  [/clip|t5|text[_-]?encoder|encoder/, "TextEncoder"],
+  [/diffus|unet/, "UNet"],
+];
+function modelTypeForInputName(name) {
+  const n = (name || "").toLowerCase();
+  for (const [re, type] of AIR_TYPE_BY_INPUT) if (re.test(n)) return type;
+  return "Checkpoint";
+}
+
+// For a Model Selector, deduce the catalogue type from where its `air` output is wired.
+function resolveModelType(node) {
+  const out = node.outputs?.find((o) => o.name === "air");
+  for (const linkId of out?.links || []) {
+    const link = app.graph?.links?.[linkId];
+    const target = link && app.graph.getNodeById(link.target_id);
+    const input = target?.inputs?.[link.target_slot];
+    if (input) return modelTypeForInputName(input.name);
+  }
+  return null;
 }
 
 let stylesInjected = false;
@@ -212,8 +241,10 @@ app.registerExtension({
     if (!target) return;
     // Append at the end so it never shifts the data widgets' serialization order.
     // Ecosystem is resolved at click time so it reflects the node's current wiring.
+    // Type + ecosystem are resolved at click time so they reflect the node's current wiring
+    // (a Model Selector feeding a `vae` socket on an sd1 node defaults to VAE / sd1).
     const button = node.addWidget("button", "🔍 Browse Civitai", null, () =>
-      openCatalog(target.widget, target.type, resolveEcosystem(node))
+      openCatalog(target.widget, resolveModelType(node) || target.type, resolveEcosystem(node))
     );
     button.serialize = false;
   },
