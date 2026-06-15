@@ -58,7 +58,39 @@ class CivitaiRecipeNodeBase:
     # otherwise trip ComfyUI's "Prompt has no outputs" guard.
     OUTPUT_NODE = True
 
+    # Field kinds backed by a free-text widget (vs. a socket/media input). Only these can slip past
+    # ComfyUI's own "required input is missing" check while still being effectively empty (the empty
+    # string default), so they're what we validate client-side. Sockets/media are already guarded.
+    _TEXT_KINDS = ("value", "json")
+
+    @classmethod
+    def _missing_required(cls, widgets: dict) -> list:
+        """Required text inputs left blank — caught before submit so the user gets a clear local
+        error instead of an orchestrator 400."""
+        input_types = getattr(cls, "INPUT_TYPES", None)
+        if input_types is None:
+            return []
+        required = input_types().get("required", {})
+        missing = []
+        for name in required:
+            field = cls.FIELDS.get(name)
+            if field is None or field.kind not in cls._TEXT_KINDS:
+                continue
+            value = widgets.get(name)
+            if value is None or not str(value).strip():
+                missing.append(name)
+        return missing
+
+    @staticmethod
+    def _missing_message(missing: list) -> str:
+        fields = ", ".join(f"'{m}'" for m in missing)
+        plural, it = ("s", "them") if len(missing) > 1 else ("", "it")
+        return f"Missing required input{plural}: {fields}. Fill {it} in before running."
+
     def run(self, api_config=None, **widgets):
+        missing = self._missing_required(widgets)
+        if missing:
+            raise CivitaiNodeError(self._missing_message(missing))
         config = resolve_config(api_config)
         client = OrchestrationClient(config)
         payload = self._build_payload(client, widgets)
