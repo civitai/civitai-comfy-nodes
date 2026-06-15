@@ -43,3 +43,9 @@ def test_query_workflows_defaults_and_optionals(monkeypatch):
     assert "cursor" not in params
     assert "excludeFailed" not in params
     assert params["hideMatureContent"] == "true"
+
+
+def test_query_workflows_can_request_mature(monkeypatch):
+    client, captured = _client(monkeypatch)
+    client.query_workflows(hide_mature=False)
+    assert captured["params"]["hideMatureContent"] == "false"

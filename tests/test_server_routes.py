@@ -37,6 +37,22 @@ def test_flatten_detects_concrete_blobs_without_type_field():
     assert items[1]["media"][0]["previewUrl"] == "vu"  # falls back to url when no previewUrl
 
 
+def test_list_generations_requests_mature(monkeypatch):
+    # The list API hides R+ blobs by default, which stripped whole mature workflows and partial
+    # batches from the user's own history — the gallery must opt out of that.
+    captured = {}
+
+    class _FakeClient:
+        def query_workflows(self, **kwargs):
+            captured.update(kwargs)
+            return {"next": None, "items": []}
+
+    monkeypatch.setattr(sr, "_new_client", lambda *a, **k: _FakeClient())
+    sr._list_generations(cursor="c1", take=60)
+    assert captured["hide_mature"] is False
+    assert captured["cursor"] == "c1" and captured["take"] == 60
+
+
 def test_flatten_uses_type_field_when_present():
     # Base-`Blob` outputs (e.g. aceStepAudio) DO carry a polymorphic `type`; trust it over the name.
     workflows = [_wf([{"output": {"blob": {"type": "audio", "id": "au", "available": True, "url": "auu"}}}])]

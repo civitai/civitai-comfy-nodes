@@ -125,7 +125,10 @@ def _new_client(*, interactive: bool = False):
 
 
 def _list_generations(cursor: str | None, take: int) -> dict:
-    return _new_client().query_workflows(cursor=cursor, take=take)
+    # The gallery shows the user's OWN history, so don't hide their mature content. The list API
+    # defaults hideMatureContent=true, which nulls the url + sets blockedReason on every R+ blob —
+    # that dropped fully-mature workflows entirely and showed only the SFW frames of a batch.
+    return _new_client().query_workflows(cursor=cursor, take=take, hide_mature=False)
 
 
 def _validate_and_save_key(key: str) -> None:
