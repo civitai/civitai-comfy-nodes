@@ -107,14 +107,15 @@ class CivitaiChatSimple(CivitaiRecipeNodeBase):
         widgets["messages_json"] = json.dumps(messages)
         output = super().run(api_config=api_config, **widgets)
 
-        workflow_id, raw_json = output[-2], output[-1]
+        result = output["result"]
+        workflow_id, raw_json = result[-2], result[-1]
         workflow = json.loads(raw_json)
         step_output = (workflow.get("steps") or [{}])[0].get("output") or {}
         choices = step_output.get("choices") or []
         if not choices:
             raise CivitaiNodeError("Chat completion returned no choices")
         text = (choices[0].get("message") or {}).get("content") or ""
-        return (text, workflow_id, raw_json)
+        return {"ui": output.get("ui", {}), "result": (text, workflow_id, raw_json)}
 
 
 AIR_EXAMPLE = "urn:air:sdxl:lora:civitai:328553@368189"

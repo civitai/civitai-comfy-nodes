@@ -40,8 +40,10 @@ def test_run_logs_workflow_id_and_status_transitions(monkeypatch, caplog):
     monkeypatch.setattr(base.CivitaiRecipeNodeBase, "_interruptible_sleep", staticmethod(lambda seconds: None))
 
     with caplog.at_level("INFO", logger="civitai_comfy_nodes"):
-        result = _Node().run()
+        ret = _Node().run()
 
+    assert ret["ui"]["civitai_status"][0] == {"workflow_id": "wf-test", "cost": "7 Blue Buzz"}
+    result = ret["result"]
     assert result[-2] == "wf-test"  # workflow_id output
     text = "\n".join(caplog.messages)
     assert "submitted workflow wf-test" in text

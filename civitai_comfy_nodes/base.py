@@ -75,7 +75,13 @@ class CivitaiRecipeNodeBase:
         step = (workflow.get("steps") or [{}])[0]
         output = step.get("output") or {}
         results = self._convert_outputs(client, output)
-        return (*results, workflow.get("id", ""), json.dumps(workflow))
+        wid = workflow.get("id", "")
+        # `ui.civitai_status` is read by web/civitai-status.js to show the id + per-currency cost
+        # on the node itself; `result` carries the actual output slots.
+        return {
+            "ui": {"civitai_status": [{"workflow_id": wid, "cost": self._cost_text(workflow)}]},
+            "result": (*results, wid, json.dumps(workflow)),
+        }
 
     def _build_payload(self, client: OrchestrationClient, widgets: dict) -> dict:
         payload = {}
@@ -217,8 +223,10 @@ class CivitaiRecipeNodeBase:
     _BUZZ_WALLETS = {"yellow": "Yellow", "blue": "Blue", "green": "Green", "fakeRed": "Red"}
 
     @classmethod
-    def _cost_summary(cls, workflow: dict) -> str:
-        """' — 16 Blue Buzz' from the workflow's transaction list (the actual charges per wallet)."""
+    def _cost_text(cls, workflow: dict) -> str:
+        """'16 Blue Buzz' / '11 Blue Buzz, 5 Green Buzz' — one entry per transaction, so a cost
+        split across currencies lists each wallet and amount (refunds flagged). Falls back to the
+        workflow cost total when no transactions are present (e.g. whatif)."""
         transactions = ((workflow.get("transactions") or {}).get("list")) or []
         parts = []
         for t in transactions:
@@ -226,9 +234,15 @@ class CivitaiRecipeNodeBase:
             suffix = " refunded" if t.get("type") == "credit" else ""
             parts.append(f"{t.get('amount')} {wallet} Buzz{suffix}")
         if parts:
-            return " — " + ", ".join(parts)
+            return ", ".join(parts)
         total = (workflow.get("cost") or {}).get("total")
-        return f" — {total} Buzz" if total is not None else ""
+        return f"{total} Buzz" if total is not None else ""
+
+    @classmethod
+    def _cost_summary(cls, workflow: dict) -> str:
+        """The cost text as a ' — ...' suffix for the success log line."""
+        text = cls._cost_text(workflow)
+        return f" — {text}" if text else ""
 
     @staticmethod
     def _preceding_jobs(workflow: dict):

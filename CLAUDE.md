@@ -15,7 +15,9 @@ converts blob outputs to native Comfy types.
   fields as those socket types (see `ir.classify_input_field` network rules) instead of JSON
   text, and `base._build_payload` serializes them per field shape (array vs AIR-keyed map).
 - `civitai_comfy_nodes/base.py` — all runtime behavior: payload building from `FIELDS`,
-  submit → poll loop (interrupt-aware, ProgressBar), output conversion per `OUTPUTS`.
+  submit → poll loop (interrupt-aware, ProgressBar), output conversion per `OUTPUTS`. `run()`
+  returns `{"ui": {"civitai_status": [...]}, "result": (...)}`; the `ui` payload (workflow id +
+  per-currency Buzz cost) is rendered on the node by `web/civitai-status.js`.
 - `civitai_comfy_nodes/client.py` — `OrchestrationClient`: workflows submit/get/cancel,
   blob download with expired-URL refresh, presigned uploads for URL-only media fields.
 - `civitai_comfy_nodes/config.py` + `oauth.py` — auth chain: CivitaiAuth node input >
