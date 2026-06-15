@@ -98,3 +98,22 @@ def test_server_routes_imports_without_comfyui():
     from civitai_comfy_nodes import server_routes
 
     assert server_routes._server is None
+
+
+def test_search_always_filters_to_generation_models(monkeypatch):
+    captured = {}
+
+    class _Resp:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"items": []}
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        captured["params"] = params
+        return _Resp()
+
+    monkeypatch.setattr(catalog.requests, "get", fake_get)
+    catalog.search(query="dreamshaper", type_="Checkpoint", ecosystem="sdxl")
+    assert ("supportsGeneration", "true") in captured["params"]

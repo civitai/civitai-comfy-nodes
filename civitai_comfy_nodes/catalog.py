@@ -197,7 +197,7 @@ def search(
 ) -> list[dict]:
     """Search Civitai, filtered server-side by type and (optionally) the ecosystem's baseModels.
     An empty query returns the most-downloaded resources for the type."""
-    params: list[tuple[str, str]] = [("limit", str(limit))]
+    params: list[tuple[str, str]] = [("limit", str(limit)), ("supportsGeneration", "true")]
     if query:
         params.append(("query", query))
     else:
