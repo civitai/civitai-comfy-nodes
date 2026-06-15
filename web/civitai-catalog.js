@@ -385,11 +385,12 @@ function loraState(node) {
   el.innerHTML = `<div class="cvl-rows"></div><button class="cvl-add">＋ Add LoRA</button>`;
   const widget = node.addDOMWidget("civitai_loras", "loras", el, { serialize: false });
   widget.computeSize = (width) => {
-    // Pin the element to the allocated widget width, else the fixed-width row controls stretch the
-    // rows across the whole canvas (the framework doesn't constrain the DOM element on its own here).
-    // Skip while WE drive node.computeSize() for height — that pass hands a provisional/min width
-    // that would clobber the real width the framework set during draw (squashing the rows).
-    if (!node.__cvlSizing && typeof width === "number" && width > 0) el.style.width = `${width}px`;
+    // Pin the element to the node's content width (node width minus the ~10px/side widget inset),
+    // else the fixed-width row controls stretch the rows across the canvas on frontends that don't
+    // constrain the DOM element themselves. Use node.size[0], NOT the `width` arg — some frontends
+    // hand computeSize a provisional/min width here, which would squash the rows to that width.
+    const content = (node.size?.[0] || width || 380) - 20;
+    if (content > 0) el.style.width = `${content}px`;
     // Height comes from a real measurement of the rendered rows (see resizeLoraNode); the row-count
     // estimate is only the first-paint fallback before that measurement lands.
     const estimate = 8 + (loraRows(node).length || 1) * LORA_ROW_H + 34;
@@ -486,9 +487,7 @@ function resizeLoraNode(node) {
   // (flex 0 0 auto) so this is the true content height even while the element is momentarily clipped.
   node.__cvlHeight = (list?.offsetHeight || 0) + (add?.offsetHeight || 30) + 13; // padding(8) + gap(5)
   const width = Math.max(node.size?.[0] || 0, 360);
-  node.__cvlSizing = true; // guard computeSize's width-pin during this height-only recompute
   const sized = node.computeSize?.() || [width, node.size?.[1] || 0];
-  node.__cvlSizing = false;
   node.setSize?.([width, sized[1]]);
   node.setDirtyCanvas?.(true, true);
 }
