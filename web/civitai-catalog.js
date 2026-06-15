@@ -131,7 +131,9 @@ function injectStyles() {
     .cvl-tw { width: 76px; flex: 0 0 auto; box-sizing: border-box; background: #27272a; color: #e4e4e7;
       border: 1px solid #3f3f46; border-radius: 5px; padding: 2px 5px; font: inherit; }
     .cvl-str { width: 52px; flex: 0 0 auto; box-sizing: border-box; background: #27272a; color: #e4e4e7;
-      border: 1px solid #3f3f46; border-radius: 5px; padding: 2px 4px; font: inherit; text-align: right; }
+      border: 1px solid #3f3f46; border-radius: 5px; padding: 2px 4px; font: inherit; text-align: right;
+      -moz-appearance: textfield; appearance: textfield; }
+    .cvl-str::-webkit-inner-spin-button, .cvl-str::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     .cvl-x { flex: 0 0 auto; background: transparent; border: none; color: #a1a1aa; cursor: pointer;
       font-size: 14px; line-height: 1; padding: 0 2px; }
     .cvl-x:hover { color: #f87171; }
@@ -383,6 +385,9 @@ function loraState(node) {
   el.innerHTML = `<div class="cvl-rows"></div><button class="cvl-add">＋ Add LoRA</button>`;
   const widget = node.addDOMWidget("civitai_loras", "loras", el, { serialize: false });
   widget.computeSize = (width) => {
+    // Pin the element to the allocated widget width, else the fixed-width row controls stretch the
+    // rows across the whole canvas (the framework doesn't constrain the DOM element on its own here).
+    if (typeof width === "number" && width > 0) el.style.width = `${width}px`;
     const n = loraRows(node).length;
     const rowsH = (n || 1) * LORA_ROW_H; // a single "empty" line when no rows
     return [width, 8 + rowsH + 34];
@@ -465,9 +470,11 @@ function renderLoraRows(node) {
     });
     list.appendChild(r);
   });
-  // grow the node to fit the current rows
-  const h = st.widget.computeSize(node.size?.[0] || 360)[1];
-  node.setSize?.([Math.max(node.size?.[0] || 0, 360), node.computeSize?.()[1] || h]);
+  // grow the node to fit the rows; node.computeSize() drives our widget.computeSize with the
+  // correct allocated width (which pins the element), so don't pass a width ourselves here.
+  const width = Math.max(node.size?.[0] || 0, 360);
+  const sized = node.computeSize?.() || [width, 0];
+  node.setSize?.([width, sized[1]]);
   node.setDirtyCanvas?.(true, true);
 }
 
