@@ -117,9 +117,9 @@ function injectStyles() {
       text-overflow: ellipsis; white-space: nowrap; }
     .cvc-np.cvc-np-empty { cursor: default; }
     .cvc-np.cvc-np-empty .cvc-np-name { color: #a1a1aa; font-weight: 500; }
-    .cvl { display: flex; flex-direction: column; gap: 5px; box-sizing: border-box; width: 100%; height: 100%;
+    .cvl { display: flex; flex-direction: column; gap: 5px; box-sizing: border-box; width: 100%;
       padding: 4px 2px; overflow: hidden; font: 12px system-ui, sans-serif; }
-    .cvl-rows { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+    .cvl-rows { display: flex; flex-direction: column; gap: 4px; flex: 0 0 auto; }
     .cvl-row { display: flex; align-items: center; gap: 6px; background: #1f1f23; border: 1px solid #27272a;
       border-radius: 7px; padding: 3px 6px; box-sizing: border-box; }
     .cvl-row.cvl-off { opacity: .45; }
@@ -388,9 +388,10 @@ function loraState(node) {
     // Pin the element to the allocated widget width, else the fixed-width row controls stretch the
     // rows across the whole canvas (the framework doesn't constrain the DOM element on its own here).
     if (typeof width === "number" && width > 0) el.style.width = `${width}px`;
-    const n = loraRows(node).length;
-    const rowsH = (n || 1) * LORA_ROW_H; // a single "empty" line when no rows
-    return [width, 8 + rowsH + 34];
+    // Height comes from a real measurement of the rendered rows (see resizeLoraNode); the row-count
+    // estimate is only the first-paint fallback before that measurement lands.
+    const estimate = 8 + (loraRows(node).length || 1) * LORA_ROW_H + 34;
+    return [width, node.__cvlHeight || estimate];
   };
   el.querySelector(".cvl-add").addEventListener("click", () =>
     openCatalog({
@@ -470,10 +471,20 @@ function renderLoraRows(node) {
     });
     list.appendChild(r);
   });
-  // grow the node to fit the rows; node.computeSize() drives our widget.computeSize with the
-  // correct allocated width (which pins the element), so don't pass a width ourselves here.
+  // Measure the actual rendered height next frame (layout px, zoom-independent) and resize to fit.
+  requestAnimationFrame(() => resizeLoraNode(node));
+}
+
+function resizeLoraNode(node) {
+  const st = node.__cvlState;
+  if (!st) return;
+  const list = st.el.querySelector(".cvl-rows");
+  const add = st.el.querySelector(".cvl-add");
+  // offsetHeight is layout px (unaffected by the canvas zoom transform); .cvl-rows never shrinks
+  // (flex 0 0 auto) so this is the true content height even while the element is momentarily clipped.
+  node.__cvlHeight = (list?.offsetHeight || 0) + (add?.offsetHeight || 30) + 13; // padding(8) + gap(5)
   const width = Math.max(node.size?.[0] || 0, 360);
-  const sized = node.computeSize?.() || [width, 0];
+  const sized = node.computeSize?.() || [width, node.size?.[1] || 0];
   node.setSize?.([width, sized[1]]);
   node.setDirtyCanvas?.(true, true);
 }
