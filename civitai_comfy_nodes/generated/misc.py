@@ -5,12 +5,12 @@ from ..base import CivitaiRecipeNodeBase, F, O
 
 
 class CivitaiPolyGenFalMeshyTextTo3D(CivitaiRecipeNodeBase):
-    """fal / meshy / textTo3D — polyGen recipe via Civitai Orchestration."""
+    """meshy / textTo3D — polyGen recipe via Civitai Orchestration."""
 
     RECIPE = "polyGen"
     STEP_TYPE = "polyGen"
     DISCRIMINATOR = {"engine": "fal", "model": "meshy", "operation": "textTo3D"}
-    CATEGORY = "Civitai/Misc/fal"
+    CATEGORY = "Civitai/Misc/meshy"
     FUNCTION = "run"
     RETURN_TYPES = ("STRING", "STRING", "IMAGE", "STRING", "STRING")
     RETURN_NAMES = ("model", "fbx_model", "thumbnail", "workflow_id", "raw_json")
@@ -63,12 +63,12 @@ class CivitaiPolyGenFalMeshyTextTo3D(CivitaiRecipeNodeBase):
 
 
 class CivitaiPolyGenFalMeshyImageTo3D(CivitaiRecipeNodeBase):
-    """fal / meshy / imageTo3D — polyGen recipe via Civitai Orchestration."""
+    """meshy / imageTo3D — polyGen recipe via Civitai Orchestration."""
 
     RECIPE = "polyGen"
     STEP_TYPE = "polyGen"
     DISCRIMINATOR = {"engine": "fal", "model": "meshy", "operation": "imageTo3D"}
-    CATEGORY = "Civitai/Misc/fal"
+    CATEGORY = "Civitai/Misc/meshy"
     FUNCTION = "run"
     RETURN_TYPES = ("STRING", "STRING", "IMAGE", "STRING", "STRING")
     RETURN_NAMES = ("model", "fbx_model", "thumbnail", "workflow_id", "raw_json")
@@ -124,6 +124,6 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "CivitaiPolyGenFalMeshyTextTo3D": "fal / meshy / textTo3D",
-    "CivitaiPolyGenFalMeshyImageTo3D": "fal / meshy / imageTo3D",
+    "CivitaiPolyGenFalMeshyTextTo3D": "meshy / textTo3D",
+    "CivitaiPolyGenFalMeshyImageTo3D": "meshy / imageTo3D",
 }

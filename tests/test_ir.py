@@ -123,6 +123,16 @@ def test_enum_refs_resolve_to_combos(nodes):
     assert isinstance(fields["model"].comfy_type, list)
 
 
+def test_provider_engine_model_is_the_ecosystem(nodes):
+    # fal is a provider/aggregator: its `model` families (qwen2/krea2/maiImage) are the ecosystems,
+    # not "fal". The payload still carries engine=fal, but the menu groups by the model.
+    qwen2 = node_by_name(nodes, "CivitaiImageGenFalQwen2CreateImage")
+    assert qwen2.discriminator["engine"] == "fal" and qwen2.discriminator["model"] == "qwen2"
+    assert qwen2.category == "Civitai/Image/qwen2"  # not Civitai/Image/fal
+    assert qwen2.display_name.startswith("qwen2 /")
+    assert not any(n.category == "Civitai/Image/fal" for n in nodes)
+
+
 def test_node_names_and_displays_unique(nodes):
     assert len({n.class_name for n in nodes}) == len(nodes)
     assert len({n.display_name for n in nodes}) == len(nodes)

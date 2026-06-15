@@ -121,32 +121,37 @@ def build_nodes(spec: dict, overrides: dict) -> list[ir.NodeIR]:
     # group (e.g. fal/qwen2 split into create-ops vs edit-ops); name those by the group's lead op.
     ambiguous = {base for base, n in Counter(p[4] for p in pending).items() if n > 1}
 
+    provider_engines = frozenset(overrides.get("_provider_engines", []))
+
     # How many engines serve each (recipe, ecosystem) — drives whether the engine is shown as its
     # own menu sub-level (only when an ecosystem is reachable through more than one engine).
     engines_by_eco: dict = {}
     for recipe, variant, _outputs, _ro, _base in pending:
-        fd = dict(variant.fixed)
-        if "ecosystem" in fd:
-            engines_by_eco.setdefault((recipe, fd["ecosystem"]), set()).add(fd.get("engine"))
+        eco, engine_facet, _rest = _menu_facets(variant.fixed, provider_engines)
+        if eco is not None and engine_facet is not None:
+            engines_by_eco.setdefault((recipe, eco), set()).add(engine_facet)
 
     used: set[str] = set()
     nodes = []
     for recipe, variant, outputs, recipe_overrides, base in pending:
         nodes.append(
             assemble_node(
-                spec, recipe, variant, outputs, recipe_overrides, base, base in ambiguous, used, engines_by_eco
+                spec, recipe, variant, outputs, recipe_overrides, base,
+                base in ambiguous, used, engines_by_eco, provider_engines,
             )
         )
     return nodes
 
 
-def _menu_facets(fixed: list) -> tuple[str | None, str | None, list]:
+def _menu_facets(fixed: list, provider_engines: set | frozenset = frozenset()) -> tuple[str | None, str | None, list]:
     """Split a variant's discriminator path into (ecosystem, engine, rest) for menu placement.
 
     The spec nests engine -> ecosystem (sdcpp/comfy span many ecosystems) while cloud engines
     *are* the ecosystem. To present one consistent ecosystem-first tree:
-      - ecosystem = the nested `ecosystem` discriminator if present, else the top discriminator value.
-      - engine    = the `engine` value, surfaced only when a distinct `ecosystem` level exists.
+      - ecosystem = the nested `ecosystem` discriminator if present; else, for a provider/aggregator
+        engine (e.g. fal — hosts independent model families), the nested `model` value; else the
+        top discriminator value (the engine is its own ecosystem, e.g. openai/flux2).
+      - engine    = the `engine` value, surfaced only when a distinct ecosystem level exists.
       - rest      = the remaining deeper facets (model/version/provider/operation), in order.
     """
     if not fixed:
@@ -155,6 +160,9 @@ def _menu_facets(fixed: list) -> tuple[str | None, str | None, list]:
     if "ecosystem" in fd:
         rest = [k for p, k in fixed if p not in ("engine", "ecosystem")]
         return fd["ecosystem"], fd.get("engine"), rest
+    if fd.get("engine") in provider_engines and "model" in fd:
+        rest = [k for p, k in fixed if p not in ("engine", "model")]
+        return fd["model"], fd["engine"], rest
     top_prop, top_key = fixed[0]
     return top_key, None, [k for _p, k in fixed[1:]]
 
@@ -270,6 +278,7 @@ def assemble_node(
     ambiguous: bool,
     used: set,
     engines_by_eco: dict,
+    provider_engines: frozenset = frozenset(),
 ) -> ir.NodeIR:
     module, base_category = MODULES[recipe]
     display_overrides = recipe_overrides.get("display", {})
@@ -282,7 +291,7 @@ def assemble_node(
     def disp(key):
         return display_overrides.get(key, key)
 
-    eco_key, engine_facet, rest_keys = _menu_facets(variant.fixed)
+    eco_key, engine_facet, rest_keys = _menu_facets(variant.fixed, provider_engines)
     show_engine = engine_facet is not None and len(engines_by_eco.get((recipe, eco_key), ())) > 1
 
     path_labels = []

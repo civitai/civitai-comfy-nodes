@@ -22,6 +22,7 @@
     "customComfy",
     "echo"
   ],
+  "_provider_engines": ["fal"],
   "videoGen": {
     "display": {
       "ltx2": "LTX 2",

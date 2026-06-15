@@ -5753,12 +5753,12 @@ class CivitaiImageGenGrokEditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFalQwen2CreateImage(CivitaiRecipeNodeBase):
-    """fal / qwen2 / createImage — imageGen recipe via Civitai Orchestration."""
+    """qwen2 / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "fal", "model": "qwen2"}
-    CATEGORY = "Civitai/Image/fal"
+    CATEGORY = "Civitai/Image/qwen2"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -5812,12 +5812,12 @@ class CivitaiImageGenFalQwen2CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFalQwen2EditImage(CivitaiRecipeNodeBase):
-    """fal / qwen2 / editImage — imageGen recipe via Civitai Orchestration."""
+    """qwen2 / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "fal", "model": "qwen2"}
-    CATEGORY = "Civitai/Image/fal"
+    CATEGORY = "Civitai/Image/qwen2"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -5873,12 +5873,12 @@ class CivitaiImageGenFalQwen2EditImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFalKrea2CreateImage(CivitaiRecipeNodeBase):
-    """fal / krea2 / createImage — imageGen recipe via Civitai Orchestration."""
+    """krea2 / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "fal", "model": "krea2", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/fal"
+    CATEGORY = "Civitai/Image/krea2"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -5927,12 +5927,12 @@ class CivitaiImageGenFalKrea2CreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFalMaiImageCreateImage(CivitaiRecipeNodeBase):
-    """fal / maiImage / createImage — imageGen recipe via Civitai Orchestration."""
+    """maiImage / createImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "fal", "model": "maiImage", "operation": "createImage"}
-    CATEGORY = "Civitai/Image/fal"
+    CATEGORY = "Civitai/Image/maiImage"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -5976,12 +5976,12 @@ class CivitaiImageGenFalMaiImageCreateImage(CivitaiRecipeNodeBase):
 
 
 class CivitaiImageGenFalMaiImageEditImage(CivitaiRecipeNodeBase):
-    """fal / maiImage / editImage — imageGen recipe via Civitai Orchestration."""
+    """maiImage / editImage — imageGen recipe via Civitai Orchestration."""
 
     RECIPE = "imageGen"
     STEP_TYPE = "imageGen"
     DISCRIMINATOR = {"engine": "fal", "model": "maiImage", "operation": "editImage"}
-    CATEGORY = "Civitai/Image/fal"
+    CATEGORY = "Civitai/Image/maiImage"
     FUNCTION = "run"
     RETURN_TYPES = ("IMAGE", "STRING", "STRING", "STRING")
     RETURN_NAMES = ("images", "errors", "workflow_id", "raw_json")
@@ -6407,11 +6407,11 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiImageGenSeedream": "seedream",
     "CivitaiImageGenGrokCreateImage": "grok / createImage",
     "CivitaiImageGenGrokEditImage": "grok / editImage",
-    "CivitaiImageGenFalQwen2CreateImage": "fal / qwen2 / createImage",
-    "CivitaiImageGenFalQwen2EditImage": "fal / qwen2 / editImage",
-    "CivitaiImageGenFalKrea2CreateImage": "fal / krea2 / createImage",
-    "CivitaiImageGenFalMaiImageCreateImage": "fal / maiImage / createImage",
-    "CivitaiImageGenFalMaiImageEditImage": "fal / maiImage / editImage",
+    "CivitaiImageGenFalQwen2CreateImage": "qwen2 / createImage",
+    "CivitaiImageGenFalQwen2EditImage": "qwen2 / editImage",
+    "CivitaiImageGenFalKrea2CreateImage": "krea2 / createImage",
+    "CivitaiImageGenFalMaiImageCreateImage": "maiImage / createImage",
+    "CivitaiImageGenFalMaiImageEditImage": "maiImage / editImage",
     "CivitaiImageUpscaler": "Civitai Image Upscaler",
     "CivitaiTextToImage": "Civitai Text To Image",
 }
