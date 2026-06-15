@@ -10,6 +10,7 @@ on, lowercase) to the Civitai `baseModel` strings that belong to it.
 import requests
 
 CIVITAI_MODELS_URL = "https://civitai.com/api/v1/models"
+CIVITAI_VERSION_URL = "https://civitai.com/api/v1/model-versions/{version_id}"
 CIVITAI_MODEL_URL = "https://civitai.com/models/{model_id}?modelVersionId={version_id}"
 USER_AGENT = "civitai-comfy-nodes/0.1 (+https://github.com/civitai/civitai-comfy-nodes)"
 
@@ -135,6 +136,13 @@ def air_ecosystem(air: str | None) -> str | None:
     return tail.split(":", 1)[0] or None
 
 
+def version_id_from_air(air: str | None) -> str | None:
+    """The Civitai model-version id from an AIR (urn:air:...:civitai:<modelId>@<versionId>)."""
+    if not air or "@" not in air:
+        return None
+    return air.rsplit("@", 1)[1].strip() or None
+
+
 def node_ecosystem(discriminator: dict | None, model_air: str | None = None) -> str | None:
     """The AIR ecosystem a recipe node's resources must belong to, derived from its discriminator
     (or a default model AIR for free-model nodes). None means 'no constraint' (Any)."""
@@ -215,3 +223,37 @@ def search(
     items = response.json().get("items") or []
     # `type_filter` is a backstop in case the API returns mixed types for some query combinations.
     return flatten_models(items, type_filter=type_)
+
+
+def lookup(air: str, timeout: int = 15, token: str | None = None) -> dict | None:
+    """Resolve a single AIR to display metadata (name/version/thumbnail) via the model-version
+    endpoint, so the selector node can show what a stored or pasted AIR actually points at.
+    Returns None for an unparseable AIR or a deleted/unknown version (404)."""
+    version_id = version_id_from_air(air)
+    if not version_id:
+        return None
+    headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    response = requests.get(CIVITAI_VERSION_URL.format(version_id=version_id), headers=headers, timeout=timeout)
+    if response.status_code == 404:
+        return None
+    response.raise_for_status()
+    version = response.json() or {}
+    model = version.get("model") or {}
+    model_id = version.get("modelId")
+    images = version.get("images") or []
+    return {
+        "air": air,
+        "name": model.get("name") or f"model {model_id}",
+        "versionName": version.get("name") or f"v{version_id}",
+        "ecosystem": air_ecosystem(air),
+        "baseModel": version.get("baseModel") or "",
+        "type": model.get("type") or "",
+        "thumbnailUrl": images[0].get("url") if images else None,
+        "modelId": model_id,
+        "versionId": version_id,
+        "modelUrl": (
+            CIVITAI_MODEL_URL.format(model_id=model_id, version_id=version_id) if model_id else None
+        ),
+    }

@@ -100,6 +100,57 @@ def test_server_routes_imports_without_comfyui():
     assert server_routes._server is None
 
 
+def test_version_id_from_air():
+    assert catalog.version_id_from_air("urn:air:sd1:checkpoint:civitai:4384@128713") == "128713"
+    assert catalog.version_id_from_air("urn:air:sd1:checkpoint:civitai:4384") is None
+    assert catalog.version_id_from_air("") is None
+
+
+def test_lookup_maps_model_version_to_preview(monkeypatch):
+    class _Resp:
+        status_code = 200
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                "id": 128713,
+                "modelId": 4384,
+                "name": "v8",
+                "baseModel": "SD 1.5",
+                "model": {"name": "DreamShaper", "type": "Checkpoint"},
+                "images": [{"url": "http://img/cover.jpg"}],
+            }
+
+    monkeypatch.setattr(catalog.requests, "get", lambda *a, **k: _Resp())
+    entry = catalog.lookup("urn:air:sd1:checkpoint:civitai:4384@128713")
+    assert entry["name"] == "DreamShaper"
+    assert entry["versionName"] == "v8"
+    assert entry["baseModel"] == "SD 1.5"
+    assert entry["thumbnailUrl"] == "http://img/cover.jpg"
+    assert entry["ecosystem"] == "sd1"
+    assert entry["modelUrl"] == "https://civitai.com/models/4384?modelVersionId=128713"
+
+
+def test_lookup_returns_none_for_unparseable_air():
+    assert catalog.lookup("not-an-air") is None
+
+
+def test_lookup_returns_none_on_404(monkeypatch):
+    class _Resp:
+        status_code = 404
+
+        def raise_for_status(self):
+            raise AssertionError("should not raise on 404")
+
+        def json(self):
+            return {}
+
+    monkeypatch.setattr(catalog.requests, "get", lambda *a, **k: _Resp())
+    assert catalog.lookup("urn:air:sd1:checkpoint:civitai:4384@999") is None
+
+
 def test_search_always_filters_to_generation_models(monkeypatch):
     captured = {}
 

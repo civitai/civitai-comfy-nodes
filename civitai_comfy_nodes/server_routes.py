@@ -180,6 +180,18 @@ if _server is not None:
             return web.json_response({"error": str(e)}, status=502)
         return web.json_response({"entries": entries})
 
+    @_server.routes.get("/civitai/catalog/lookup")
+    async def _civitai_catalog_lookup(request):
+        air = (request.query.get("air") or "").strip()
+        if not air:
+            return web.json_response({"error": "air is required"}, status=400)
+        loop = asyncio.get_event_loop()
+        try:
+            entry = await loop.run_in_executor(None, lambda: catalog.lookup(air))
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=502)
+        return web.json_response({"entry": entry})
+
     @_server.routes.get("/civitai/catalog/meta")
     async def _civitai_catalog_meta(request):
         ecosystems = [{"key": e["key"], "label": e["label"]} for e in catalog.ECOSYSTEMS]

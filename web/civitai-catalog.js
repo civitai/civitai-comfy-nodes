@@ -1,7 +1,9 @@
 // Civitai catalogue picker for the civitai-comfy-nodes pack. Adds a "Browse Civitai" button to the
 // selector nodes (Model / LoRA / Embedding) that opens a searchable card grid — pick a resource and
 // its AIR drops into the node's `air` widget. The picker defaults its type + ecosystem from where
-// the selector is wired. Backed by the pack's same-origin /civitai/catalog/search proxy (no CORS).
+// the selector is wired. Each selector also shows an on-node preview (thumbnail + name) of the
+// current AIR, resolved via the /civitai/catalog/lookup proxy. Backed by the pack's same-origin
+// /civitai/catalog/* proxies (no CORS).
 import { app } from "../../scripts/app.js";
 
 const NODE_TARGETS = {
@@ -102,6 +104,18 @@ function injectStyles() {
       -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
     .cvc-sub { color: #a1a1aa; font-size: 11px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .cvc-empty { grid-column: 1 / -1; color: #a1a1aa; text-align: center; padding: 48px 0; }
+    .cvc-np { display: flex; gap: 9px; align-items: center; box-sizing: border-box; width: 100%; height: 100%;
+      padding: 3px 4px; overflow: hidden; cursor: pointer; font: 12px system-ui, sans-serif; }
+    .cvc-np-thumb { width: 54px; height: 54px; flex: 0 0 auto; border-radius: 7px; overflow: hidden;
+      background: #111113; display: flex; align-items: center; justify-content: center; color: #52525b; font-size: 20px; }
+    .cvc-np-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .cvc-np-meta { min-width: 0; flex: 1; }
+    .cvc-np-name { font-weight: 600; font-size: 12px; color: #e4e4e7; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap; }
+    .cvc-np-sub { font-size: 11px; color: #a1a1aa; margin-top: 3px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap; }
+    .cvc-np.cvc-np-empty { cursor: default; }
+    .cvc-np.cvc-np-empty .cvc-np-name { color: #a1a1aa; font-weight: 500; }
   `;
   const style = document.createElement("style");
   style.textContent = css;
@@ -195,8 +209,13 @@ function openCatalog(targetWidget, defaultType, defaultEcosystem) {
       // The ↗ link opens the model page; don't let that click also pick the card.
       card.querySelector(".cvc-link")?.addEventListener("click", (ev) => ev.stopPropagation());
       const pick = () => {
+        const node = targetWidget.node;
+        if (node) {
+          node.properties = node.properties || {};
+          node.properties.civitai_model = e; // metadata for the on-node preview (persists in the graph)
+        }
         targetWidget.value = e.air;
-        targetWidget.callback?.(e.air, app.canvas, targetWidget.node, undefined, undefined);
+        targetWidget.callback?.(e.air, app.canvas, node, undefined, undefined);
         app.graph?.setDirtyCanvas?.(true, true);
         close();
       };
@@ -214,6 +233,92 @@ function openCatalog(targetWidget, defaultType, defaultEcosystem) {
   ecoSelect.addEventListener("change", run);
   input.focus();
   run();
+}
+
+// ── On-node model preview (thumbnail + name) for the selector nodes ───────────────────────────────
+const PREVIEW_HEIGHT = 64;
+
+function previewState(node) {
+  if (node.__cvcPreview) return node.__cvcPreview;
+  injectStyles();
+  const el = document.createElement("div");
+  el.className = "cvc-np cvc-np-empty";
+  el.innerHTML =
+    `<div class="cvc-np-thumb">🖼</div>` +
+    `<div class="cvc-np-meta"><div class="cvc-np-name"></div><div class="cvc-np-sub"></div></div>`;
+  const widget = node.addDOMWidget("civitai_model_preview", "preview", el, { serialize: false });
+  widget.computeSize = (width) => [width, PREVIEW_HEIGHT];
+  el.addEventListener("click", () => {
+    const url = node.__cvcPreview?.entry?.modelUrl;
+    if (url) window.open(url, "_blank", "noopener");
+  });
+  node.__cvcPreview = { widget, el, entry: null };
+  return node.__cvcPreview;
+}
+
+function renderPreview(node, { entry = null, air = "", sub = "", empty = false } = {}) {
+  const st = previewState(node);
+  st.entry = entry;
+  const thumb = st.el.querySelector(".cvc-np-thumb");
+  const name = st.el.querySelector(".cvc-np-name");
+  const subEl = st.el.querySelector(".cvc-np-sub");
+  st.el.classList.toggle("cvc-np-empty", empty);
+  if (empty) {
+    thumb.innerHTML = "🖼";
+    name.textContent = "No model selected";
+    subEl.textContent = "Use Browse Civitai";
+    st.el.title = "";
+    return;
+  }
+  thumb.innerHTML = entry?.thumbnailUrl ? `<img src="${esc(entry.thumbnailUrl)}" loading="lazy" />` : "🖼";
+  name.textContent = entry?.name || air || "Model";
+  const bits = [entry?.versionName, entry?.baseModel].filter(Boolean);
+  subEl.textContent = sub || bits.join(" · ") || air;
+  st.el.title = entry?.modelUrl ? "Open on Civitai ↗" : "";
+}
+
+// Reflect the node's current `air` value: render from the stashed metadata when it matches, else
+// resolve the AIR via the lookup proxy (handles pasted AIRs and graphs saved before this existed).
+function refreshPreview(node, airWidget) {
+  const air = (airWidget.value || "").trim();
+  if (!air) { renderPreview(node, { empty: true }); return; }
+  const stored = node.properties?.civitai_model;
+  if (stored && stored.air === air) { renderPreview(node, { entry: stored }); return; }
+  renderPreview(node, { air, sub: "Loading…" });
+  clearTimeout(node.__cvcLookupT);
+  node.__cvcLookupT = setTimeout(async () => {
+    try {
+      const res = await fetch(`/civitai/catalog/lookup?air=${encodeURIComponent(air)}`);
+      const data = await res.json();
+      if ((airWidget.value || "").trim() !== air) return; // air changed while loading
+      if (data.entry) {
+        node.properties = node.properties || {};
+        node.properties.civitai_model = data.entry;
+        renderPreview(node, { entry: data.entry });
+      } else {
+        renderPreview(node, { air, sub: "Details unavailable" });
+      }
+    } catch {
+      if ((airWidget.value || "").trim() === air) renderPreview(node, { air, sub: "Details unavailable" });
+    }
+  }, 250);
+}
+
+function setupPreview(node, airWidget) {
+  previewState(node); // create up-front so the preview sits above the Browse button
+  const origCb = airWidget.callback;
+  airWidget.callback = function (...a) {
+    const r = origCb?.apply(this, a);
+    refreshPreview(node, airWidget);
+    return r;
+  };
+  const origConfigure = node.onConfigure;
+  node.onConfigure = function () {
+    const r = origConfigure?.apply(this, arguments);
+    refreshPreview(node, airWidget);
+    return r;
+  };
+  refreshPreview(node, airWidget);
 }
 
 function targetFor(node) {
@@ -239,8 +344,8 @@ app.registerExtension({
   nodeCreated(node) {
     const target = targetFor(node);
     if (!target) return;
+    setupPreview(node, target.widget);
     // Append at the end so it never shifts the data widgets' serialization order.
-    // Ecosystem is resolved at click time so it reflects the node's current wiring.
     // Type + ecosystem are resolved at click time so they reflect the node's current wiring
     // (a Model Selector feeding a `vae` socket on an sd1 node defaults to VAE / sd1).
     const button = node.addWidget("button", "🔍 Browse Civitai", null, () =>
