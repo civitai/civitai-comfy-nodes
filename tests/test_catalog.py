@@ -9,7 +9,8 @@ def test_flatten_builds_airs_and_skips_unknown_ecosystems():
             "type": "LORA",
             "stats": {"downloadCount": 42},
             "modelVersions": [
-                {"id": 200, "name": "v1", "baseModel": "SDXL 1.0", "images": [{"url": "http://img/1.png"}]},
+                {"id": 200, "name": "v1", "baseModel": "SDXL 1.0", "images": [{"url": "http://img/1.png"}],
+                 "trainedWords": ["brush stroke", "traditional media"]},
                 {"id": 201, "name": "v2", "baseModel": "Some Future Model"},  # no ecosystem -> skipped
                 {"id": 202, "name": "v3", "baseModel": "Pony"},
             ],
@@ -27,6 +28,8 @@ def test_flatten_builds_airs_and_skips_unknown_ecosystems():
     assert entries[0]["modelId"] == 100
     assert entries[0]["versionId"] == 200
     assert entries[0]["modelUrl"] == "https://civitai.com/models/100?modelVersionId=200"
+    assert entries[0]["trainedWords"] == ["brush stroke", "traditional media"]
+    assert entries[1]["trainedWords"] == []  # absent -> empty list
 
 
 def test_air_type_uses_civitai_type_map_not_lowercase():
@@ -121,6 +124,7 @@ def test_lookup_maps_model_version_to_preview(monkeypatch):
                 "baseModel": "SD 1.5",
                 "model": {"name": "DreamShaper", "type": "Checkpoint"},
                 "images": [{"url": "http://img/cover.jpg"}],
+                "trainedWords": ["dreamshaper"],
             }
 
     monkeypatch.setattr(catalog.requests, "get", lambda *a, **k: _Resp())
@@ -130,6 +134,7 @@ def test_lookup_maps_model_version_to_preview(monkeypatch):
     assert entry["baseModel"] == "SD 1.5"
     assert entry["thumbnailUrl"] == "http://img/cover.jpg"
     assert entry["ecosystem"] == "sd1"
+    assert entry["trainedWords"] == ["dreamshaper"]
     assert entry["modelUrl"] == "https://civitai.com/models/4384?modelVersionId=128713"
 
 

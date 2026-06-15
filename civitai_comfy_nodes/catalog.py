@@ -186,6 +186,7 @@ def flatten_models(items: list, max_versions: int = 6, type_filter: str | None =
                     "type": model_type,
                     "downloadCount": (model.get("stats") or {}).get("downloadCount") or 0,
                     "thumbnailUrl": images[0].get("url") if images else None,
+                    "trainedWords": version.get("trainedWords") or [],
                     "modelId": model["id"],
                     "versionId": version["id"],
                     "modelUrl": CIVITAI_MODEL_URL.format(model_id=model["id"], version_id=version["id"]),
@@ -251,6 +252,7 @@ def lookup(air: str, timeout: int = 15, token: str | None = None) -> dict | None
         "baseModel": version.get("baseModel") or "",
         "type": model.get("type") or "",
         "thumbnailUrl": images[0].get("url") if images else None,
+        "trainedWords": version.get("trainedWords") or [],
         "modelId": model_id,
         "versionId": version_id,
         "modelUrl": (

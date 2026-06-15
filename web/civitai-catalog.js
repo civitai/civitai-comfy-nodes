@@ -403,7 +403,7 @@ function loraState(node) {
       onPick: (e) => {
         const rows = loraRows(node);
         rows.push({
-          air: e.air, name: e.name, strength: 1.0, triggerWord: "", on: true,
+          air: e.air, name: e.name, strength: 1.0, triggerWord: (e.trainedWords || []).join(", "), on: true,
           thumbnailUrl: e.thumbnailUrl, versionName: e.versionName, baseModel: e.baseModel,
         });
         commitLoraRows(node, rows);
@@ -452,7 +452,7 @@ function renderLoraRows(node) {
         ecosystem: resolveEcosystem(node),
         onPick: (e) => {
           Object.assign(row, {
-            air: e.air, name: e.name,
+            air: e.air, name: e.name, triggerWord: (e.trainedWords || []).join(", "),
             thumbnailUrl: e.thumbnailUrl, versionName: e.versionName, baseModel: e.baseModel,
           });
           commitLoraRows(node, rows);
@@ -483,13 +483,27 @@ function resizeLoraNode(node) {
   if (!st) return;
   const list = st.el.querySelector(".cvl-rows");
   const add = st.el.querySelector(".cvl-add");
-  // offsetHeight is layout px (unaffected by the canvas zoom transform); .cvl-rows never shrinks
-  // (flex 0 0 auto) so this is the true content height even while the element is momentarily clipped.
-  node.__cvlHeight = (list?.offsetHeight || 0) + (add?.offsetHeight || 30) + 13; // padding(8) + gap(5)
+  // Height = the Add button's bottom edge within the element (offsetTop already includes the rows,
+  // the flex gap and the top padding) + bottom padding. offsetTop/offsetHeight are layout px,
+  // unaffected by the canvas zoom transform.
+  const buttonBottom = () => (add ? add.offsetTop + add.offsetHeight : (list?.offsetHeight || 0) + 30);
   const width = Math.max(node.size?.[0] || 0, 360);
-  const sized = node.computeSize?.() || [width, node.size?.[1] || 0];
-  node.setSize?.([width, sized[1]]);
-  node.setDirtyCanvas?.(true, true);
+  const applyHeight = () => {
+    node.__cvlHeight = buttonBottom() + 8;
+    node.setSize?.([width, (node.computeSize?.() || [width, node.size?.[1] || 0])[1]]);
+    node.setDirtyCanvas?.(true, true);
+  };
+  applyHeight();
+  // ComfyUI gives the DOM element box a few px less than computeSize returns; if that clips the
+  // button, add the measured deficit once (self-tuning across frontend versions).
+  requestAnimationFrame(() => {
+    const deficit = buttonBottom() - st.el.offsetHeight;
+    if (deficit > 0) {
+      node.__cvlHeight = buttonBottom() + 8 + deficit + 2;
+      node.setSize?.([width, (node.computeSize?.() || [width, node.size?.[1] || 0])[1]]);
+      node.setDirtyCanvas?.(true, true);
+    }
+  });
 }
 
 function setupLoraRows(node) {
