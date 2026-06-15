@@ -251,34 +251,44 @@ class CivitaiControlNet:
         return (stack,)
 
 
-class CivitaiCheckpointLoader:
-    """Civitai checkpoint loader. Wire `air` into a Civitai recipe node to run in the cloud, OR
-    wire model/clip/vae into local nodes (KSampler, CLIP Text Encode, …) — in that case the
-    checkpoint is downloaded from Civitai and loaded locally. The download only happens when the
-    model/clip/vae outputs are actually connected, so cloud-only use stays free."""
+class _AnyType(str):
+    """The classic '*' Any type: its __ne__ override makes ComfyUI's validate_node_input treat it as
+    matching every input type, so the `path` output can wire into any standard loader's file widget
+    (ckpt_name, lora_name, vae_name, control_net_name, …)."""
+
+    def __ne__(self, other):
+        return False
+
+
+ANY_TYPE = _AnyType("*")
+
+
+class CivitaiModelSelector:
+    """Pick a Civitai model and drop this *in front of* an existing loader instead of replacing it.
+    Outputs the model's `air` (wire into a Civitai recipe node to run in the cloud) and a local
+    `path` (wire into a standard loader's file widget, e.g. Load Checkpoint's `ckpt_name`). The
+    model is downloaded into the matching ComfyUI model folder only when `path` is connected, so
+    AIR/cloud-only use stays free."""
 
     CATEGORY = "Civitai/Loaders"
-    FUNCTION = "load"
-    RETURN_TYPES = ("STRING", "MODEL", "CLIP", "VAE")
-    RETURN_NAMES = ("air", "model", "clip", "vae")
-    _LOCAL_SLOTS = (1, 2, 3)  # model/clip/vae output indices
+    FUNCTION = "select"
+    RETURN_TYPES = ("STRING", ANY_TYPE)
+    RETURN_NAMES = ("air", "path")
+    _PATH_SLOT = 1  # downloading is driven by the `path` output being wired
 
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "air": (
-                    "STRING",
-                    {"default": "", "tooltip": "Checkpoint AIR (use the Browse Civitai button)"},
-                ),
+                "air": ("STRING", {"default": "", "tooltip": "Model AIR (use the Browse Civitai button)"}),
             },
             "optional": {"api_config": ("CIVITAI_CONFIG", {})},
             "hidden": {"prompt": "PROMPT", "unique_id": "UNIQUE_ID"},
         }
 
     @classmethod
-    def _local_outputs_consumed(cls, prompt, unique_id) -> bool:
-        """True if model/clip/vae are wired downstream (so we should download + load locally)."""
+    def _path_consumed(cls, prompt, unique_id) -> bool:
+        """True if the `path` output is wired downstream (so we should download the file)."""
         if not prompt or unique_id is None:
             return False
         uid = str(unique_id)
@@ -286,21 +296,21 @@ class CivitaiCheckpointLoader:
             for value in (node.get("inputs") or {}).values():
                 if not (isinstance(value, list) and len(value) == 2):
                     continue
-                if str(value[0]) == uid and value[1] in cls._LOCAL_SLOTS:
+                if str(value[0]) == uid and value[1] == cls._PATH_SLOT:
                     return True
         return False
 
     @classmethod
     def IS_CHANGED(cls, air, api_config=None, prompt=None, unique_id=None):
-        # Re-run when the local outputs get (dis)connected, not just when the AIR changes.
-        return f"{(air or '').strip()}|{cls._local_outputs_consumed(prompt, unique_id)}"
+        # Re-run when `path` gets (dis)connected, not just when the AIR changes.
+        return f"{(air or '').strip()}|{cls._path_consumed(prompt, unique_id)}"
 
-    def load(self, air, api_config=None, prompt=None, unique_id=None):
+    def select(self, air, api_config=None, prompt=None, unique_id=None):
         air = (air or "").strip()
         if not air:
-            raise CivitaiNodeError("No checkpoint AIR set — use the Browse Civitai button to pick one.")
-        model = clip = vae = None
-        if self._local_outputs_consumed(prompt, unique_id):
+            raise CivitaiNodeError("No model AIR set — use the Browse Civitai button to pick one.")
+        path = ""
+        if self._path_consumed(prompt, unique_id):
             import os
 
             from . import local_models, oauth
@@ -308,9 +318,10 @@ class CivitaiCheckpointLoader:
             token = (api_config or {}).get("api_token") or os.environ.get("CIVITAI_API_TOKEN")
             if not token:
                 token = oauth.get_valid_access_token()  # best-effort; public models need no token
-            path = local_models.download_model(air, folder="checkpoints", token=token)
-            model, clip, vae = local_models.load_checkpoint(path)
-        return (air, model, clip, vae)
+            folder = local_models.folder_for_air(air)
+            full = local_models.download_model(air, folder=folder, token=token)
+            path = os.path.basename(full)  # folder-relative name the loader's combo resolves
+        return (air, path)
 
 
 NODE_CLASS_MAPPINGS = {
@@ -318,7 +329,7 @@ NODE_CLASS_MAPPINGS = {
     "CivitaiChatSimple": CivitaiChatSimple,
     "CivitaiLoraLoader": CivitaiLoraLoader,
     "CivitaiControlNet": CivitaiControlNet,
-    "CivitaiCheckpointLoader": CivitaiCheckpointLoader,
+    "CivitaiModelSelector": CivitaiModelSelector,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -326,5 +337,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiChatSimple": "Civitai Chat (Simple)",
     "CivitaiLoraLoader": "Civitai LoRA Loader",
     "CivitaiControlNet": "Civitai ControlNet",
-    "CivitaiCheckpointLoader": "Civitai Checkpoint Loader",
+    "CivitaiModelSelector": "Civitai Model Selector",
 }

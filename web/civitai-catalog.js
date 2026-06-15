@@ -6,7 +6,7 @@ import { app } from "../../scripts/app.js";
 
 const NODE_TARGETS = {
   CivitaiLoraLoader: { widget: "air", type: "LORA" },
-  CivitaiCheckpointLoader: { widget: "air", type: "Checkpoint" },
+  CivitaiModelSelector: { widget: "air", type: "Checkpoint" },
 };
 const TYPES = ["Checkpoint", "LORA", "TextualInversion", "VAE", "Controlnet", "Upscaler"];
 

@@ -1,7 +1,7 @@
 from civitai_comfy_nodes.base import CivitaiRecipeNodeBase, F
 from civitai_comfy_nodes.client import OrchestrationClient
 from civitai_comfy_nodes.config import ClientConfig
-from civitai_comfy_nodes.nodes_manual import CivitaiCheckpointLoader, CivitaiLoraLoader
+from civitai_comfy_nodes.nodes_manual import CivitaiLoraLoader
 
 
 def test_lora_loader_chains():
@@ -18,11 +18,6 @@ def test_lora_loader_chains():
 def test_lora_loader_skips_blank_air():
     stack, model, clip = CivitaiLoraLoader().load("   ", 1.0)
     assert stack == []
-
-
-def test_checkpoint_loader_trims():
-    # Cloud-only (no local outputs wired): returns the trimmed AIR + None model/clip/vae.
-    assert CivitaiCheckpointLoader().load("  urn:air:x  ", prompt={}, unique_id="1") == ("urn:air:x", None, None, None)
 
 
 class _ArrayNode(CivitaiRecipeNodeBase):

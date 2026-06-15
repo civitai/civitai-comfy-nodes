@@ -41,7 +41,7 @@ discriminator variant is its own node so it shows only the inputs that variant a
 - **Civitai/Analysis** — Media Rating, WD Tagging, XGuard Moderation
 - **Civitai/Training** — Training, Image Resource Training
 - **Civitai/Misc** — Poly Gen (3D mesh generation)
-- **Civitai/Loaders** — LoRA Loader, ControlNet, Checkpoint Loader (see below)
+- **Civitai/Loaders** — LoRA Loader, ControlNet, Model Selector (see below)
 
 Every node returns its media outputs as native Comfy types (IMAGE/VIDEO/AUDIO) plus
 `workflow_id` and `raw_json` for debugging and cost inspection. Models and LoRAs are
@@ -60,7 +60,11 @@ into the input.
   loaders (`loras` → `loras`) to stack multiple LoRAs.
 - **Civitai ControlNet** — pick a preprocessor, weight, step range, optional control image;
   chain and wire into a recipe node's `control_nets` input.
-- **Civitai Checkpoint Loader** — outputs a checkpoint AIR you can drop onto a node's `model` input.
+- **Civitai Model Selector** — drop it *in front of* any standard loader (no need to replace it).
+  Pick a model and it outputs the `air` (wire into a recipe node's `model` input for cloud runs)
+  plus a `path` you wire into a normal loader's file widget (e.g. Load Checkpoint's `ckpt_name`,
+  LoraLoader's `lora_name`). The model is downloaded into the matching ComfyUI model folder **only
+  when `path` is connected**, so AIR/cloud-only use never downloads.
 
 `chat messages` and other freeform structures remain JSON text inputs.
 

@@ -14,12 +14,37 @@ from .errors import CivitaiNodeError
 CIVITAI_DOWNLOAD_URL = "https://civitai.com/api/download/models/{version_id}"
 USER_AGENT = "civitai-comfy-nodes/0.1 (+https://github.com/civitai/civitai-comfy-nodes)"
 
+# AIR type segment (urn:air:{eco}:{type}:civitai:...) -> the ComfyUI model folder to download into,
+# so the file lands where the matching standard loader (Load Checkpoint, LoraLoader, …) reads from.
+AIR_TYPE_FOLDERS = {
+    "checkpoint": "checkpoints",
+    "lora": "loras",
+    "lycoris": "loras",
+    "dora": "loras",
+    "vae": "vae",
+    "controlnet": "controlnet",
+    "embedding": "embeddings",
+    "hypernet": "hypernetworks",
+    "upscaler": "upscale_models",
+    "unet": "diffusion_models",
+    "textencoder": "text_encoders",
+    "clipvision": "clip_vision",
+    "motion": "animatediff_models",
+}
+
 
 def version_id_from_air(air: str) -> str:
     match = re.search(r"@(\d+)", air or "")
     if not match:
         raise CivitaiNodeError(f"Cannot parse a Civitai version id from AIR '{air}'")
     return match.group(1)
+
+
+def folder_for_air(air: str, default: str = "checkpoints") -> str:
+    """The ComfyUI model folder for an AIR's type segment (checkpoint->checkpoints, lora->loras, …)."""
+    parts = (air or "").split(":")
+    air_type = parts[3] if len(parts) > 3 else ""
+    return AIR_TYPE_FOLDERS.get(air_type, default)
 
 
 def _model_dir(folder: str) -> str:
