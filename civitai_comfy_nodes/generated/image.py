@@ -2073,7 +2073,7 @@ class CivitaiImageGenSdcppZImageTurboCreateImage(CivitaiRecipeNodeBase):
     FIELDS = {
         "output_format": F("outputFormat", "value"),
         "image_metadata": F("imageMetadata", "value"),
-        "diffuser_model": F("diffuserModel", "value"),
+        "diffuser_model": F("diffuserModel", "air"),
         "prompt": F("prompt", "value"),
         "negative_prompt": F("negativePrompt", "value"),
         "sample_method": F("sampleMethod", "value"),
@@ -2104,7 +2104,7 @@ class CivitaiImageGenSdcppZImageTurboCreateImage(CivitaiRecipeNodeBase):
                     "STRING",
                     {"tooltip": "External metadata that will be stored with the image", "default": ""},
                 ),
-                "diffuser_model": ("STRING", {"default": ""}),
+                "diffuser_model": ("CIVITAI_AIR", {}),
                 "negative_prompt": ("STRING", {"default": "", "multiline": True}),
                 "sample_method": (
                     [
@@ -2175,7 +2175,7 @@ class CivitaiImageGenSdcppZImageBaseCreateImage(CivitaiRecipeNodeBase):
     FIELDS = {
         "output_format": F("outputFormat", "value"),
         "image_metadata": F("imageMetadata", "value"),
-        "diffuser_model": F("diffuserModel", "value"),
+        "diffuser_model": F("diffuserModel", "air"),
         "prompt": F("prompt", "value"),
         "negative_prompt": F("negativePrompt", "value"),
         "sample_method": F("sampleMethod", "value"),
@@ -2206,7 +2206,7 @@ class CivitaiImageGenSdcppZImageBaseCreateImage(CivitaiRecipeNodeBase):
                     "STRING",
                     {"tooltip": "External metadata that will be stored with the image", "default": ""},
                 ),
-                "diffuser_model": ("STRING", {"default": ""}),
+                "diffuser_model": ("CIVITAI_AIR", {}),
                 "negative_prompt": ("STRING", {"default": "", "multiline": True}),
                 "sample_method": (
                     [
@@ -2286,7 +2286,7 @@ class CivitaiImageGenSdcppAnimaCreateImage(CivitaiRecipeNodeBase):
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
         "loras": F("loras", "lora_strength_map"),
-        "diffuser_model": F("diffuserModel", "value"),
+        "diffuser_model": F("diffuserModel", "air"),
         "width": F("width", "value"),
         "height": F("height", "value"),
     }
@@ -2351,7 +2351,7 @@ class CivitaiImageGenSdcppAnimaCreateImage(CivitaiRecipeNodeBase):
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
                 "loras": ("CIVITAI_LORAS", {}),
-                "diffuser_model": ("STRING", {"default": ""}),
+                "diffuser_model": ("CIVITAI_AIR", {}),
                 "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "api_config": (
@@ -2386,7 +2386,7 @@ class CivitaiImageGenSdcppAnimaCreateVariant(CivitaiRecipeNodeBase):
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
         "loras": F("loras", "lora_strength_map"),
-        "diffuser_model": F("diffuserModel", "value"),
+        "diffuser_model": F("diffuserModel", "air"),
         "width": F("width", "value"),
         "height": F("height", "value"),
         "image": F("image", "image_inline"),
@@ -2454,7 +2454,7 @@ class CivitaiImageGenSdcppAnimaCreateVariant(CivitaiRecipeNodeBase):
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
                 "loras": ("CIVITAI_LORAS", {}),
-                "diffuser_model": ("STRING", {"default": ""}),
+                "diffuser_model": ("CIVITAI_AIR", {}),
                 "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "strength": ("FLOAT", {"default": 0.7, "min": 0.0, "max": 1.0, "step": 0.01}),
@@ -2489,10 +2489,10 @@ class CivitaiImageGenSdcppSd1CreateImage(CivitaiRecipeNodeBase):
         "cfg_scale": F("cfgScale", "value"),
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
-        "model": F("model", "value"),
-        "vae_model": F("vaeModel", "value"),
+        "model": F("model", "air"),
+        "vae_model": F("vaeModel", "air"),
         "loras": F("loras", "lora_strength_map"),
-        "embeddings_json": F("embeddings", "json"),
+        "embeddings": F("embeddings", "air_list"),
         "clip_skip": F("clipSkip", "value"),
         "u_cache": F("uCache", "value"),
         "width": F("width", "value"),
@@ -2508,7 +2508,7 @@ class CivitaiImageGenSdcppSd1CreateImage(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "model": ("STRING", {"default": ""}),
+                "model": ("CIVITAI_AIR", {}),
             },
             "optional": {
                 "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
@@ -2559,9 +2559,9 @@ class CivitaiImageGenSdcppSd1CreateImage(CivitaiRecipeNodeBase):
                 "cfg_scale": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 30.0, "step": 0.01}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
-                "vae_model": ("STRING", {"default": ""}),
+                "vae_model": ("CIVITAI_AIR", {}),
                 "loras": ("CIVITAI_LORAS", {}),
-                "embeddings_json": ("STRING", {"default": "", "multiline": True}),
+                "embeddings": ("CIVITAI_EMBEDDINGS", {}),
                 "clip_skip": ("INT", {"default": -1, "min": 0, "max": 2147483647, "step": 1}),
                 "u_cache": (["", "off", "normal"], {"default": ""}),
                 "width": ("INT", {"default": 512, "min": 64, "max": 2048, "step": 1}),
@@ -2597,10 +2597,10 @@ class CivitaiImageGenSdcppSd1CreateVariant(CivitaiRecipeNodeBase):
         "cfg_scale": F("cfgScale", "value"),
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
-        "model": F("model", "value"),
-        "vae_model": F("vaeModel", "value"),
+        "model": F("model", "air"),
+        "vae_model": F("vaeModel", "air"),
         "loras": F("loras", "lora_strength_map"),
-        "embeddings_json": F("embeddings", "json"),
+        "embeddings": F("embeddings", "air_list"),
         "clip_skip": F("clipSkip", "value"),
         "u_cache": F("uCache", "value"),
         "width": F("width", "value"),
@@ -2618,7 +2618,7 @@ class CivitaiImageGenSdcppSd1CreateVariant(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "model": ("STRING", {"default": ""}),
+                "model": ("CIVITAI_AIR", {}),
                 "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
             },
             "optional": {
@@ -2670,9 +2670,9 @@ class CivitaiImageGenSdcppSd1CreateVariant(CivitaiRecipeNodeBase):
                 "cfg_scale": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 30.0, "step": 0.01}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
-                "vae_model": ("STRING", {"default": ""}),
+                "vae_model": ("CIVITAI_AIR", {}),
                 "loras": ("CIVITAI_LORAS", {}),
-                "embeddings_json": ("STRING", {"default": "", "multiline": True}),
+                "embeddings": ("CIVITAI_EMBEDDINGS", {}),
                 "clip_skip": ("INT", {"default": -1, "min": 0, "max": 2147483647, "step": 1}),
                 "u_cache": (["", "off", "normal"], {"default": ""}),
                 "width": ("INT", {"default": 512, "min": 64, "max": 2048, "step": 1}),
@@ -2709,10 +2709,10 @@ class CivitaiImageGenSdcppSdxlCreateImage(CivitaiRecipeNodeBase):
         "cfg_scale": F("cfgScale", "value"),
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
-        "model": F("model", "value"),
-        "vae_model": F("vaeModel", "value"),
+        "model": F("model", "air"),
+        "vae_model": F("vaeModel", "air"),
         "loras": F("loras", "lora_strength_map"),
-        "embeddings_json": F("embeddings", "json"),
+        "embeddings": F("embeddings", "air_list"),
         "u_cache": F("uCache", "value"),
         "width": F("width", "value"),
         "height": F("height", "value"),
@@ -2727,7 +2727,7 @@ class CivitaiImageGenSdcppSdxlCreateImage(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "model": ("STRING", {"default": ""}),
+                "model": ("CIVITAI_AIR", {}),
             },
             "optional": {
                 "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
@@ -2778,9 +2778,9 @@ class CivitaiImageGenSdcppSdxlCreateImage(CivitaiRecipeNodeBase):
                 "cfg_scale": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 30.0, "step": 0.01}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
-                "vae_model": ("STRING", {"default": ""}),
+                "vae_model": ("CIVITAI_AIR", {}),
                 "loras": ("CIVITAI_LORAS", {}),
-                "embeddings_json": ("STRING", {"default": "", "multiline": True}),
+                "embeddings": ("CIVITAI_EMBEDDINGS", {}),
                 "u_cache": (["", "off", "normal"], {"default": ""}),
                 "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
@@ -2815,10 +2815,10 @@ class CivitaiImageGenSdcppSdxlCreateVariant(CivitaiRecipeNodeBase):
         "cfg_scale": F("cfgScale", "value"),
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
-        "model": F("model", "value"),
-        "vae_model": F("vaeModel", "value"),
+        "model": F("model", "air"),
+        "vae_model": F("vaeModel", "air"),
         "loras": F("loras", "lora_strength_map"),
-        "embeddings_json": F("embeddings", "json"),
+        "embeddings": F("embeddings", "air_list"),
         "u_cache": F("uCache", "value"),
         "width": F("width", "value"),
         "height": F("height", "value"),
@@ -2835,7 +2835,7 @@ class CivitaiImageGenSdcppSdxlCreateVariant(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "model": ("STRING", {"default": ""}),
+                "model": ("CIVITAI_AIR", {}),
                 "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
             },
             "optional": {
@@ -2887,9 +2887,9 @@ class CivitaiImageGenSdcppSdxlCreateVariant(CivitaiRecipeNodeBase):
                 "cfg_scale": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 30.0, "step": 0.01}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
-                "vae_model": ("STRING", {"default": ""}),
+                "vae_model": ("CIVITAI_AIR", {}),
                 "loras": ("CIVITAI_LORAS", {}),
-                "embeddings_json": ("STRING", {"default": "", "multiline": True}),
+                "embeddings": ("CIVITAI_EMBEDDINGS", {}),
                 "u_cache": (["", "off", "normal"], {"default": ""}),
                 "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
@@ -2928,10 +2928,10 @@ class CivitaiImageGenSdcppFlux1CreateImage(CivitaiRecipeNodeBase):
         "schedule": F("schedule", "value"),
         "negative_prompt": F("negativePrompt", "value"),
         "loras": F("loras", "lora_strength_map"),
-        "diffuser_model": F("diffuserModel", "value"),
-        "vae_model": F("vaeModel", "value"),
-        "clip_lmodel": F("clipLModel", "value"),
-        "t5_xxlmodel": F("t5XXLModel", "value"),
+        "diffuser_model": F("diffuserModel", "air"),
+        "vae_model": F("vaeModel", "air"),
+        "clip_lmodel": F("clipLModel", "air"),
+        "t5_xxlmodel": F("t5XXLModel", "air"),
     }
     OUTPUTS = (
         O("images", "image_list"),
@@ -2943,10 +2943,10 @@ class CivitaiImageGenSdcppFlux1CreateImage(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "diffuser_model": ("STRING", {"default": ""}),
-                "vae_model": ("STRING", {"default": ""}),
-                "clip_lmodel": ("STRING", {"default": ""}),
-                "t5_xxlmodel": ("STRING", {"default": ""}),
+                "diffuser_model": ("CIVITAI_AIR", {}),
+                "vae_model": ("CIVITAI_AIR", {}),
+                "clip_lmodel": ("CIVITAI_AIR", {}),
+                "t5_xxlmodel": ("CIVITAI_AIR", {}),
             },
             "optional": {
                 "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
@@ -3034,10 +3034,10 @@ class CivitaiImageGenSdcppFlux1EditImage(CivitaiRecipeNodeBase):
         "schedule": F("schedule", "value"),
         "negative_prompt": F("negativePrompt", "value"),
         "loras": F("loras", "lora_strength_map"),
-        "diffuser_model": F("diffuserModel", "value"),
-        "vae_model": F("vaeModel", "value"),
-        "clip_lmodel": F("clipLModel", "value"),
-        "t5_xxlmodel": F("t5XXLModel", "value"),
+        "diffuser_model": F("diffuserModel", "air"),
+        "vae_model": F("vaeModel", "air"),
+        "clip_lmodel": F("clipLModel", "air"),
+        "t5_xxlmodel": F("t5XXLModel", "air"),
         "images": F("images", "image_list"),
     }
     OUTPUTS = (
@@ -3050,10 +3050,10 @@ class CivitaiImageGenSdcppFlux1EditImage(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "diffuser_model": ("STRING", {"default": ""}),
-                "vae_model": ("STRING", {"default": ""}),
-                "clip_lmodel": ("STRING", {"default": ""}),
-                "t5_xxlmodel": ("STRING", {"default": ""}),
+                "diffuser_model": ("CIVITAI_AIR", {}),
+                "vae_model": ("CIVITAI_AIR", {}),
+                "clip_lmodel": ("CIVITAI_AIR", {}),
+                "t5_xxlmodel": ("CIVITAI_AIR", {}),
             },
             "optional": {
                 "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
@@ -3142,10 +3142,10 @@ class CivitaiImageGenSdcppFlux1CreateVariant(CivitaiRecipeNodeBase):
         "schedule": F("schedule", "value"),
         "negative_prompt": F("negativePrompt", "value"),
         "loras": F("loras", "lora_strength_map"),
-        "diffuser_model": F("diffuserModel", "value"),
-        "vae_model": F("vaeModel", "value"),
-        "clip_lmodel": F("clipLModel", "value"),
-        "t5_xxlmodel": F("t5XXLModel", "value"),
+        "diffuser_model": F("diffuserModel", "air"),
+        "vae_model": F("vaeModel", "air"),
+        "clip_lmodel": F("clipLModel", "air"),
+        "t5_xxlmodel": F("t5XXLModel", "air"),
         "image": F("image", "image_inline"),
         "strength": F("strength", "value"),
     }
@@ -3159,10 +3159,10 @@ class CivitaiImageGenSdcppFlux1CreateVariant(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "diffuser_model": ("STRING", {"default": ""}),
-                "vae_model": ("STRING", {"default": ""}),
-                "clip_lmodel": ("STRING", {"default": ""}),
-                "t5_xxlmodel": ("STRING", {"default": ""}),
+                "diffuser_model": ("CIVITAI_AIR", {}),
+                "vae_model": ("CIVITAI_AIR", {}),
+                "clip_lmodel": ("CIVITAI_AIR", {}),
+                "t5_xxlmodel": ("CIVITAI_AIR", {}),
                 "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
             },
             "optional": {
@@ -3855,8 +3855,8 @@ class CivitaiImageGenComfySd1CreateImage(CivitaiRecipeNodeBase):
         "cfg_scale": F("cfgScale", "value"),
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
-        "model": F("model", "value"),
-        "vae_model": F("vaeModel", "value"),
+        "model": F("model", "air"),
+        "vae_model": F("vaeModel", "air"),
         "loras": F("loras", "lora_strength_map"),
         "clip_skip": F("clipSkip", "value"),
         "control_nets": F("controlNets", "controlnet_array"),
@@ -3873,7 +3873,7 @@ class CivitaiImageGenComfySd1CreateImage(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "model": ("STRING", {"default": ""}),
+                "model": ("CIVITAI_AIR", {}),
             },
             "optional": {
                 "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
@@ -3927,7 +3927,7 @@ class CivitaiImageGenComfySd1CreateImage(CivitaiRecipeNodeBase):
                 "cfg_scale": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 30.0, "step": 0.01}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
-                "vae_model": ("STRING", {"default": ""}),
+                "vae_model": ("CIVITAI_AIR", {}),
                 "loras": ("CIVITAI_LORAS", {}),
                 "clip_skip": ("INT", {"default": 2, "min": 0, "max": 2147483647, "step": 1}),
                 "control_nets": ("CIVITAI_CONTROLNETS", {}),
@@ -3964,8 +3964,8 @@ class CivitaiImageGenComfySd1CreateVariant(CivitaiRecipeNodeBase):
         "cfg_scale": F("cfgScale", "value"),
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
-        "model": F("model", "value"),
-        "vae_model": F("vaeModel", "value"),
+        "model": F("model", "air"),
+        "vae_model": F("vaeModel", "air"),
         "loras": F("loras", "lora_strength_map"),
         "clip_skip": F("clipSkip", "value"),
         "control_nets": F("controlNets", "controlnet_array"),
@@ -3984,7 +3984,7 @@ class CivitaiImageGenComfySd1CreateVariant(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "model": ("STRING", {"default": ""}),
+                "model": ("CIVITAI_AIR", {}),
                 "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
             },
             "optional": {
@@ -4039,7 +4039,7 @@ class CivitaiImageGenComfySd1CreateVariant(CivitaiRecipeNodeBase):
                 "cfg_scale": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 30.0, "step": 0.01}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
-                "vae_model": ("STRING", {"default": ""}),
+                "vae_model": ("CIVITAI_AIR", {}),
                 "loras": ("CIVITAI_LORAS", {}),
                 "clip_skip": ("INT", {"default": 2, "min": 0, "max": 2147483647, "step": 1}),
                 "control_nets": ("CIVITAI_CONTROLNETS", {}),
@@ -4077,8 +4077,8 @@ class CivitaiImageGenComfySdxlCreateImage(CivitaiRecipeNodeBase):
         "cfg_scale": F("cfgScale", "value"),
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
-        "model": F("model", "value"),
-        "vae_model": F("vaeModel", "value"),
+        "model": F("model", "air"),
+        "vae_model": F("vaeModel", "air"),
         "loras": F("loras", "lora_strength_map"),
         "control_nets": F("controlNets", "controlnet_array"),
         "width": F("width", "value"),
@@ -4094,7 +4094,7 @@ class CivitaiImageGenComfySdxlCreateImage(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "model": ("STRING", {"default": ""}),
+                "model": ("CIVITAI_AIR", {}),
             },
             "optional": {
                 "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
@@ -4148,7 +4148,7 @@ class CivitaiImageGenComfySdxlCreateImage(CivitaiRecipeNodeBase):
                 "cfg_scale": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 30.0, "step": 0.01}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
-                "vae_model": ("STRING", {"default": ""}),
+                "vae_model": ("CIVITAI_AIR", {}),
                 "loras": ("CIVITAI_LORAS", {}),
                 "control_nets": ("CIVITAI_CONTROLNETS", {}),
                 "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
@@ -4184,8 +4184,8 @@ class CivitaiImageGenComfySdxlCreateVariant(CivitaiRecipeNodeBase):
         "cfg_scale": F("cfgScale", "value"),
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
-        "model": F("model", "value"),
-        "vae_model": F("vaeModel", "value"),
+        "model": F("model", "air"),
+        "vae_model": F("vaeModel", "air"),
         "loras": F("loras", "lora_strength_map"),
         "control_nets": F("controlNets", "controlnet_array"),
         "width": F("width", "value"),
@@ -4203,7 +4203,7 @@ class CivitaiImageGenComfySdxlCreateVariant(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "model": ("STRING", {"default": ""}),
+                "model": ("CIVITAI_AIR", {}),
                 "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
             },
             "optional": {
@@ -4258,7 +4258,7 @@ class CivitaiImageGenComfySdxlCreateVariant(CivitaiRecipeNodeBase):
                 "cfg_scale": ("FLOAT", {"default": 7.0, "min": 0.0, "max": 30.0, "step": 0.01}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
-                "vae_model": ("STRING", {"default": ""}),
+                "vae_model": ("CIVITAI_AIR", {}),
                 "loras": ("CIVITAI_LORAS", {}),
                 "control_nets": ("CIVITAI_CONTROLNETS", {}),
                 "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
@@ -4294,8 +4294,8 @@ class CivitaiImageGenComfyFlux1CreateImage(CivitaiRecipeNodeBase):
         "cfg_scale": F("cfgScale", "value"),
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
-        "model": F("model", "value"),
-        "vae_model": F("vaeModel", "value"),
+        "model": F("model", "air"),
+        "vae_model": F("vaeModel", "air"),
         "loras": F("loras", "lora_strength_map"),
         "control_nets": F("controlNets", "controlnet_array"),
         "width": F("width", "value"),
@@ -4311,7 +4311,7 @@ class CivitaiImageGenComfyFlux1CreateImage(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "model": ("STRING", {"default": ""}),
+                "model": ("CIVITAI_AIR", {}),
             },
             "optional": {
                 "output_format": (["", "jpeg", "png", "webP"], {"default": ""}),
@@ -4364,7 +4364,7 @@ class CivitaiImageGenComfyFlux1CreateImage(CivitaiRecipeNodeBase):
                 "cfg_scale": ("FLOAT", {"default": 3.5, "min": 0.0, "max": 30.0, "step": 0.01}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
-                "vae_model": ("STRING", {"default": ""}),
+                "vae_model": ("CIVITAI_AIR", {}),
                 "loras": ("CIVITAI_LORAS", {}),
                 "control_nets": ("CIVITAI_CONTROLNETS", {}),
                 "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
@@ -4399,8 +4399,8 @@ class CivitaiImageGenComfyFlux1CreateVariant(CivitaiRecipeNodeBase):
         "cfg_scale": F("cfgScale", "value"),
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
-        "model": F("model", "value"),
-        "vae_model": F("vaeModel", "value"),
+        "model": F("model", "air"),
+        "vae_model": F("vaeModel", "air"),
         "loras": F("loras", "lora_strength_map"),
         "control_nets": F("controlNets", "controlnet_array"),
         "width": F("width", "value"),
@@ -4418,7 +4418,7 @@ class CivitaiImageGenComfyFlux1CreateVariant(CivitaiRecipeNodeBase):
         return {
             "required": {
                 "prompt": ("STRING", {"default": "", "multiline": True}),
-                "model": ("STRING", {"default": ""}),
+                "model": ("CIVITAI_AIR", {}),
                 "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
             },
             "optional": {
@@ -4472,7 +4472,7 @@ class CivitaiImageGenComfyFlux1CreateVariant(CivitaiRecipeNodeBase):
                 "cfg_scale": ("FLOAT", {"default": 3.5, "min": 0.0, "max": 30.0, "step": 0.01}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
-                "vae_model": ("STRING", {"default": ""}),
+                "vae_model": ("CIVITAI_AIR", {}),
                 "loras": ("CIVITAI_LORAS", {}),
                 "control_nets": ("CIVITAI_CONTROLNETS", {}),
                 "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
@@ -4714,7 +4714,7 @@ class CivitaiImageGenComfyErnieErnieCreateImage(CivitaiRecipeNodeBase):
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
         "loras": F("loras", "lora_strength_map"),
-        "diffusion_model": F("diffusionModel", "value"),
+        "diffusion_model": F("diffusionModel", "air"),
         "width": F("width", "value"),
         "height": F("height", "value"),
     }
@@ -4782,7 +4782,7 @@ class CivitaiImageGenComfyErnieErnieCreateImage(CivitaiRecipeNodeBase):
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
                 "loras": ("CIVITAI_LORAS", {}),
-                "diffusion_model": ("STRING", {"default": ""}),
+                "diffusion_model": ("CIVITAI_AIR", {}),
                 "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "api_config": (
@@ -4817,7 +4817,7 @@ class CivitaiImageGenComfyErnieTurboCreateImage(CivitaiRecipeNodeBase):
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
         "loras": F("loras", "lora_strength_map"),
-        "diffusion_model": F("diffusionModel", "value"),
+        "diffusion_model": F("diffusionModel", "air"),
         "width": F("width", "value"),
         "height": F("height", "value"),
     }
@@ -4885,7 +4885,7 @@ class CivitaiImageGenComfyErnieTurboCreateImage(CivitaiRecipeNodeBase):
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
                 "loras": ("CIVITAI_LORAS", {}),
-                "diffusion_model": ("STRING", {"default": ""}),
+                "diffusion_model": ("CIVITAI_AIR", {}),
                 "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "api_config": (
@@ -4924,7 +4924,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageCreateImage(CivitaiRecipeNodeBa
         "cfg_scale": F("cfgScale", "value"),
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
-        "checkpoint_model": F("checkpointModel", "value"),
+        "checkpoint_model": F("checkpointModel", "air"),
         "loras": F("loras", "lora_strength_map"),
     }
     OUTPUTS = (
@@ -4951,7 +4951,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageCreateImage(CivitaiRecipeNodeBa
                 "cfg_scale": ("FLOAT", {"default": 5.0, "min": 0.0, "max": 30.0, "step": 0.01}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
-                "checkpoint_model": ("STRING", {"default": "urn:air:hidream-o1:checkpoint:civitai:2618495@2939946"}),
+                "checkpoint_model": ("CIVITAI_AIR", {}),
                 "loras": ("CIVITAI_LORAS", {}),
                 "api_config": (
                     "CIVITAI_CONFIG",
@@ -4989,7 +4989,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageEditImage(CivitaiRecipeNodeBase
         "cfg_scale": F("cfgScale", "value"),
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
-        "checkpoint_model": F("checkpointModel", "value"),
+        "checkpoint_model": F("checkpointModel", "air"),
         "loras": F("loras", "lora_strength_map"),
         "images": F("images", "image_list"),
     }
@@ -5017,7 +5017,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageEditImage(CivitaiRecipeNodeBase
                 "cfg_scale": ("FLOAT", {"default": 5.0, "min": 0.0, "max": 30.0, "step": 0.01}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
-                "checkpoint_model": ("STRING", {"default": "urn:air:hidream-o1:checkpoint:civitai:2618495@2939946"}),
+                "checkpoint_model": ("CIVITAI_AIR", {}),
                 "loras": ("CIVITAI_LORAS", {}),
                 "images": ("IMAGE", {}),
                 "api_config": (
@@ -5056,7 +5056,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevCreateImage(CivitaiRecipeNod
         "cfg_scale": F("cfgScale", "value"),
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
-        "checkpoint_model": F("checkpointModel", "value"),
+        "checkpoint_model": F("checkpointModel", "air"),
         "loras": F("loras", "lora_strength_map"),
     }
     OUTPUTS = (
@@ -5083,7 +5083,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevCreateImage(CivitaiRecipeNod
                 "cfg_scale": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 30.0, "step": 0.01}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
-                "checkpoint_model": ("STRING", {"default": "urn:air:hidream-o1:checkpoint:civitai:2618495@2939964"}),
+                "checkpoint_model": ("CIVITAI_AIR", {}),
                 "loras": ("CIVITAI_LORAS", {}),
                 "api_config": (
                     "CIVITAI_CONFIG",
@@ -5121,7 +5121,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevEditImage(CivitaiRecipeNodeB
         "cfg_scale": F("cfgScale", "value"),
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
-        "checkpoint_model": F("checkpointModel", "value"),
+        "checkpoint_model": F("checkpointModel", "air"),
         "loras": F("loras", "lora_strength_map"),
         "images": F("images", "image_list"),
     }
@@ -5149,7 +5149,7 @@ class CivitaiImageGenComfyHidreamO1HiDreamO1ImageDevEditImage(CivitaiRecipeNodeB
                 "cfg_scale": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 30.0, "step": 0.01}),
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 4, "step": 1}),
-                "checkpoint_model": ("STRING", {"default": "urn:air:hidream-o1:checkpoint:civitai:2618495@2939964"}),
+                "checkpoint_model": ("CIVITAI_AIR", {}),
                 "loras": ("CIVITAI_LORAS", {}),
                 "images": ("IMAGE", {}),
                 "api_config": (
@@ -5184,7 +5184,7 @@ class CivitaiImageGenComfyAnimaCreateImage(CivitaiRecipeNodeBase):
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
         "loras": F("loras", "lora_strength_map"),
-        "diffuser_model": F("diffuserModel", "value"),
+        "diffuser_model": F("diffuserModel", "air"),
         "control_nets": F("controlNets", "controlnet_array"),
         "width": F("width", "value"),
         "height": F("height", "value"),
@@ -5253,7 +5253,7 @@ class CivitaiImageGenComfyAnimaCreateImage(CivitaiRecipeNodeBase):
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
                 "loras": ("CIVITAI_LORAS", {}),
-                "diffuser_model": ("STRING", {"default": ""}),
+                "diffuser_model": ("CIVITAI_AIR", {}),
                 "control_nets": ("CIVITAI_CONTROLNETS", {}),
                 "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
@@ -5289,7 +5289,7 @@ class CivitaiImageGenComfyAnimaCreateVariant(CivitaiRecipeNodeBase):
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
         "loras": F("loras", "lora_strength_map"),
-        "diffuser_model": F("diffuserModel", "value"),
+        "diffuser_model": F("diffuserModel", "air"),
         "control_nets": F("controlNets", "controlnet_array"),
         "width": F("width", "value"),
         "height": F("height", "value"),
@@ -5361,7 +5361,7 @@ class CivitaiImageGenComfyAnimaCreateVariant(CivitaiRecipeNodeBase):
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
                 "loras": ("CIVITAI_LORAS", {}),
-                "diffuser_model": ("STRING", {"default": ""}),
+                "diffuser_model": ("CIVITAI_AIR", {}),
                 "control_nets": ("CIVITAI_CONTROLNETS", {}),
                 "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
@@ -5398,7 +5398,7 @@ class CivitaiImageGenComfyLensNormalCreateImage(CivitaiRecipeNodeBase):
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
         "loras": F("loras", "lora_strength_map"),
-        "diffusion_model": F("diffusionModel", "value"),
+        "diffusion_model": F("diffusionModel", "air"),
         "width": F("width", "value"),
         "height": F("height", "value"),
     }
@@ -5466,7 +5466,7 @@ class CivitaiImageGenComfyLensNormalCreateImage(CivitaiRecipeNodeBase):
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
                 "loras": ("CIVITAI_LORAS", {}),
-                "diffusion_model": ("STRING", {"default": ""}),
+                "diffusion_model": ("CIVITAI_AIR", {}),
                 "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "api_config": (
@@ -5501,7 +5501,7 @@ class CivitaiImageGenComfyLensTurboCreateImage(CivitaiRecipeNodeBase):
         "seed": F("seed", "value"),
         "quantity": F("quantity", "value"),
         "loras": F("loras", "lora_strength_map"),
-        "diffusion_model": F("diffusionModel", "value"),
+        "diffusion_model": F("diffusionModel", "air"),
         "width": F("width", "value"),
         "height": F("height", "value"),
     }
@@ -5569,7 +5569,7 @@ class CivitaiImageGenComfyLensTurboCreateImage(CivitaiRecipeNodeBase):
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "quantity": ("INT", {"default": 1, "min": 1, "max": 12, "step": 1}),
                 "loras": ("CIVITAI_LORAS", {}),
-                "diffusion_model": ("STRING", {"default": ""}),
+                "diffusion_model": ("CIVITAI_AIR", {}),
                 "width": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "height": ("INT", {"default": 1024, "min": 64, "max": 2048, "step": 1}),
                 "api_config": (
@@ -6037,7 +6037,7 @@ class CivitaiImageUpscaler(CivitaiRecipeNodeBase):
     RETURN_NAMES = ("blob", "workflow_id", "raw_json")
     FIELDS = {
         "image": F("image", "image_inline"),
-        "model": F("model", "value"),
+        "model": F("model", "air"),
         "number_of_repeats": F("numberOfRepeats", "value"),
     }
     OUTPUTS = (O("blob", "image"),)
@@ -6049,7 +6049,7 @@ class CivitaiImageUpscaler(CivitaiRecipeNodeBase):
                 "image": ("IMAGE", {"tooltip": "Either A URL, A DataURL or a Base64 string"}),
             },
             "optional": {
-                "model": ("STRING", {"tooltip": "The upscaler model to use (AIR URN format).", "default": ""}),
+                "model": ("CIVITAI_AIR", {"tooltip": "The upscaler model to use (AIR URN format)."}),
                 "number_of_repeats": (
                     "INT",
                     {
@@ -6082,7 +6082,7 @@ class CivitaiTextToImage(CivitaiRecipeNodeBase):
     FIELDS = {
         "quantity": F("quantity", "value"),
         "batch_size": F("batchSize", "value"),
-        "model": F("model", "value"),
+        "model": F("model", "air"),
         "additional_networks": F("additionalNetworks", "network_map"),
         "control_nets": F("controlNets", "controlnet_array"),
         "prompt": F("prompt", "value"),
@@ -6138,13 +6138,7 @@ class CivitaiTextToImage(CivitaiRecipeNodeBase):
                     "INT",
                     {"tooltip": "The size of each batch", "default": 1, "min": 1, "max": 100, "step": 1},
                 ),
-                "model": (
-                    "STRING",
-                    {
-                        "tooltip": "The AIR of the checkpoint model to use for generation.",
-                        "default": "urn:air:sd1:checkpoint:civitai:4384@128713",
-                    },
-                ),
+                "model": ("CIVITAI_AIR", {"tooltip": "The AIR of the checkpoint model to use for generation."}),
                 "additional_networks": (
                     "CIVITAI_LORAS",
                     {

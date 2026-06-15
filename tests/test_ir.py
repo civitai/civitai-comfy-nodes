@@ -144,6 +144,24 @@ def test_all_recipes_have_module_assignment(spec, overrides):
         assert name in generate.MODULES
 
 
+def test_model_fields_become_air_sockets(nodes):
+    # AIR-pattern string fields (checkpoint/vae) -> CIVITAI_AIR sockets fed by the Model Selector;
+    # the embeddings array -> a CIVITAI_EMBEDDINGS list. A plain model-name string stays STRING.
+    sd1 = node_by_name(nodes, "CivitaiImageGenSdcppSd1CreateImage")
+    fields = {f.api: f for f in sd1.fields}
+    assert fields["model"].kind == "air" and fields["model"].comfy_type == "CIVITAI_AIR"
+    assert fields["vaeModel"].kind == "air"
+    assert fields["embeddings"].kind == "air_list" and fields["embeddings"].comfy_type == "CIVITAI_EMBEDDINGS"
+    # imageUpscaler.model is AIR-by-description (no schema pattern) -> forced via override
+    upscaler = {f.api: f for f in node_by_name(nodes, "CivitaiImageUpscaler").fields}
+    assert upscaler["model"].kind == "air"
+
+
+def test_plain_model_name_stays_string(nodes):
+    chat = node_by_name(nodes, "CivitaiChatCompletion")
+    assert {f.api: f for f in chat.fields}["model"].kind == "value"  # "gpt-4o" etc., not an AIR
+
+
 def test_network_fields_become_typed_sockets(nodes):
     t2i = node_by_name(nodes, "CivitaiTextToImage")
     fields = {f.api: f for f in t2i.fields}

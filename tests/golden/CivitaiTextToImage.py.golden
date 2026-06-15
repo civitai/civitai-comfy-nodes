@@ -10,7 +10,7 @@ class CivitaiTextToImage(CivitaiRecipeNodeBase):
     FIELDS = {
         "quantity": F("quantity", "value"),
         "batch_size": F("batchSize", "value"),
-        "model": F("model", "value"),
+        "model": F("model", "air"),
         "additional_networks": F("additionalNetworks", "network_map"),
         "control_nets": F("controlNets", "controlnet_array"),
         "prompt": F("prompt", "value"),
@@ -41,7 +41,7 @@ class CivitaiTextToImage(CivitaiRecipeNodeBase):
             "optional": {
                 "quantity": ("INT", {'tooltip': 'The number of batches to run.', 'default': 1, 'min': 1, 'max': 100, 'step': 1}),
                 "batch_size": ("INT", {'tooltip': 'The size of each batch', 'default': 1, 'min': 1, 'max': 100, 'step': 1}),
-                "model": ("STRING", {'tooltip': 'The AIR of the checkpoint model to use for generation.', 'default': 'urn:air:sd1:checkpoint:civitai:4384@128713'}),
+                "model": ("CIVITAI_AIR", {'tooltip': 'The AIR of the checkpoint model to use for generation.'}),
                 "additional_networks": ("CIVITAI_LORAS", {'tooltip': 'Get or set a associative list of additional networks. Use the AIR of the network as the key.'}),
                 "control_nets": ("CIVITAI_CONTROLNETS", {'tooltip': 'Get or set a associative list of ControlNets.'}),
                 "negative_prompt": ("STRING", {'tooltip': 'The provided negative text prompt.', 'default': '', 'multiline': True}),

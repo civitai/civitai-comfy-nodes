@@ -39,6 +39,9 @@
   "textToSpeech": {
     "skip_variants": [{ "engine": "custom" }]
   },
+  "imageUpscaler": {
+    "field_types": { "model": "air" }
+  },
   "mediaCaptioning": {
     "field_types": { "mediaUrl": "image_url" }
   },

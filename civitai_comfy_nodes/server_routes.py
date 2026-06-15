@@ -156,16 +156,7 @@ def node_ecosystem_map() -> dict:
 
     result = {}
     for name, cls in NODE_CLASS_MAPPINGS.items():
-        discriminator = getattr(cls, "DISCRIMINATOR", None) or {}
-        model_air = None
-        fields = getattr(cls, "FIELDS", {}) or {}
-        if "model" in {f.api for f in fields.values()}:
-            try:
-                default = cls.INPUT_TYPES().get("optional", {}).get("model", (None, {}))[1].get("default")
-                model_air = default if isinstance(default, str) and "air:" in default else None
-            except Exception:
-                model_air = None
-        eco = catalog.node_ecosystem(discriminator, model_air)
+        eco = catalog.node_ecosystem(getattr(cls, "DISCRIMINATOR", None) or {})
         if eco:
             result[name] = eco
     return result

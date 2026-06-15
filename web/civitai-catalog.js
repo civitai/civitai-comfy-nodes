@@ -7,6 +7,7 @@ import { app } from "../../scripts/app.js";
 const NODE_TARGETS = {
   CivitaiLoraLoader: { widget: "air", type: "LORA" },
   CivitaiModelSelector: { widget: "air", type: "Checkpoint" },
+  CivitaiEmbeddingSelector: { widget: "air", type: "TextualInversion" },
 };
 const TYPES = ["Checkpoint", "LORA", "TextualInversion", "VAE", "Controlnet", "Upscaler"];
 
@@ -187,14 +188,12 @@ function openCatalog(targetWidget, defaultType, defaultEcosystem) {
 }
 
 function targetFor(node) {
+  // Only the dedicated Civitai selector nodes get a Browse button. Recipe nodes take their models
+  // via CIVITAI_AIR sockets (wire a Model Selector), so there's no model widget to attach to.
   const mapped = NODE_TARGETS[node.comfyClass];
   if (mapped) {
     const w = node.widgets?.find((x) => x.name === mapped.widget);
     if (w) return { widget: w, type: mapped.type };
-  }
-  if (node.comfyClass?.startsWith("Civitai")) {
-    const w = node.widgets?.find((x) => x.name === "model" && x.type !== "combo");
-    if (w) return { widget: w, type: "Checkpoint" };
   }
   return null;
 }

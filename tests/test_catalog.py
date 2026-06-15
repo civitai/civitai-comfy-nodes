@@ -91,7 +91,6 @@ def test_node_ecosystem_map_covers_zimage_turbo():
     mapping = server_routes.node_ecosystem_map()
     assert mapping["CivitaiImageGenSdcppZImageTurboCreateImage"] == "zimage"
     assert mapping["CivitaiImageGenSdcppZImageBaseCreateImage"] == "zimagebase"
-    assert mapping["CivitaiTextToImage"] == "sd1"  # from its default model AIR
 
 
 def test_server_routes_imports_without_comfyui():

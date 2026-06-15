@@ -24,11 +24,11 @@ class CivitaiAceStepAudio(CivitaiRecipeNodeBase):
         "key": F("key", "value"),
         "instrumental_weight": F("instrumentalWeight", "value"),
         "vocal_weight": F("vocalWeight", "value"),
-        "diffusion_model": F("diffusionModel", "value"),
+        "diffusion_model": F("diffusionModel", "air"),
         "cover_json": F("cover", "json"),
-        "clip_model": F("clipModel", "value"),
-        "vae_model": F("vaeModel", "value"),
-        "language_model": F("languageModel", "value"),
+        "clip_model": F("clipModel", "air"),
+        "vae_model": F("vaeModel", "air"),
+        "language_model": F("languageModel", "air"),
         "steps": F("steps", "value"),
         "cfg": F("cfg", "value"),
         "loras": F("loras", "lora_strength_map"),
@@ -171,11 +171,8 @@ class CivitaiAceStepAudio(CivitaiRecipeNodeBase):
                     },
                 ),
                 "diffusion_model": (
-                    "STRING",
-                    {
-                        "tooltip": "Optional diffusion model (unet) override. Defaults to ACE-Step 1.5 turbo 2B.",
-                        "default": "",
-                    },
+                    "CIVITAI_AIR",
+                    {"tooltip": "Optional diffusion model (unet) override. Defaults to ACE-Step 1.5 turbo 2B."},
                 ),
                 "cover_json": (
                     "STRING",
@@ -186,15 +183,14 @@ class CivitaiAceStepAudio(CivitaiRecipeNodeBase):
                     },
                 ),
                 "clip_model": (
-                    "STRING",
-                    {"tooltip": "Optional text encoder (CLIP) override. Defaults to qwen_4b_ace15.", "default": ""},
+                    "CIVITAI_AIR",
+                    {"tooltip": "Optional text encoder (CLIP) override. Defaults to qwen_4b_ace15."},
                 ),
-                "vae_model": ("STRING", {"tooltip": "Optional VAE override. Defaults to ace_1.5_vae.", "default": ""}),
+                "vae_model": ("CIVITAI_AIR", {"tooltip": "Optional VAE override. Defaults to ace_1.5_vae."}),
                 "language_model": (
-                    "STRING",
+                    "CIVITAI_AIR",
                     {
-                        "tooltip": "Optional language model override for audio code generation. Defaults to qwen_0.6b_ace15.",
-                        "default": "",
+                        "tooltip": "Optional language model override for audio code generation. Defaults to qwen_0.6b_ace15."
                     },
                 ),
                 "steps": (

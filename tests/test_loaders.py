@@ -54,6 +54,28 @@ def test_controlnet_passthrough_and_empty_omitted():
     assert _CnNode()._build_payload(_client(), {"control_nets": []}) == {}
 
 
+class _AirNode(CivitaiRecipeNodeBase):
+    FIELDS = {"model": F("model", "air"), "embeddings": F("embeddings", "air_list")}
+
+
+def test_air_and_air_list_serialization():
+    node = _AirNode()
+    air = "urn:air:sd1:checkpoint:civitai:1@2"
+    payload = node._build_payload(_client(), {"model": air, "embeddings": ["e1", "e2"]})
+    assert payload == {"model": air, "embeddings": ["e1", "e2"]}
+    # empty AIR / empty list are omitted, not sent
+    assert node._build_payload(_client(), {"model": "", "embeddings": ["", None]}) == {}
+
+
+def test_embedding_selector_chains():
+    from civitai_comfy_nodes.nodes_manual import CivitaiEmbeddingSelector
+
+    first = CivitaiEmbeddingSelector().append("urn:air:sd1:embedding:civitai:1@2")[0]
+    second = CivitaiEmbeddingSelector().append("  urn:air:sd1:embedding:civitai:3@4  ", embeddings=first)[0]
+    assert second == ["urn:air:sd1:embedding:civitai:1@2", "urn:air:sd1:embedding:civitai:3@4"]
+    assert CivitaiEmbeddingSelector().append("   ")[0] == []  # blank AIR ignored
+
+
 class _StrengthMapNode(CivitaiRecipeNodeBase):
     FIELDS = {"loras": F("loras", "lora_strength_map")}
 

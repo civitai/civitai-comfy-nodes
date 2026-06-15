@@ -9,15 +9,18 @@ converts blob outputs to native Comfy types.
 - `civitai_comfy_nodes/generated/` — **AUTO-GENERATED, never hand-edit.** One module per
   category (image/video/audio/text/analysis/training/misc), ~160 declarative node classes.
 - `civitai_comfy_nodes/nodes_manual.py` — hand-written nodes: `CivitaiAuth`, `CivitaiChatSimple`,
-  and the **Civitai/Loaders** helpers (`CivitaiLoraLoader`, `CivitaiControlNet`,
-  `CivitaiModelSelector`). LoRA/ControlNet output typed sockets (`CIVITAI_LORAS` /
-  `CIVITAI_CONTROLNETS`); codegen emits the `loras`/`additionalNetworks`/`controlNets` recipe
-  fields as those socket types (see `ir.classify_input_field` network rules) instead of JSON
-  text, and `base._build_payload` serializes them per field shape (array vs AIR-keyed map).
-  `CivitaiModelSelector` sits in front of a standard loader: it outputs the `air` (STRING) plus a
-  `path` (the `*`/AnyType so it wires into any loader's file combo); the model is downloaded into
-  `local_models.folder_for_air(air)` only when `path` is wired (detected via PROMPT/UNIQUE_ID,
-  same `_path_consumed` + `IS_CHANGED` trick as before).
+  and the **Civitai/Loaders** selectors (`CivitaiModelSelector`, `CivitaiLoraLoader`,
+  `CivitaiEmbeddingSelector`, `CivitaiControlNet`). Recipe model references are emitted as typed
+  **sockets** (no on-node text/widget), fed by these selectors — `ir.classify_input_field` maps:
+  AIR-pattern strings (`(?<source>` in the schema `pattern`) → `air`/`CIVITAI_AIR`; arrays of AIRs
+  → `air_list`/`CIVITAI_EMBEDDINGS`; `loras`/`additionalNetworks` → `CIVITAI_LORAS`; `controlNets`
+  → `CIVITAI_CONTROLNETS`. `base._build_payload` serializes each (AIR string, AIR list, lora
+  array/AIR-keyed map, controlnet array). `field_types: {field: "air"}` forces an AIR-by-description
+  field that lacks the pattern (e.g. `imageUpscaler.model`). `CivitaiModelSelector` outputs the
+  `air` (`CIVITAI_AIR`) plus a `path` (`*`/AnyType — wires into any standard loader's file combo);
+  the model downloads into `local_models.folder_for_air(air)` only when `path` is wired (PROMPT/
+  UNIQUE_ID `_path_consumed` + `IS_CHANGED`). The Browse-Civitai picker button is on the selector
+  nodes only (`web/civitai-catalog.js` NODE_TARGETS), never on recipe nodes.
 - `civitai_comfy_nodes/base.py` — all runtime behavior: payload building from `FIELDS`,
   submit → poll loop (interrupt-aware, ProgressBar), output conversion per `OUTPUTS`. `run()`
   returns `{"ui": {"civitai_status": [...]}, "result": (...)}`; the `ui` payload (workflow id +

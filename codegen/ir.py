@@ -168,6 +168,12 @@ def _merge_property(existing: dict | None, new: dict) -> dict:
     return merged
 
 
+def _is_air_string(schema: dict) -> bool:
+    """A model-reference field: a string constrained to the AIR/URN pattern (urn:air:...:id@version).
+    The orchestrator emits that regex with named groups, so `(?<source>` uniquely identifies it."""
+    return "(?<source>" in (schema.get("pattern") or "")
+
+
 def classify_input_field(name: str, schema: dict, hint: str | None) -> tuple[str, str | list, str]:
     """Map a property schema to (field_kind, comfy_type, detection_note)."""
     schema, _ = unwrap_nullable(schema)
@@ -184,6 +190,8 @@ def classify_input_field(name: str, schema: dict, hint: str | None) -> tuple[str
             "audio": ("audio_url", "AUDIO"),
             "json": ("json", "STRING"),
             "string": ("value", "STRING"),
+            "air": ("air", "CIVITAI_AIR"),
+            "air_list": ("air_list", "CIVITAI_EMBEDDINGS"),
         }
         if hint not in hinted:
             raise ValueError(f"Unknown field_types hint '{hint}' for field '{name}'")
@@ -225,11 +233,18 @@ def classify_input_field(name: str, schema: dict, hint: str | None) -> tuple[str
     if type_value == "string" and lower in IMAGE_FIELD_NAMES:
         return "image_inline", "IMAGE", "name:image"
 
+    # Model references (checkpoint/vae/upscaler AIRs) -> a typed socket fed by the Civitai Model
+    # Selector, instead of a raw STRING you'd have to convert to an input by hand.
+    if type_value == "string" and _is_air_string(schema):
+        return "air", "CIVITAI_AIR", "air:pattern"
+
     if type_value == "array":
         items = schema.get("items", {})
         items_unwrapped, _ = unwrap_nullable(items) if isinstance(items, dict) else ({}, False)
         if items_unwrapped.get("type") == "string" and lower in {"images", "sourceimages", "referenceimages"}:
             return "image_list", "IMAGE", "name:image-array"
+        if items_unwrapped.get("type") == "string" and _is_air_string(items_unwrapped):
+            return "air_list", "CIVITAI_EMBEDDINGS", "air:list"
         if items_unwrapped.get("type") == "string" and "enum" not in items_unwrapped and "$ref" not in items:
             return "json", "STRING", "array-of-strings:json"
         return "json", "STRING", "array:json"

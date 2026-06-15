@@ -272,7 +272,7 @@ class CivitaiModelSelector:
 
     CATEGORY = "Civitai/Loaders"
     FUNCTION = "select"
-    RETURN_TYPES = ("STRING", ANY_TYPE)
+    RETURN_TYPES = ("CIVITAI_AIR", ANY_TYPE)
     RETURN_NAMES = ("air", "path")
     _PATH_SLOT = 1  # downloading is driven by the `path` output being wired
 
@@ -324,12 +324,41 @@ class CivitaiModelSelector:
         return (air, path)
 
 
+class CivitaiEmbeddingSelector:
+    """Pick Civitai textual-inversion embeddings. Chain several (embeddings → embeddings) and wire
+    the final `embeddings` output into a recipe node's `embeddings` input."""
+
+    CATEGORY = "Civitai/Loaders"
+    FUNCTION = "append"
+    RETURN_TYPES = ("CIVITAI_EMBEDDINGS",)
+    RETURN_NAMES = ("embeddings",)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "air": ("STRING", {"default": "", "tooltip": "Embedding AIR (use the Browse Civitai button)"}),
+            },
+            "optional": {
+                "embeddings": ("CIVITAI_EMBEDDINGS", {"tooltip": "Chain from another Civitai Embedding Selector"}),
+            },
+        }
+
+    def append(self, air, embeddings=None):
+        stack = list(embeddings or [])
+        air = (air or "").strip()
+        if air:
+            stack.append(air)
+        return (stack,)
+
+
 NODE_CLASS_MAPPINGS = {
     "CivitaiAuth": CivitaiAuth,
     "CivitaiChatSimple": CivitaiChatSimple,
     "CivitaiLoraLoader": CivitaiLoraLoader,
     "CivitaiControlNet": CivitaiControlNet,
     "CivitaiModelSelector": CivitaiModelSelector,
+    "CivitaiEmbeddingSelector": CivitaiEmbeddingSelector,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -338,4 +367,5 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiLoraLoader": "Civitai LoRA Selector",
     "CivitaiControlNet": "Civitai ControlNet",
     "CivitaiModelSelector": "Civitai Model Selector",
+    "CivitaiEmbeddingSelector": "Civitai Embedding Selector",
 }

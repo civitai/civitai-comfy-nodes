@@ -93,6 +93,15 @@ class CivitaiRecipeNodeBase:
                 if value == "":
                     continue
                 payload[field.api] = value
+            elif field.kind == "air":
+                # AIR string from a Civitai Model Selector socket
+                if value:
+                    payload[field.api] = value
+            elif field.kind == "air_list":
+                # list of AIR strings from a Civitai Embedding Selector socket
+                airs = [a for a in value if a]
+                if airs:
+                    payload[field.api] = airs
             elif field.kind == "json":
                 if not str(value).strip():
                     continue

@@ -552,7 +552,7 @@ class CivitaiVideoGenLtx23CreateVideo(CivitaiRecipeNodeBase):
         "steps": F("steps", "value"),
         "model": F("model", "value"),
         "loras": F("loras", "lora_strength_map"),
-        "diffusion_model": F("diffusionModel", "value"),
+        "diffusion_model": F("diffusionModel", "air"),
         "quantity": F("quantity", "value"),
         "images": F("images", "image_list"),
     }
@@ -577,10 +577,9 @@ class CivitaiVideoGenLtx23CreateVideo(CivitaiRecipeNodeBase):
                 "model": (["22b-dev", "22b-distilled"], {"default": "22b-dev"}),
                 "loras": ("CIVITAI_LORAS", {}),
                 "diffusion_model": (
-                    "STRING",
+                    "CIVITAI_AIR",
                     {
-                        "tooltip": "Optional override for the LTX 2.3 diffusion-model checkpoint. When set, replaces the transformer file selected by Civitai.Orchestration.Grains.Workflows.Steps.VideoGen.ComfyLtx23VideoGenInput.Model while leaving the CLIPs, VAEs, and upscale-LoRA behavior unchanged. Use to point at a community fine-tune (e.g. SulphurAI/Sulphur-2-base).",
-                        "default": "",
+                        "tooltip": "Optional override for the LTX 2.3 diffusion-model checkpoint. When set, replaces the transformer file selected by Civitai.Orchestration.Grains.Workflows.Steps.VideoGen.ComfyLtx23VideoGenInput.Model while leaving the CLIPs, VAEs, and upscale-LoRA behavior unchanged. Use to point at a community fine-tune (e.g. SulphurAI/Sulphur-2-base)."
                     },
                 ),
                 "quantity": (
@@ -627,7 +626,7 @@ class CivitaiVideoGenLtx23ExtendVideo(CivitaiRecipeNodeBase):
         "steps": F("steps", "value"),
         "model": F("model", "value"),
         "loras": F("loras", "lora_strength_map"),
-        "diffusion_model": F("diffusionModel", "value"),
+        "diffusion_model": F("diffusionModel", "air"),
         "quantity": F("quantity", "value"),
         "source_video": F("sourceVideo", "video_url"),
         "num_frames": F("numFrames", "value"),
@@ -654,10 +653,9 @@ class CivitaiVideoGenLtx23ExtendVideo(CivitaiRecipeNodeBase):
                 "model": (["22b-dev", "22b-distilled"], {"default": "22b-dev"}),
                 "loras": ("CIVITAI_LORAS", {}),
                 "diffusion_model": (
-                    "STRING",
+                    "CIVITAI_AIR",
                     {
-                        "tooltip": "Optional override for the LTX 2.3 diffusion-model checkpoint. When set, replaces the transformer file selected by Civitai.Orchestration.Grains.Workflows.Steps.VideoGen.ComfyLtx23VideoGenInput.Model while leaving the CLIPs, VAEs, and upscale-LoRA behavior unchanged. Use to point at a community fine-tune (e.g. SulphurAI/Sulphur-2-base).",
-                        "default": "",
+                        "tooltip": "Optional override for the LTX 2.3 diffusion-model checkpoint. When set, replaces the transformer file selected by Civitai.Orchestration.Grains.Workflows.Steps.VideoGen.ComfyLtx23VideoGenInput.Model while leaving the CLIPs, VAEs, and upscale-LoRA behavior unchanged. Use to point at a community fine-tune (e.g. SulphurAI/Sulphur-2-base)."
                     },
                 ),
                 "quantity": (
@@ -704,7 +702,7 @@ class CivitaiVideoGenLtx23EditVideo(CivitaiRecipeNodeBase):
         "steps": F("steps", "value"),
         "model": F("model", "value"),
         "loras": F("loras", "lora_strength_map"),
-        "diffusion_model": F("diffusionModel", "value"),
+        "diffusion_model": F("diffusionModel", "air"),
         "quantity": F("quantity", "value"),
         "source_video": F("sourceVideo", "video_url"),
         "canny_low_threshold": F("cannyLowThreshold", "value"),
@@ -733,10 +731,9 @@ class CivitaiVideoGenLtx23EditVideo(CivitaiRecipeNodeBase):
                 "model": (["22b-dev", "22b-distilled"], {"default": "22b-dev"}),
                 "loras": ("CIVITAI_LORAS", {}),
                 "diffusion_model": (
-                    "STRING",
+                    "CIVITAI_AIR",
                     {
-                        "tooltip": "Optional override for the LTX 2.3 diffusion-model checkpoint. When set, replaces the transformer file selected by Civitai.Orchestration.Grains.Workflows.Steps.VideoGen.ComfyLtx23VideoGenInput.Model while leaving the CLIPs, VAEs, and upscale-LoRA behavior unchanged. Use to point at a community fine-tune (e.g. SulphurAI/Sulphur-2-base).",
-                        "default": "",
+                        "tooltip": "Optional override for the LTX 2.3 diffusion-model checkpoint. When set, replaces the transformer file selected by Civitai.Orchestration.Grains.Workflows.Steps.VideoGen.ComfyLtx23VideoGenInput.Model while leaving the CLIPs, VAEs, and upscale-LoRA behavior unchanged. Use to point at a community fine-tune (e.g. SulphurAI/Sulphur-2-base)."
                     },
                 ),
                 "quantity": (
@@ -785,7 +782,7 @@ class CivitaiVideoGenLtx23FirstLastFrameToVideo(CivitaiRecipeNodeBase):
         "steps": F("steps", "value"),
         "model": F("model", "value"),
         "loras": F("loras", "lora_strength_map"),
-        "diffusion_model": F("diffusionModel", "value"),
+        "diffusion_model": F("diffusionModel", "air"),
         "quantity": F("quantity", "value"),
         "first_frame": F("firstFrame", "value"),
         "last_frame": F("lastFrame", "value"),
@@ -812,10 +809,9 @@ class CivitaiVideoGenLtx23FirstLastFrameToVideo(CivitaiRecipeNodeBase):
                 "model": (["22b-dev", "22b-distilled"], {"default": "22b-dev"}),
                 "loras": ("CIVITAI_LORAS", {}),
                 "diffusion_model": (
-                    "STRING",
+                    "CIVITAI_AIR",
                     {
-                        "tooltip": "Optional override for the LTX 2.3 diffusion-model checkpoint. When set, replaces the transformer file selected by Civitai.Orchestration.Grains.Workflows.Steps.VideoGen.ComfyLtx23VideoGenInput.Model while leaving the CLIPs, VAEs, and upscale-LoRA behavior unchanged. Use to point at a community fine-tune (e.g. SulphurAI/Sulphur-2-base).",
-                        "default": "",
+                        "tooltip": "Optional override for the LTX 2.3 diffusion-model checkpoint. When set, replaces the transformer file selected by Civitai.Orchestration.Grains.Workflows.Steps.VideoGen.ComfyLtx23VideoGenInput.Model while leaving the CLIPs, VAEs, and upscale-LoRA behavior unchanged. Use to point at a community fine-tune (e.g. SulphurAI/Sulphur-2-base)."
                     },
                 ),
                 "quantity": (
@@ -885,7 +881,7 @@ class CivitaiVideoGenLtx23VideoToVideo(CivitaiRecipeNodeBase):
         "steps": F("steps", "value"),
         "model": F("model", "value"),
         "loras": F("loras", "lora_strength_map"),
-        "diffusion_model": F("diffusionModel", "value"),
+        "diffusion_model": F("diffusionModel", "air"),
         "quantity": F("quantity", "value"),
         "source_video": F("sourceVideo", "video_url"),
         "guide_strength": F("guideStrength", "value"),
@@ -912,10 +908,9 @@ class CivitaiVideoGenLtx23VideoToVideo(CivitaiRecipeNodeBase):
                 "model": (["22b-dev", "22b-distilled"], {"default": "22b-dev"}),
                 "loras": ("CIVITAI_LORAS", {}),
                 "diffusion_model": (
-                    "STRING",
+                    "CIVITAI_AIR",
                     {
-                        "tooltip": "Optional override for the LTX 2.3 diffusion-model checkpoint. When set, replaces the transformer file selected by Civitai.Orchestration.Grains.Workflows.Steps.VideoGen.ComfyLtx23VideoGenInput.Model while leaving the CLIPs, VAEs, and upscale-LoRA behavior unchanged. Use to point at a community fine-tune (e.g. SulphurAI/Sulphur-2-base).",
-                        "default": "",
+                        "tooltip": "Optional override for the LTX 2.3 diffusion-model checkpoint. When set, replaces the transformer file selected by Civitai.Orchestration.Grains.Workflows.Steps.VideoGen.ComfyLtx23VideoGenInput.Model while leaving the CLIPs, VAEs, and upscale-LoRA behavior unchanged. Use to point at a community fine-tune (e.g. SulphurAI/Sulphur-2-base)."
                     },
                 ),
                 "quantity": (
@@ -962,7 +957,7 @@ class CivitaiVideoGenLtx23AudioToVideo(CivitaiRecipeNodeBase):
         "steps": F("steps", "value"),
         "model": F("model", "value"),
         "loras": F("loras", "lora_strength_map"),
-        "diffusion_model": F("diffusionModel", "value"),
+        "diffusion_model": F("diffusionModel", "air"),
         "quantity": F("quantity", "value"),
         "reference_image": F("referenceImage", "value"),
         "source_audio": F("sourceAudio", "audio_url"),
@@ -991,10 +986,9 @@ class CivitaiVideoGenLtx23AudioToVideo(CivitaiRecipeNodeBase):
                 "model": (["22b-dev", "22b-distilled"], {"default": "22b-dev"}),
                 "loras": ("CIVITAI_LORAS", {}),
                 "diffusion_model": (
-                    "STRING",
+                    "CIVITAI_AIR",
                     {
-                        "tooltip": "Optional override for the LTX 2.3 diffusion-model checkpoint. When set, replaces the transformer file selected by Civitai.Orchestration.Grains.Workflows.Steps.VideoGen.ComfyLtx23VideoGenInput.Model while leaving the CLIPs, VAEs, and upscale-LoRA behavior unchanged. Use to point at a community fine-tune (e.g. SulphurAI/Sulphur-2-base).",
-                        "default": "",
+                        "tooltip": "Optional override for the LTX 2.3 diffusion-model checkpoint. When set, replaces the transformer file selected by Civitai.Orchestration.Grains.Workflows.Steps.VideoGen.ComfyLtx23VideoGenInput.Model while leaving the CLIPs, VAEs, and upscale-LoRA behavior unchanged. Use to point at a community fine-tune (e.g. SulphurAI/Sulphur-2-base)."
                     },
                 ),
                 "quantity": (
@@ -1064,7 +1058,7 @@ class CivitaiVideoGenHunyuan(CivitaiRecipeNodeBase):
         "width": F("width", "value"),
         "height": F("height", "value"),
         "loras": F("loras", "lora_array"),
-        "model": F("model", "value"),
+        "model": F("model", "air"),
     }
     OUTPUTS = (O("video", "video"),)
 
@@ -1083,7 +1077,7 @@ class CivitaiVideoGenHunyuan(CivitaiRecipeNodeBase):
                 "seed": ("INT", {"control_after_generate": True, "default": 0, "min": 0, "max": 4294967295, "step": 1}),
                 "steps": ("INT", {"default": 20, "min": 10, "max": 50, "step": 1}),
                 "loras": ("CIVITAI_LORAS", {}),
-                "model": ("STRING", {"default": ""}),
+                "model": ("CIVITAI_AIR", {}),
                 "api_config": (
                     "CIVITAI_CONFIG",
                     {
@@ -1115,7 +1109,7 @@ class CivitaiVideoGenWanV21Civitai(CivitaiRecipeNodeBase):
         "loras": F("loras", "lora_array"),
         "width": F("width", "value"),
         "height": F("height", "value"),
-        "model": F("model", "value"),
+        "model": F("model", "air"),
         "images": F("images", "image_list"),
     }
     OUTPUTS = (O("video", "video"),)
@@ -1136,7 +1130,7 @@ class CivitaiVideoGenWanV21Civitai(CivitaiRecipeNodeBase):
                 "loras": ("CIVITAI_LORAS", {}),
                 "width": ("INT", {"default": 480, "min": 0, "max": 2147483647, "step": 1}),
                 "height": ("INT", {"default": 480, "min": 0, "max": 2147483647, "step": 1}),
-                "model": ("STRING", {"default": ""}),
+                "model": ("CIVITAI_AIR", {}),
                 "images": ("IMAGE", {}),
                 "api_config": (
                     "CIVITAI_CONFIG",
@@ -1345,7 +1339,7 @@ class CivitaiVideoGenWanV22Comfy(CivitaiRecipeNodeBase):
         "loras": F("loras", "lora_array"),
         "width": F("width", "value"),
         "height": F("height", "value"),
-        "model": F("model", "value"),
+        "model": F("model", "air"),
         "images": F("images", "image_list"),
         "negative_prompt": F("negativePrompt", "value"),
         "sampler": F("sampler", "value"),
@@ -1370,7 +1364,7 @@ class CivitaiVideoGenWanV22Comfy(CivitaiRecipeNodeBase):
                 "loras": ("CIVITAI_LORAS", {}),
                 "width": ("INT", {"default": 1280, "min": 64, "max": 2048, "step": 1}),
                 "height": ("INT", {"default": 720, "min": 64, "max": 2048, "step": 1}),
-                "model": ("STRING", {"default": ""}),
+                "model": ("CIVITAI_AIR", {}),
                 "images": ("IMAGE", {}),
                 "negative_prompt": ("STRING", {"default": "", "multiline": True}),
                 "sampler": (
