@@ -160,9 +160,9 @@ CONTROLNET_PREPROCESSORS = [
 
 
 class CivitaiLoraLoader:
-    """Civitai LoRA loader. Cloud: chain several (loras → loras) and wire the final `loras` output
+    """Civitai LoRA selector. Cloud: chain several (loras → loras) and wire the final `loras` output
     into a recipe node's `loras` / `additional_networks` input. Local: wire a MODEL + CLIP into the
-    last loader of a chain — it downloads every LoRA in the stack and applies them, outputting the
+    last selector of a chain — it downloads every LoRA in the stack and applies them, outputting the
     patched MODEL/CLIP for local nodes (KSampler, …). The download only happens when model+clip
     are connected, so cloud-only use stays free."""
 
@@ -335,7 +335,7 @@ NODE_CLASS_MAPPINGS = {
 NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiAuth": "Civitai Auth",
     "CivitaiChatSimple": "Civitai Chat (Simple)",
-    "CivitaiLoraLoader": "Civitai LoRA Loader",
+    "CivitaiLoraLoader": "Civitai LoRA Selector",
     "CivitaiControlNet": "Civitai ControlNet",
     "CivitaiModelSelector": "Civitai Model Selector",
 }
