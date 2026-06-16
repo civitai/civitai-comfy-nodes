@@ -1,0 +1,21 @@
+name: Publish to Comfy Registry
+
+# Publishes to registry.comfy.org whenever the version in pyproject.toml changes on main
+# (the sync-spec PR does this), or on demand. The registry rejects a duplicate version,
+# so a no-op version is simply skipped by the action.
+on:
+  push:
+    branches: [main]
+    paths:
+      - pyproject.toml
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish
+        uses: Comfy-Org/publish-action@v1
+        with:
+          personal_access_token: ${{ secrets.REGISTRY_ACCESS_TOKEN }}

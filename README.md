@@ -1,8 +1,8 @@
 # civitai-comfy-nodes
 
-> ⚠️ **Under active development — not yet available in preview.** This repo is a
-> work in progress: nodes, APIs, and behavior may change without notice, and it
-> is not yet released for public preview. Use at your own risk.
+> 🔹 **Now in early preview — installable from the [Comfy Registry](https://registry.comfy.org/nodes/civitai-comfy-nodes).**
+> Still under active development: nodes, APIs, and behavior may change without
+> notice. Use at your own risk.
 
 ComfyUI custom nodes for the [Civitai Orchestration API](https://developer.civitaic.com/orchestration/).
 Run Civitai's cloud recipes — image/video/audio generation, upscaling, training, captioning,
@@ -10,6 +10,24 @@ moderation — as nodes inside any local ComfyUI graph. No local GPU or model do
 jobs run on Civitai's fleet and are billed in Buzz.
 
 ## Install
+
+### From the Comfy Registry (recommended)
+
+The pack is published to the [Comfy Registry](https://registry.comfy.org/nodes/civitai-comfy-nodes),
+so [ComfyUI Manager](https://docs.comfy.org/manager/overview) can install and update it
+for you:
+
+- **In ComfyUI Manager:** open **Manager → Custom Nodes Manager**, search for **Civitai Orchestration**,
+  and click **Install**, then restart ComfyUI.
+- **With [comfy-cli](https://docs.comfy.org/comfy-cli/getting-started):**
+
+  ```bash
+  comfy node registry-install civitai-comfy-nodes
+  ```
+
+See the [Comfy Registry docs](https://docs.comfy.org/registry/overview) for details.
+
+### From source
 
 Clone (or unzip) into your ComfyUI `custom_nodes` directory:
 

@@ -1,0 +1,77 @@
+name: Sync orchestration spec
+
+# Manual only. Fetches the published consumer OpenAPI spec, regenerates the nodes,
+# runs tests, and — if the generated output changed — bumps the patch version and
+# opens a PR. Merging that PR to main triggers publish.yml.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: pip install pytest ruff pillow numpy requests
+
+      - name: Sync spec + regenerate + test
+        env:
+          PYTHON: python
+          # Force the HTTP path: no orchestration checkout exists in CI.
+          SPEC_SOURCE: ""
+        run: ./scripts/sync-spec.sh
+
+      - name: Detect codegen changes
+        id: diff
+        run: |
+          if git diff --quiet -- civitai_comfy_nodes/generated spec/v2-consumers.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No spec/codegen changes — nothing to publish."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump patch version
+        id: bump
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          python - <<'PY'
+          import os, re, pathlib
+          p = pathlib.Path("pyproject.toml")
+          t = p.read_text()
+          def repl(m):
+              major, minor, patch = (int(x) for x in m.groups())
+              return f'version = "{major}.{minor}.{patch + 1}"'
+          t, n = re.subn(r'version = "(\d+)\.(\d+)\.(\d+)"', repl, t, count=1)
+          assert n == 1, "could not find a semver version line in pyproject.toml"
+          p.write_text(t)
+          new = re.search(r'version = "([^"]+)"', t).group(1)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"version={new}\n")
+          PY
+
+      - name: Open PR
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: automated/spec-sync
+          base: main
+          delete-branch: true
+          title: "chore: sync orchestration spec → v${{ steps.bump.outputs.version }}"
+          commit-message: "chore: sync orchestration spec and regenerate nodes (v${{ steps.bump.outputs.version }})"
+          body: |
+            Automated sync of the consumer OpenAPI spec from
+            `https://orchestration.civitai.com/openapi/v2-consumers.json`, regenerated
+            nodes, and a patch version bump to **v${{ steps.bump.outputs.version }}**.
+
+            Review the node diff, then merge — merging to `main` triggers the Comfy
+            Registry publish workflow.

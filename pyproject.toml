@@ -15,6 +15,17 @@ dev = [
     "numpy",
 ]
 
+[project.urls]
+Repository = "https://github.com/civitai/civitai-comfy-nodes"
+
+# Comfy Registry (registry.comfy.org) metadata, read by Comfy-Org/publish-action.
+# The registry rejects re-publishing an existing version, so `version` above is the
+# publish trigger — bump it (the sync-spec workflow bumps the patch automatically).
+[tool.comfy]
+PublisherId = "civitai"
+DisplayName = "Civitai Orchestration"
+Icon = "https://raw.githubusercontent.com/civitai/civitai-comfy-nodes/main/web/icon.svg"
+
 [tool.ruff]
 line-length = 120
 target-version = "py310"
