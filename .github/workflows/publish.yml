@@ -14,8 +14,8 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # publish-node-action checks out the repo itself, then runs `comfy node publish`.
       - name: Publish
-        uses: Comfy-Org/publish-action@v1
+        uses: Comfy-Org/publish-node-action@1.0.1
         with:
           personal_access_token: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
