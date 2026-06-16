@@ -119,6 +119,21 @@ matching loader node — image→`LoadImage`, video/audio/3D→their loaders —
 **fill** a selected loader node, or **drag** a thumbnail onto the canvas. If no credentials are
 configured, the tab shows a connect panel (OAuth sign-in or paste an API key).
 
+### CustomComfy offload
+
+The **Run in Civitai** action submits the current graph as a `customComfy` workflow. Local model
+widgets are rewritten to AIRs when the model can be resolved by embedded metadata hash or computed
+hash, and installed custom node packs are advertised when a versioned nodepack AIR can be inferred.
+
+Use **Civitai/Offload/Civitai Offload Start** and **Civitai Offload End** to delimit a cloud region.
+Place `Start` to the left of the nodes to offload, put the normal Comfy workflow between the markers,
+include the user output node such as `SaveImage` inside that region, and place `End` to the right.
+Nodes after `End` are not included in the submitted customComfy job.
+
+The markers are selection hints for **Run in Civitai**. When the cloud job returns an output asset,
+the node pack imports that asset into local Comfy and queues the downstream nodes after `End` as a
+local continuation.
+
 ## Development
 
 Nodes are **generated** — never edit `civitai_comfy_nodes/generated/` by hand. To change
