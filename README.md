@@ -80,11 +80,16 @@ searchable card grid of generation-capable models via a same-origin proxy to
 `civitai.com/api/v1/models`) and shows an on-node preview (thumbnail + name) of its current
 resource. Recipe nodes themselves have no Browse button — change a model by wiring a selector.
 
-- **Civitai Model Selector** — pick a model; it outputs the `air` (wire into a recipe node's `model`
-  / `vae` socket) plus a `path` you wire into a *standard* loader's file widget (e.g. Load
-  Checkpoint's `ckpt_name`). The model downloads into the matching ComfyUI folder **only when `path`
-  is connected**, so AIR/cloud-only use never downloads. Drop it in front of any loader — no need to
-  replace it.
+- **Civitai Model Selector** — pick a model once; it serves two purposes through its two outputs:
+  1. **Choose the model a Civitai recipe node runs on.** Wire its `air` output into a recipe node's
+     `model` / `vae` socket. The job runs on Civitai's fleet, so nothing is downloaded locally.
+  2. **Auto-download a model for a local loader.** Wire its `path` output into any *standard* loader's
+     file widget — e.g. drop it in front of a **Load LoRA** (`lora_name`) or **Load Checkpoint**
+     (`ckpt_name`) node and it downloads the model into the matching ComfyUI folder for you, no manual
+     file management. No need to replace the loader — just feed it.
+
+  The download happens **only when `path` is connected**, so use (1) stays cloud-only and never pulls
+  files down.
 - **Civitai LoRA Selector** — holds **multiple LoRAs in one node**: each row has an enable toggle,
   the model (pick/replace via Browse Civitai), a strength, and a **keywords** field; **＋ Add LoRA**
   appends another. Wire its `loras` output into a recipe node's `loras` / `additional_networks` input
