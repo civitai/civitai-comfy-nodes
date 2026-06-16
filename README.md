@@ -4,7 +4,7 @@
 > Still under active development: nodes, APIs, and behavior may change without
 > notice. Use at your own risk.
 
-ComfyUI custom nodes for the [Civitai Orchestration API](https://developer.civitaic.com/orchestration/).
+ComfyUI custom nodes for the [Civitai Orchestration API](https://developer.civitai.com/orchestration/).
 Run Civitai's cloud recipes — image/video/audio generation, upscaling, training, captioning,
 moderation — as nodes inside any local ComfyUI graph. No local GPU or model downloads needed;
 jobs run on Civitai's fleet and are billed in Buzz.
@@ -68,7 +68,7 @@ discriminator variant is its own node so it shows only the inputs that variant a
 
 Every node returns its media outputs as native Comfy types (IMAGE/VIDEO/AUDIO) plus
 `workflow_id` and `raw_json` for debugging and cost inspection. Models and LoRAs are
-referenced by [AIR URNs](https://developer.civitaic.com/guide/air) (e.g.
+referenced by [AIR URNs](https://developer.civitai.com/guide/air) (e.g.
 `urn:air:sdxl:checkpoint:civitai:101055@128078`).
 
 ### Models, LoRAs, ControlNets & embeddings
