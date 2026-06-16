@@ -67,3 +67,15 @@ def test_submit_workflow_includes_tags_in_body(monkeypatch):
     assert body["tags"] == ["civitai-comfy-nodes"]
     client.submit_workflow("imageGen", {"prompt": "hi"})
     assert "tags" not in captured["json"]
+
+
+def test_submit_steps_posts_workflow_body(monkeypatch):
+    client, captured = _client(monkeypatch)
+    steps = [{"$type": "customComfy", "input": {"resources": ["urn:air:x"], "workflow": {"1": {}}}}]
+
+    client.submit_steps(steps, wait=0, whatif=True)
+
+    assert captured["method"] == "POST"
+    assert captured["url"].endswith("/v2/consumer/workflows")
+    assert captured["params"] == {"wait": 0, "whatif": "true"}
+    assert captured["json"] == {"steps": steps}

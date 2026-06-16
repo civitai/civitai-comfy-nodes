@@ -108,3 +108,23 @@ def test_guess_ext_sniffs_magic_bytes():
     assert sr._guess_ext("image", b"\xff\xd8\xff\xe0\x00\x10JFIF") == ".jpg"
     assert sr._guess_ext("video", b"\x00\x00\x00\x18ftypmp42") == ".mp4"
     assert sr._guess_ext("audio", b"not a known header") == ".flac"  # falls back by kind
+
+
+def test_workflow_asset_urls_reads_custom_comfy_assets_and_blobs():
+    workflow = _wf(
+        [
+            {
+                "$type": "customComfy",
+                "output": {
+                    "assets": ["http://asset/a.png", {"url": "http://asset/b.png"}],
+                    "images": [{"id": "blob1", "available": True, "url": "http://blob/c.png"}],
+                },
+            }
+        ]
+    )
+
+    assert sr._workflow_asset_urls(workflow) == [
+        "http://asset/a.png",
+        "http://asset/b.png",
+        "http://blob/c.png",
+    ]

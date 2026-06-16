@@ -1,0 +1,158 @@
+{
+  "last_node_id": 11,
+  "last_link_id": 4,
+  "nodes": [
+    {
+      "id": 10,
+      "type": "CivitaiOffloadStart",
+      "pos": [40, 120],
+      "size": [260, 86],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [
+        { "name": "value", "type": "*", "link": null }
+      ],
+      "outputs": [
+        { "name": "value", "type": "*", "links": null, "slot_index": 0 }
+      ],
+      "properties": { "Node name for S&R": "CivitaiOffloadStart" },
+      "widgets_values": ["demo"]
+    },
+    {
+      "id": 1,
+      "type": "EmptyImage",
+      "pos": [340, 120],
+      "size": [315, 106],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        { "name": "width", "type": "INT", "widget": { "name": "width" }, "link": null },
+        { "name": "height", "type": "INT", "widget": { "name": "height" }, "link": null },
+        { "name": "batch_size", "type": "INT", "widget": { "name": "batch_size" }, "link": null },
+        { "name": "color", "type": "INT", "widget": { "name": "color" }, "link": null }
+      ],
+      "outputs": [
+        { "name": "IMAGE", "type": "IMAGE", "links": [1], "slot_index": 0 }
+      ],
+      "properties": { "Node name for S&R": "EmptyImage" },
+      "widgets_values": [512, 512, 1, 8421504]
+    },
+    {
+      "id": 2,
+      "type": "ImageInvert",
+      "pos": [700, 120],
+      "size": [210, 46],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        { "name": "image", "type": "IMAGE", "link": 1 }
+      ],
+      "outputs": [
+        { "name": "IMAGE", "type": "IMAGE", "links": [2, 3], "slot_index": 0 }
+      ],
+      "properties": { "Node name for S&R": "ImageInvert" },
+      "widgets_values": []
+    },
+    {
+      "id": 3,
+      "type": "SaveImage",
+      "pos": [980, 90],
+      "size": [315, 58],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        { "name": "images", "type": "IMAGE", "link": 2 },
+        { "name": "filename_prefix", "type": "STRING", "widget": { "name": "filename_prefix" }, "link": null }
+      ],
+      "outputs": [],
+      "properties": { "Node name for S&R": "SaveImage" },
+      "widgets_values": ["civitai-offload-remote"]
+    },
+    {
+      "id": 11,
+      "type": "CivitaiOffloadEnd",
+      "pos": [1340, 120],
+      "size": [260, 86],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        { "name": "value", "type": "*", "link": null }
+      ],
+      "outputs": [
+        { "name": "value", "type": "*", "links": null, "slot_index": 0 }
+      ],
+      "properties": { "Node name for S&R": "CivitaiOffloadEnd" },
+      "widgets_values": ["demo"]
+    },
+    {
+      "id": 4,
+      "type": "ImageInvert",
+      "pos": [1700, 120],
+      "size": [210, 46],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        { "name": "image", "type": "IMAGE", "link": 3 }
+      ],
+      "outputs": [
+        { "name": "IMAGE", "type": "IMAGE", "links": [4], "slot_index": 0 }
+      ],
+      "properties": { "Node name for S&R": "ImageInvert" },
+      "widgets_values": []
+    },
+    {
+      "id": 5,
+      "type": "SaveImage",
+      "pos": [1980, 90],
+      "size": [315, 58],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        { "name": "images", "type": "IMAGE", "link": 4 },
+        { "name": "filename_prefix", "type": "STRING", "widget": { "name": "filename_prefix" }, "link": null }
+      ],
+      "outputs": [],
+      "properties": { "Node name for S&R": "SaveImage" },
+      "widgets_values": ["local-after-offload-boundary"]
+    }
+  ],
+  "links": [
+    [1, 1, 0, 2, 0, "IMAGE"],
+    [2, 2, 0, 3, 0, "IMAGE"],
+    [3, 2, 0, 4, 0, "IMAGE"],
+    [4, 4, 0, 5, 0, "IMAGE"]
+  ],
+  "groups": [
+    {
+      "id": 1,
+      "title": "Offloaded by Run in Civitai",
+      "bounding": [315, 25, 1010, 260],
+      "color": "#3f789e",
+      "font_size": 24,
+      "flags": {}
+    },
+    {
+      "id": 2,
+      "title": "Local tail after End is not submitted",
+      "bounding": [1660, 25, 670, 260],
+      "color": "#9e7b3f",
+      "font_size": 24,
+      "flags": {}
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.8,
+      "offset": [40, 160]
+    }
+  },
+  "version": 0.4
+}

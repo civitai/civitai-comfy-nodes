@@ -38,10 +38,9 @@ class OrchestrationClient:
         error.status_code = response.status_code
         raise error
 
-    def submit_workflow(
+    def submit_steps(
         self,
-        step_type: str,
-        input_payload: dict,
+        steps: list[dict],
         *,
         wait: int = 5,
         whatif: bool = False,
@@ -52,10 +51,23 @@ class OrchestrationClient:
             params["whatif"] = "true"
         if self.config.allow_mature_content:
             params["hideMatureContent"] = "false"
-        body: dict = {"steps": [{"$type": step_type, "input": input_payload}]}
+        body: dict = {"steps": steps}
         if tags:
             body["tags"] = list(tags)
         return self._request("POST", "/v2/consumer/workflows", params=params, json=body).json()
+
+    def submit_workflow(
+        self,
+        step_type: str,
+        input_payload: dict,
+        *,
+        wait: int = 5,
+        whatif: bool = False,
+        tags: list[str] | None = None,
+    ) -> dict:
+        return self.submit_steps(
+            [{"$type": step_type, "input": input_payload}], wait=wait, whatif=whatif, tags=tags
+        )
 
     def query_workflows(
         self,
