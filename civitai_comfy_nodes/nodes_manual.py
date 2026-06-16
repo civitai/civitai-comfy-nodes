@@ -335,7 +335,6 @@ class CivitaiModelSelector:
             path = os.path.basename(full)  # folder-relative name the loader's combo resolves
         return (air, path)
 
-
 class CivitaiEmbeddingSelector:
     """Pick Civitai textual-inversion embeddings. Chain several (embeddings → embeddings) and wire
     the final `embeddings` output into a recipe node's `embeddings` input."""
@@ -364,6 +363,44 @@ class CivitaiEmbeddingSelector:
         return (stack,)
 
 
+class _CivitaiOffloadPassthrough:
+    CATEGORY = "Civitai/Offload"
+    FUNCTION = "mark"
+    RETURN_TYPES = (ANY_TYPE,)
+    RETURN_NAMES = ("value",)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "region_id": (
+                    "STRING",
+                    {
+                        "default": "default",
+                        "tooltip": "Matching start/end markers delimit one Civitai offload region.",
+                    },
+                ),
+            },
+            "optional": {
+                "value": (
+                    ANY_TYPE,
+                    {"tooltip": "Passthrough value. The offload transformer removes this marker before submission."},
+                ),
+            },
+        }
+
+    def mark(self, region_id="default", value=None):
+        return (value,)
+
+
+class CivitaiOffloadStart(_CivitaiOffloadPassthrough):
+    """Passthrough marker that starts a graph region intended for Civitai customComfy offload."""
+
+
+class CivitaiOffloadEnd(_CivitaiOffloadPassthrough):
+    """Passthrough marker that ends a graph region intended for Civitai customComfy offload."""
+
+
 NODE_CLASS_MAPPINGS = {
     "CivitaiAuth": CivitaiAuth,
     "CivitaiChatSimple": CivitaiChatSimple,
@@ -371,6 +408,8 @@ NODE_CLASS_MAPPINGS = {
     "CivitaiControlNet": CivitaiControlNet,
     "CivitaiModelSelector": CivitaiModelSelector,
     "CivitaiEmbeddingSelector": CivitaiEmbeddingSelector,
+    "CivitaiOffloadStart": CivitaiOffloadStart,
+    "CivitaiOffloadEnd": CivitaiOffloadEnd,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -380,4 +419,6 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CivitaiControlNet": "Civitai ControlNet",
     "CivitaiModelSelector": "Civitai Model Selector",
     "CivitaiEmbeddingSelector": "Civitai Embedding Selector",
+    "CivitaiOffloadStart": "Civitai Offload Start",
+    "CivitaiOffloadEnd": "Civitai Offload End",
 }

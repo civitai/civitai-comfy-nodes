@@ -4,10 +4,13 @@ No-op when imported outside ComfyUI (e.g. pytest)."""
 
 import asyncio
 import os
+import time
 import uuid
 
+import requests
+
 from . import catalog
-from .errors import CivitaiAuthError
+from .errors import CivitaiAuthError, CivitaiNodeError
 
 try:
     from aiohttp import web
@@ -153,6 +156,119 @@ def _import_blob(blob_id: str | None, url: str | None, kind: str) -> dict:
     return {"name": name, "subfolder": "", "type": "input"}
 
 
+def _download_url_to_input(url: str, kind: str = "image") -> dict:
+    import folder_paths  # ComfyUI runtime
+
+    response = requests.get(url, timeout=300)
+    if response.status_code >= 400:
+        raise CivitaiNodeError(f"Asset download failed ({response.status_code})")
+    data = response.content
+    safe = uuid.uuid4().hex[:16]
+    name = f"civitai_offload_{safe}{_guess_ext(kind, data)}"
+    path = os.path.join(folder_paths.get_input_directory(), name)
+    with open(path, "wb") as handle:
+        handle.write(data)
+    return {"name": name, "subfolder": "", "type": "input"}
+
+
+def _workflow_asset_urls(workflow: dict) -> list[str]:
+    urls: list[str] = []
+    for step in workflow.get("steps") or []:
+        output = step.get("output") or {}
+        assets = output.get("assets")
+        if isinstance(assets, list):
+            for asset in assets:
+                if isinstance(asset, str) and asset:
+                    urls.append(asset)
+                elif isinstance(asset, dict):
+                    url = asset.get("url") or asset.get("previewUrl")
+                    if url:
+                        urls.append(url)
+        for blob, _key in _walk_blobs(output):
+            url = blob.get("url") or blob.get("previewUrl")
+            if url:
+                urls.append(url)
+    return list(dict.fromkeys(urls))
+
+
+def _poll_workflow_to_terminal(client, workflow: dict, timeout_minutes: float) -> dict:
+    workflow_id = workflow.get("id") or workflow.get("workflowId")
+    if not workflow_id:
+        return workflow
+    deadline = time.monotonic() + max(1.0, timeout_minutes) * 60
+    current = workflow
+    while str(current.get("status") or "").lower() not in {"succeeded", "failed", "expired", "canceled"}:
+        if time.monotonic() > deadline:
+            raise CivitaiNodeError(f"Civitai workflow {workflow_id} timed out")
+        current = client.get_workflow(workflow_id, wait=10)
+    return current
+
+
+def _queue_local_prompt(comfy_base_url: str, prompt: dict) -> dict:
+    response = requests.post(
+        f"{comfy_base_url.rstrip('/')}/prompt",
+        json={"prompt": prompt, "client_id": "civitai-offload-hybrid"},
+        timeout=30,
+    )
+    if response.status_code >= 400:
+        raise CivitaiNodeError(f"Local Comfy continuation queue failed ({response.status_code}): {response.text}")
+    return response.json()
+
+
+def _offload_inventory() -> dict:
+    from . import offload
+
+    return {
+        "models": [record.as_dict() for record in offload.scan_local_model_files()],
+        "nodepacks": [nodepack.as_dict() for nodepack in offload.scan_installed_nodepacks()],
+    }
+
+
+def _offload_run(
+    prompt: dict,
+    selected_node_ids: list[str] | None,
+    workflow: dict | None,
+    wait: int,
+    whatif: bool,
+    *,
+    wait_until_complete: bool = False,
+) -> dict:
+    from . import offload
+    from .client import OrchestrationClient
+    from .config import resolve_config
+
+    config = resolve_config(interactive=False)
+    build = offload.build_custom_comfy_offload(
+        prompt,
+        selected_node_ids=selected_node_ids,
+        workflow=workflow,
+        token=config.token,
+    )
+    client = OrchestrationClient(config)
+    workflow = client.submit_steps(build.steps, wait=wait, whatif=whatif)
+    if wait_until_complete and not whatif:
+        workflow = _poll_workflow_to_terminal(client, workflow, config.timeout_minutes)
+    return {"workflow": workflow, "offload": build.as_dict()}
+
+
+def _run_local_tail(prompt: dict, offload_result: dict, comfy_base_url: str) -> dict | None:
+    from . import offload
+
+    assets = _workflow_asset_urls(offload_result["workflow"])
+    if not assets:
+        raise CivitaiNodeError("Civitai workflow completed but returned no downloadable customComfy assets")
+    imported = _download_url_to_input(assets[0], kind="image")
+    continuation = offload.build_local_continuation_prompt(
+        prompt,
+        remote_node_ids=offload_result["offload"].get("included_node_ids") or [],
+        imported_image_name=imported["name"],
+    )
+    if continuation is None:
+        return {"imported": imported, "continuation": None, "queue": None}
+    queue = _queue_local_prompt(comfy_base_url, continuation.prompt)
+    return {"imported": imported, "continuation": continuation.as_dict(), "queue": queue}
+
+
 def node_ecosystem_map() -> dict:
     """Map each recipe node class -> its expected AIR ecosystem (for the picker's default filter)."""
     from . import NODE_CLASS_MAPPINGS  # noqa: PLC0415 - deferred to call time to avoid an import cycle
@@ -272,6 +388,61 @@ if _server is not None:
             result = await loop.run_in_executor(None, lambda: _import_blob(blob_id, url, kind))
         except CivitaiAuthError:
             return web.json_response({"error": "auth_required"}, status=401)
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=502)
+        return web.json_response(result)
+
+    @_server.routes.get("/civitai/offload/inventory")
+    async def _civitai_offload_inventory(request):
+        loop = asyncio.get_event_loop()
+        try:
+            data = await loop.run_in_executor(None, _offload_inventory)
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=502)
+        return web.json_response(data)
+
+    @_server.routes.post("/civitai/offload/run")
+    async def _civitai_offload_run(request):
+        body = await request.json()
+        prompt = body.get("prompt") or body.get("output")
+        if not isinstance(prompt, dict):
+            return web.json_response({"error": "prompt must be a ComfyUI API prompt object"}, status=400)
+        selected = body.get("selectedNodeIds") or body.get("selected_node_ids") or None
+        if selected is not None and not isinstance(selected, list):
+            return web.json_response({"error": "selectedNodeIds must be an array"}, status=400)
+        workflow = body.get("workflow")
+        if workflow is not None and not isinstance(workflow, dict):
+            return web.json_response({"error": "workflow must be a serialized ComfyUI workflow object"}, status=400)
+        try:
+            wait = max(0, min(int(body.get("wait", 0)), 60))
+        except (TypeError, ValueError):
+            wait = 0
+        whatif = bool(body.get("whatif", False))
+        run_local_tail = bool(body.get("runLocalTail", False))
+        comfy_base_url = f"{request.scheme}://{request.host}"
+        loop = asyncio.get_event_loop()
+        try:
+            selected_ids = [str(node_id) for node_id in selected] if selected else None
+            result = await loop.run_in_executor(
+                None,
+                lambda: _offload_run(
+                    prompt,
+                    selected_ids,
+                    workflow,
+                    wait,
+                    whatif,
+                    wait_until_complete=run_local_tail,
+                ),
+            )
+            if run_local_tail and not whatif:
+                result["local"] = await loop.run_in_executor(
+                    None,
+                    lambda: _run_local_tail(prompt, result, comfy_base_url),
+                )
+        except CivitaiAuthError:
+            return web.json_response({"error": "auth_required"}, status=401)
+        except CivitaiNodeError as e:
+            return web.json_response({"error": str(e)}, status=400)
         except Exception as e:
             return web.json_response({"error": str(e)}, status=502)
         return web.json_response(result)
