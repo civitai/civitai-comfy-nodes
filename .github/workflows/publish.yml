@@ -2,7 +2,7 @@ name: Publish to Comfy Registry
 
 # Publishes to registry.comfy.org whenever the version in pyproject.toml changes on main
 # (the sync-spec PR does this), or on demand. The registry rejects a duplicate version,
-# so a no-op version is simply skipped by the action.
+# so re-running on an unchanged version is a no-op.
 on:
   push:
     branches: [main]
@@ -14,8 +14,18 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      # publish-node-action checks out the repo itself, then runs `comfy node publish`.
-      - name: Publish
-        uses: Comfy-Org/publish-node-action@1.0.1
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          personal_access_token: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
+          python-version: "3.12"
+      # We call comfy-cli directly rather than Comfy-Org/publish-node-action: that action's
+      # tagged releases shell out to `comfy --yes env`, an option current comfy-cli dropped,
+      # so they fail. Pin the cli and use its current non-interactive flags.
+      - name: Install comfy-cli
+        run: pip install "comfy-cli==1.10.4"
+      - name: Publish
+        env:
+          REGISTRY_ACCESS_TOKEN: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
+        run: |
+          comfy --skip-prompt env
+          comfy --skip-prompt node publish --token "$REGISTRY_ACCESS_TOKEN"
