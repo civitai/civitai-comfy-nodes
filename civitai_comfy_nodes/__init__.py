@@ -1,4 +1,6 @@
-from . import generated, nodes_manual
+from . import generated, nodes_manual, prompt_context
+
+prompt_context.register()
 
 NODE_CLASS_MAPPINGS = {
     **generated.NODE_CLASS_MAPPINGS,

@@ -3,7 +3,7 @@ import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
-from . import oauth
+from . import oauth, prompt_context
 from .errors import CivitaiAuthError, CivitaiNodeError
 
 DEFAULT_BASE_URL = "https://orchestration.civitai.com"
@@ -25,6 +25,9 @@ def resolve_session_id() -> str:
     CIVITAI_COMFY_SESSION_ID so submissions link to its own session; a standalone install
     instead mints one and persists it, so it survives ComfyUI restarts (identifies the instance,
     not just the process). Resolved per call so a host that sets the env var is always honoured."""
+    ctx = prompt_context.current()
+    if ctx and (ctx.get("session_id") or "").strip():
+        return ctx["session_id"].strip()
     provided = os.environ.get("CIVITAI_COMFY_SESSION_ID")
     if provided and provided.strip():
         return provided.strip()
@@ -73,9 +76,12 @@ def base_url() -> str:
 def auth_state() -> tuple[str | None, str | None]:
     """Return (token, source) from non-interactive credential sources, or (None, None).
 
-    source is one of "env", "apikey", "oauth". Never opens a browser / interactive login, so it's
-    safe for the server-side status route.
+    source is one of "prompt", "env", "apikey", "oauth". Never opens a browser / interactive login,
+    so it's safe for the server-side status route.
     """
+    ctx = prompt_context.current()
+    if ctx and ctx.get("api_token"):
+        return ctx["api_token"], "prompt"
     env = os.environ.get("CIVITAI_API_TOKEN")
     if env:
         return env, "env"

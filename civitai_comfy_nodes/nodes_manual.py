@@ -210,13 +210,10 @@ class CivitaiLoraLoader:
 
         # Local mode: model + clip wired in -> download and apply the whole accumulated stack.
         if model is not None and clip is not None and stack:
-            import os
+            from . import local_models
+            from .config import auth_state
 
-            from . import local_models, oauth
-
-            token = (api_config or {}).get("api_token") or os.environ.get("CIVITAI_API_TOKEN")
-            if not token:
-                token = oauth.get_valid_access_token()
+            token = (api_config or {}).get("api_token") or auth_state()[0]
             for item in stack:
                 path = local_models.download_model(item["air"], folder="loras", token=token)
                 model, clip = local_models.apply_lora(model, clip, path, item.get("strength", 1.0))
@@ -325,11 +322,10 @@ class CivitaiModelSelector:
         if self._path_consumed(prompt, unique_id):
             import os
 
-            from . import local_models, oauth
+            from . import local_models
+            from .config import auth_state
 
-            token = (api_config or {}).get("api_token") or os.environ.get("CIVITAI_API_TOKEN")
-            if not token:
-                token = oauth.get_valid_access_token()  # best-effort; public models need no token
+            token = (api_config or {}).get("api_token") or auth_state()[0]
             folder = local_models.folder_for_air(air)
             full = local_models.download_model(air, folder=folder, token=token)
             path = os.path.basename(full)  # folder-relative name the loader's combo resolves
