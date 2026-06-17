@@ -278,6 +278,11 @@ function renderGallery(el) {
   root.className = "cvg-root";
   root.innerHTML = `
     <div class="cvg-bar">
+      <select class="cvg-scope" title="Which generations to show">
+        <option value="session">Current session</option>
+        <option value="source">All sessions</option>
+        <option value="all">All generations</option>
+      </select>
       <select class="cvg-filter">
         <option value="">All media</option>
         <option value="image">Images</option>
@@ -296,9 +301,11 @@ function renderGallery(el) {
   const sentinel = root.querySelector(".cvg-sentinel");
   const msg = root.querySelector(".cvg-msg");
   const filterSel = root.querySelector(".cvg-filter");
+  const scopeSel = root.querySelector(".cvg-scope");
 
   const state = { cursor: null, loading: false, done: false, shown: 0 };
   const kind = () => filterSel.value;
+  const scope = () => scopeSel.value;
 
   function reset() {
     state.cursor = null; state.done = false; state.loading = false; state.shown = 0;
@@ -310,7 +317,7 @@ function renderGallery(el) {
     if (state.loading || state.done) return;
     state.loading = true;
     try {
-      const params = new URLSearchParams({ take: String(PAGE) });
+      const params = new URLSearchParams({ take: String(PAGE), scope: scope() });
       if (state.cursor) params.set("cursor", state.cursor);
       const res = await fetch(`/civitai/workflows/list?${params}`);
       const data = await res.json();
@@ -326,7 +333,15 @@ function renderGallery(el) {
       }
       state.cursor = data.next || null;
       if (!state.cursor) state.done = true;
-      if (!state.shown && state.done) { msg.textContent = "No generations yet."; msg.style.display = "block"; }
+      if (!state.shown && state.done) {
+        msg.textContent =
+          scope() === "session"
+            ? "Nothing generated in this session yet. Switch to “All sessions” or “All generations” to see more."
+            : scope() === "source"
+              ? "No generations from this node pack yet."
+              : "No generations yet.";
+        msg.style.display = "block";
+      }
       // keep filling while the viewport isn't covered yet
       if (!state.done && grid.getBoundingClientRect().bottom < root.getBoundingClientRect().bottom) {
         state.loading = false;
@@ -341,6 +356,7 @@ function renderGallery(el) {
   }
 
   filterSel.addEventListener("change", reset);
+  scopeSel.addEventListener("change", reset);
   root.querySelector(".cvg-refresh").addEventListener("click", reset);
   root.querySelector(".cvg-disconnect").addEventListener("click", async () => {
     await fetch("/civitai/auth/logout", { method: "POST" });

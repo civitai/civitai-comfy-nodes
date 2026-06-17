@@ -124,11 +124,23 @@ def _new_client(*, interactive: bool = False):
     return OrchestrationClient(resolve_config(interactive=interactive))
 
 
-def _list_generations(cursor: str | None, take: int) -> dict:
+def _scope_tags(scope: str | None) -> list[str] | None:
+    """Map a gallery scope to the tag filter: 'session' = this ComfyUI process's generations,
+    'source' = any from this pack across the user's sessions, anything else = no filter."""
+    from .config import SOURCE_TAG, session_tag
+
+    if scope == "session":
+        return [SOURCE_TAG, session_tag()]
+    if scope == "source":
+        return [SOURCE_TAG]
+    return None
+
+
+def _list_generations(cursor: str | None, take: int, tags: list[str] | None = None) -> dict:
     # The gallery shows the user's OWN history, so don't hide their mature content. The list API
     # defaults hideMatureContent=true, which nulls the url + sets blockedReason on every R+ blob —
     # that dropped fully-mature workflows entirely and showed only the SFW frames of a batch.
-    return _new_client().query_workflows(cursor=cursor, take=take, hide_mature=False)
+    return _new_client().query_workflows(cursor=cursor, take=take, hide_mature=False, tags=tags)
 
 
 def _validate_and_save_key(key: str) -> None:
@@ -245,13 +257,14 @@ if _server is not None:
         cursor = request.query.get("cursor") or None
         kinds = request.query.get("kinds")
         kind_set = set(kinds.split(",")) if kinds else None
+        tags = _scope_tags(request.query.get("scope"))
         try:
             take = max(1, min(int(request.query.get("take", "60")), 200))
         except ValueError:
             take = 60
         loop = asyncio.get_event_loop()
         try:
-            data = await loop.run_in_executor(None, lambda: _list_generations(cursor, take))
+            data = await loop.run_in_executor(None, lambda: _list_generations(cursor, take, tags))
         except CivitaiAuthError:
             return web.json_response({"error": "auth_required"}, status=401)
         except Exception as e:

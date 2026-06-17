@@ -15,7 +15,7 @@ def _client(monkeypatch):
     captured = {}
 
     def fake_request(method, url, **kwargs):
-        captured.update(method=method, url=url, params=kwargs.get("params"))
+        captured.update(method=method, url=url, params=kwargs.get("params"), json=kwargs.get("json"))
         return _Resp()
 
     monkeypatch.setattr(client.session, "request", fake_request)
@@ -49,3 +49,21 @@ def test_query_workflows_can_request_mature(monkeypatch):
     client, captured = _client(monkeypatch)
     client.query_workflows(hide_mature=False)
     assert captured["params"]["hideMatureContent"] == "false"
+
+
+def test_query_workflows_forwards_tags(monkeypatch):
+    client, captured = _client(monkeypatch)
+    client.query_workflows(tags=["civitai-comfy-nodes", "civitai-comfy-nodes:session:abc"])
+    assert captured["params"]["tags"] == ["civitai-comfy-nodes", "civitai-comfy-nodes:session:abc"]
+    client.query_workflows()
+    assert "tags" not in captured["params"]
+
+
+def test_submit_workflow_includes_tags_in_body(monkeypatch):
+    client, captured = _client(monkeypatch)
+    client.submit_workflow("imageGen", {"prompt": "hi"}, tags=["civitai-comfy-nodes"])
+    body = captured["json"]
+    assert body["steps"][0]["$type"] == "imageGen"
+    assert body["tags"] == ["civitai-comfy-nodes"]
+    client.submit_workflow("imageGen", {"prompt": "hi"})
+    assert "tags" not in captured["json"]

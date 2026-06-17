@@ -1,10 +1,56 @@
 import os
+import uuid
 from dataclasses import dataclass
+from pathlib import Path
 
 from . import oauth
 from .errors import CivitaiAuthError, CivitaiNodeError
 
 DEFAULT_BASE_URL = "https://orchestration.civitai.com"
+
+# Workflows submitted by this pack carry two indexed tags so the gallery can scope its listing:
+# SOURCE_TAG (any workflow from this pack) and a per-session tag identifying the submitter.
+SOURCE_TAG = "civitai-comfy-nodes"
+
+
+def session_id_store_path() -> Path:
+    override = os.environ.get("CIVITAI_COMFY_SESSION_STORE")
+    if override:
+        return Path(override)
+    return Path.home() / ".civitai" / "comfy-session-id"
+
+
+def resolve_session_id() -> str:
+    """The submitting session's stable id. A host (e.g. comfy-cloud) pins it via
+    CIVITAI_COMFY_SESSION_ID so submissions link to its own session; a standalone install
+    instead mints one and persists it, so it survives ComfyUI restarts (identifies the instance,
+    not just the process). Resolved per call so a host that sets the env var is always honoured."""
+    provided = os.environ.get("CIVITAI_COMFY_SESSION_ID")
+    if provided and provided.strip():
+        return provided.strip()
+    path = session_id_store_path()
+    try:
+        existing = path.read_text().strip()
+        if existing:
+            return existing
+    except OSError:
+        pass
+    new_id = uuid.uuid4().hex
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(new_id)
+        path.chmod(0o600)
+    except OSError:
+        pass  # read-only FS: not persisted, but still usable for this run
+    return new_id
+
+
+def session_tag() -> str:
+    return f"{SOURCE_TAG}:session:{resolve_session_id()}"
+
+
+def submit_tags() -> list[str]:
+    return [SOURCE_TAG, session_tag()]
 
 _NO_CREDS_MESSAGE = (
     "No Civitai credentials. Set the CIVITAI_API_TOKEN environment variable to a token from "

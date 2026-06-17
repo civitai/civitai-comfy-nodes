@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 from . import comfy_compat, conversions
 from .client import TERMINAL_STATUSES, OrchestrationClient
-from .config import resolve_config
+from .config import resolve_config, submit_tags
 from .errors import CivitaiNodeError, workflow_failure_message
 
 # Propagates to ComfyUI's root logger, so these show in the same console as "[INFO] got prompt".
@@ -96,7 +96,7 @@ class CivitaiRecipeNodeBase:
         payload = self._build_payload(client, widgets)
         payload.update(self.DISCRIMINATOR)
 
-        workflow = client.submit_workflow(self.STEP_TYPE, payload, wait=5)
+        workflow = client.submit_workflow(self.STEP_TYPE, payload, wait=5, tags=submit_tags())
         workflow_id = workflow.get("id", "?")
         logger.info("Civitai %s: submitted workflow %s (status: %s)", self.RECIPE, workflow_id, workflow.get("status"))
         workflow = self._poll(client, workflow, timeout_minutes=config.timeout_minutes)

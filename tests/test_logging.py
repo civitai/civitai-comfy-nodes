@@ -6,7 +6,7 @@ class _FakeClient:
     def __init__(self, config):
         self.calls = 0
 
-    def submit_workflow(self, step_type, payload, wait=5):
+    def submit_workflow(self, step_type, payload, wait=5, tags=None):
         return {
             "id": "wf-test",
             "status": "scheduled",

@@ -38,13 +38,23 @@ class OrchestrationClient:
         error.status_code = response.status_code
         raise error
 
-    def submit_workflow(self, step_type: str, input_payload: dict, *, wait: int = 5, whatif: bool = False) -> dict:
+    def submit_workflow(
+        self,
+        step_type: str,
+        input_payload: dict,
+        *,
+        wait: int = 5,
+        whatif: bool = False,
+        tags: list[str] | None = None,
+    ) -> dict:
         params: dict = {"wait": wait}
         if whatif:
             params["whatif"] = "true"
         if self.config.allow_mature_content:
             params["hideMatureContent"] = "false"
-        body = {"steps": [{"$type": step_type, "input": input_payload}]}
+        body: dict = {"steps": [{"$type": step_type, "input": input_payload}]}
+        if tags:
+            body["tags"] = list(tags)
         return self._request("POST", "/v2/consumer/workflows", params=params, json=body).json()
 
     def query_workflows(
@@ -56,9 +66,11 @@ class OrchestrationClient:
         hide_mature: bool | None = None,
         from_date: str | None = None,
         to_date: str | None = None,
+        tags: list[str] | None = None,
     ) -> dict:
         """List the caller's own workflows newest-first (scoped to the token's user). Returns
-        `{"next": <cursor|None>, "items": [workflow, ...]}`; pass `next` back as `cursor` to page."""
+        `{"next": <cursor|None>, "items": [workflow, ...]}`; pass `next` back as `cursor` to page.
+        `tags` filters to workflows carrying ALL the given tags (the API ANDs them)."""
         params: dict = {"take": take}
         if cursor:
             params["cursor"] = cursor
@@ -70,6 +82,8 @@ class OrchestrationClient:
             params["fromDate"] = from_date
         if to_date:
             params["toDate"] = to_date
+        if tags:
+            params["tags"] = list(tags)
         return self._request("GET", "/v2/consumer/workflows", params=params).json()
 
     def get_workflow(self, workflow_id: str, wait: int = 0) -> dict:

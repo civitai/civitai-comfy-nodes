@@ -51,6 +51,30 @@ def test_list_generations_requests_mature(monkeypatch):
     sr._list_generations(cursor="c1", take=60)
     assert captured["hide_mature"] is False
     assert captured["cursor"] == "c1" and captured["take"] == 60
+    assert captured["tags"] is None
+
+
+def test_scope_tags_mapping(monkeypatch):
+    monkeypatch.setenv("CIVITAI_COMFY_SESSION_ID", "sess-1")
+    from civitai_comfy_nodes.config import SOURCE_TAG
+
+    assert sr._scope_tags("session") == [SOURCE_TAG, f"{SOURCE_TAG}:session:sess-1"]
+    assert sr._scope_tags("source") == [SOURCE_TAG]
+    assert sr._scope_tags("all") is None
+    assert sr._scope_tags(None) is None
+
+
+def test_list_generations_forwards_tags(monkeypatch):
+    captured = {}
+
+    class _FakeClient:
+        def query_workflows(self, **kwargs):
+            captured.update(kwargs)
+            return {"next": None, "items": []}
+
+    monkeypatch.setattr(sr, "_new_client", lambda *a, **k: _FakeClient())
+    sr._list_generations(cursor=None, take=60, tags=["civitai-comfy-nodes"])
+    assert captured["tags"] == ["civitai-comfy-nodes"]
 
 
 def test_flatten_uses_type_field_when_present():
