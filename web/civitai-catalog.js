@@ -304,16 +304,16 @@ function renderPreview(node, { entry = null, air = "", sub = "", empty = false }
 }
 
 // Adaptive component outputs: keep the node's outputs a prefix of the canonical list
-// [air, path, vae, clip, clip 2, clip 3] so slot indices always match the Python node, growing /
+// [air, path, clip, vae, clip 2, clip 3] so slot indices always match the Python node, growing /
 // collapsing the trailing component slots to fit the picked model and labelling each with its real
 // file. A slot with a live link is never removed (so loading a saved graph can't drop a wire).
-const COMPONENT_OUTPUTS = ["vae", "clip", "clip 2", "clip 3"]; // canonical output slots 2..5
+const COMPONENT_OUTPUTS = ["clip", "vae", "clip 2", "clip 3"]; // canonical output slots 2..5
 
 function applyComponentOutputs(node, components) {
   if (!components || !node.outputs) return; // unknown (e.g. lookup failed) — leave outputs as they are
   const vae = components.vae || [];
   const clip = components.clip || [];
-  const fileFor = [vae[0], clip[0], clip[1], clip[2]]; // canonical slot 2..5 -> its file (or undefined)
+  const fileFor = [clip[0], vae[0], clip[1], clip[2]]; // canonical slot 2..5 -> its file (or undefined)
   let lastNeeded = 1; // 1 = `path`; nothing past it needed yet
   fileFor.forEach((f, i) => { if (f) lastNeeded = Math.max(lastNeeded, 2 + i); });
 

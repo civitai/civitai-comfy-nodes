@@ -282,12 +282,14 @@ class CivitaiModelSelector:
     CATEGORY = "Civitai/Loaders"
     FUNCTION = "select"
     RETURN_TYPES = ("CIVITAI_AIR", ANY_TYPE, ANY_TYPE, ANY_TYPE, ANY_TYPE, ANY_TYPE)
-    RETURN_NAMES = ("air", "path", "vae", "clip", "clip 2", "clip 3")
+    RETURN_NAMES = ("air", "path", "clip", "vae", "clip 2", "clip 3")
     _PATH_SLOT = 1
     # Component output slot -> (catalog.components bucket, index within that bucket, ComfyUI folder).
+    # clip before vae so the outputs line up with loaders that list clip_name above vae_name; the
+    # extra clip slots stay at the tail so single-clip models still collapse to clip + vae.
     _COMPONENT_SLOTS = {
-        2: ("vae", 0, "vae"),
-        3: ("clip", 0, "text_encoders"),
+        2: ("clip", 0, "text_encoders"),
+        3: ("vae", 0, "vae"),
         4: ("clip", 1, "text_encoders"),
         5: ("clip", 2, "text_encoders"),
     }

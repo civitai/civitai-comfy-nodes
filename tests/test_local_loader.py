@@ -86,8 +86,8 @@ def test_consumed_slots_detection():
     # only the AIR (slot 0) is consumed -> no download slots
     assert consumed({"5": {"inputs": {"model_air": ["3", 0]}}}, "3") == {0}
     assert consumed(None, "3") == set()  # no prompt available -> don't download
-    # unet (path, slot 1), vae (slot 2) and clip (slot 3) all wired from one downstream node
-    multi = {"7": {"inputs": {"unet_name": ["3", 1], "vae_name": ["3", 2], "clip_name": ["3", 3]}}}
+    # unet (path, slot 1), clip (slot 2) and vae (slot 3) all wired from one downstream node
+    multi = {"7": {"inputs": {"unet_name": ["3", 1], "clip_name": ["3", 2], "vae_name": ["3", 3]}}}
     assert consumed(multi, "3") == {1, 2, 3}
 
 
@@ -142,11 +142,11 @@ def test_select_downloads_components_when_wired(monkeypatch):
         return f"/models/{folder}/civitai_9_f{file_id}_{folder}.safetensors"
 
     monkeypatch.setattr(local_models, "download_model", fake_download)
-    # node "7" wires the vae (slot 2) and first clip (slot 3) of node "3"
-    prompt = {"7": {"inputs": {"vae_name": ["3", 2], "clip_name": ["3", 3]}}}
+    # node "7" wires the first clip (slot 2) and the vae (slot 3) of node "3"
+    prompt = {"7": {"inputs": {"clip_name": ["3", 2], "vae_name": ["3", 3]}}}
     result = CivitaiModelSelector().select("urn:air:zimage:checkpoint:civitai:1@9", prompt=prompt, unique_id="3")
-    assert result[2] == "civitai_9_f22_vae.safetensors"  # vae output -> vae/ folder, keyed by file id
-    assert result[3] == "civitai_9_f33_text_encoders.safetensors"  # clip output -> text_encoders/
+    assert result[2] == "civitai_9_f33_text_encoders.safetensors"  # clip output -> text_encoders/
+    assert result[3] == "civitai_9_f22_vae.safetensors"  # vae output -> vae/ folder, keyed by file id
     assert result[1] == ""  # path not wired -> primary not downloaded
     assert ("vae", "u-vae", 22) in calls
     assert ("text_encoders", "u-clip", 33) in calls
@@ -156,7 +156,7 @@ def test_select_errors_when_a_wired_component_is_missing(monkeypatch):
     monkeypatch.setattr(config, "auth_state", lambda: (None, "none"))
     monkeypatch.setattr(catalog, "components", lambda air, token=None: {"vae": [], "clip": []})
     monkeypatch.setattr(local_models, "download_model", lambda *a, **k: "/x")
-    prompt = {"7": {"inputs": {"vae_name": ["3", 2]}}}  # vae wired but the model has none
+    prompt = {"7": {"inputs": {"clip_name": ["3", 2]}}}  # clip wired but the model has none
     with pytest.raises(CivitaiNodeError):
         CivitaiModelSelector().select("urn:air:x:checkpoint:civitai:1@9", prompt=prompt, unique_id="3")
 

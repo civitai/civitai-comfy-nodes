@@ -17,7 +17,7 @@ converts blob outputs to native Comfy types.
   → `CIVITAI_CONTROLNETS`. `base._build_payload` serializes each (AIR string, AIR list, lora
   array/AIR-keyed map, controlnet array). `field_types: {field: "air"}` forces an AIR-by-description
   field that lacks the pattern (e.g. `imageUpscaler.model`). `CivitaiModelSelector` outputs the
-  `air` (`CIVITAI_AIR`) plus `path`/`vae`/`clip`/`clip 2`/`clip 3` (all `*`/AnyType — wire into a
+  `air` (`CIVITAI_AIR`) plus `path`/`clip`/`vae`/`clip 2`/`clip 3` (all `*`/AnyType — wire into a
   standard loader's file combo); `path` is the version's primary file, the rest are its additional
   components (`catalog.components` groups the version `files[]` by Civitai `type`: VAE → `vae`,
   Text Encoder → `clip` in API order). Each output downloads into the matching ComfyUI folder only
