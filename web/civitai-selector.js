@@ -9,6 +9,25 @@ const PLACEHOLDER = "⬇ from Civitai (downloaded on run)";
 // The selector's download outputs (primary file + extra components), all fed into loader combos.
 const DOWNLOAD_OUTPUTS = new Set(["path", "vae", "clip", "clip 2", "clip 3"]);
 
+// The component outputs carry filenames, so they're AnyType and LiteGraph offers them to *every*
+// file-name combo (unet_name, clip_name, vae_name are all the same generic COMBO type — the drag
+// highlight can't tell them apart). Guard the *completion* of an obviously-wrong wire by the target
+// widget's name: e.g. the `vae` output won't connect to a `clip_name`/`unet_name` input. `path` is
+// the primary file and stays unrestricted; unrecognized targets are always allowed (never block a
+// wire we don't understand).
+const OWN_KEYWORDS = {
+  vae: ["vae"],
+  clip: ["clip", "text_encoder", "textencoder", "encoder", "t5"],
+};
+const MODEL_KEYWORDS = ["unet", "diffusion", "ckpt", "checkpoint"];
+
+function mismatchRule(outputName) {
+  if (outputName === "vae") return { own: OWN_KEYWORDS.vae, foreign: [...OWN_KEYWORDS.clip, ...MODEL_KEYWORDS] };
+  if (outputName === "clip" || outputName === "clip 2" || outputName === "clip 3")
+    return { own: OWN_KEYWORDS.clip, foreign: [...OWN_KEYWORDS.vae, ...MODEL_KEYWORDS] };
+  return null; // path / air -> unrestricted
+}
+
 function fedComboWidget(node, slot) {
   const input = node?.inputs?.[slot];
   if (!input) return null;
@@ -21,6 +40,31 @@ app.registerExtension({
   name: "civitai.model-selector",
   async beforeRegisterNodeDef(nodeType, nodeData) {
     if (nodeData.name !== "CivitaiModelSelector") return;
+
+    const onConnectOutput = nodeType.prototype.onConnectOutput;
+    nodeType.prototype.onConnectOutput = function (outputIndex, inputType, inputObj, targetNode, targetIndex) {
+      if (onConnectOutput && onConnectOutput.apply(this, arguments) === false) return false;
+      const rule = mismatchRule(this.outputs?.[outputIndex]?.name);
+      if (!rule) return true;
+      const targetName = (inputObj?.name || targetNode?.inputs?.[targetIndex]?.name || "").toLowerCase();
+      if (!targetName) return true; // can't identify the target -> allow
+      const own = rule.own.some((k) => targetName.includes(k));
+      const foreign = rule.foreign.some((k) => targetName.includes(k));
+      if (foreign && !own) {
+        const outName = this.outputs[outputIndex].name;
+        try {
+          app.extensionManager?.toast?.add({
+            severity: "warn",
+            summary: "Civitai Model Selector",
+            detail: `The ${outName} output goes into a ${outName} input, not "${targetName}".`,
+            life: 4000,
+          });
+        } catch {}
+        return false;
+      }
+      return true;
+    };
+
     const onConnectionsChange = nodeType.prototype.onConnectionsChange;
     nodeType.prototype.onConnectionsChange = function (type, index, connected, link) {
       onConnectionsChange?.apply(this, arguments);
