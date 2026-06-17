@@ -23,7 +23,7 @@ Repository = "https://github.com/civitai/civitai-comfy-nodes"
 # publish trigger — bump it (the sync-spec workflow bumps the patch automatically).
 [tool.comfy]
 PublisherId = "civitai"
-DisplayName = "Civitai Orchestration"
+DisplayName = "Civitai Comfy Nodes"
 Icon = "https://raw.githubusercontent.com/civitai/civitai-comfy-nodes/main/web/icon.svg"
 
 [tool.ruff]

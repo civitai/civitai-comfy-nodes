@@ -17,8 +17,8 @@ The pack is published to the [Comfy Registry](https://registry.comfy.org/nodes/c
 so [ComfyUI Manager](https://docs.comfy.org/manager/overview) can install and update it
 for you:
 
-- **In ComfyUI Manager:** open **Manager → Custom Nodes Manager**, search for **Civitai Orchestration**,
-  and click **Install**, then restart ComfyUI.
+- **In ComfyUI Manager:** open **Manager → Custom Nodes Manager**, search for **Civitai Comfy Nodes**
+  (publisher `civitai`), and click **Install**, then restart ComfyUI.
 - **With [comfy-cli](https://docs.comfy.org/comfy-cli/getting-started):**
 
   ```bash
