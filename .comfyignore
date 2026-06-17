@@ -1,0 +1,13 @@
+# Build tooling
+codegen/
+spec/
+
+# Tests, dev scripts, CI, and agent/dev docs.
+tests/
+scripts/
+.github/
+CLAUDE.md
+
+# Repo meta — irrelevant once published.
+.gitignore
+.comfyignore
