@@ -75,16 +75,15 @@ def test_operation_split_removes_image_overlap(nodes):
     assert edit.discriminator["operation"] == "editImage"
 
 
-def test_texttoimage_widget_bounds(nodes):
-    t2i = node_by_name(nodes, "CivitaiTextToImage")
-    fields = {f.api: f for f in t2i.fields}
+def test_image_widget_bounds(nodes):
+    node = node_by_name(nodes, "CivitaiImageGenComfySd1CreateImage")
+    fields = {f.api: f for f in node.fields}
     steps = fields["steps"]
     assert steps.comfy_type == "INT"
     assert (steps.options["min"], steps.options["max"], steps.options["default"]) == (1, 150, 30)
     seed = fields["seed"]
     assert seed.options.get("control_after_generate") is True
-    assert fields["sourceImage"].kind == "image_inline"
-    assert [o.kind for o in t2i.outputs] == ["image_list"]
+    assert node.outputs[0].kind == "image_list"
 
 
 def test_image_upscaler_image_input_and_output(nodes):
@@ -110,8 +109,8 @@ def test_acestep_blob_union_occupies_two_slots(nodes):
 
 
 def test_optional_enums_offer_omit_choice(nodes):
-    t2i = node_by_name(nodes, "CivitaiTextToImage")
-    scheduler = {f.api: f for f in t2i.fields}["scheduler"]
+    node = node_by_name(nodes, "CivitaiImageGenComfySd1CreateImage")
+    scheduler = {f.api: f for f in node.fields}["scheduler"]
     assert scheduler.comfy_type[0] == ""
     assert scheduler.options["default"] == ""
 
@@ -163,12 +162,10 @@ def test_plain_model_name_stays_string(nodes):
 
 
 def test_network_fields_become_typed_sockets(nodes):
-    t2i = node_by_name(nodes, "CivitaiTextToImage")
-    fields = {f.api: f for f in t2i.fields}
-    assert fields["additionalNetworks"].kind == "network_map"
-    assert fields["additionalNetworks"].comfy_type == "CIVITAI_LORAS"
-    assert fields["controlNets"].kind == "controlnet_array"
-    assert fields["controlNets"].comfy_type == "CIVITAI_CONTROLNETS"
+    sd1 = node_by_name(nodes, "CivitaiImageGenComfySd1CreateImage")
+    control_nets = {f.api: f for f in sd1.fields}["controlNets"]
+    assert control_nets.kind == "controlnet_array"
+    assert control_nets.comfy_type == "CIVITAI_CONTROLNETS"
     wan = node_by_name(nodes, "CivitaiVideoGenWanV21Fal")
     assert {f.api: f for f in wan.fields}["loras"].kind == "lora_array"
 

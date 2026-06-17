@@ -1,0 +1,57 @@
+class CivitaiImageGenComfySd1CreateImage(CivitaiRecipeNodeBase):
+    """sd1 / comfy / createImage — imageGen recipe via Civitai Orchestration."""
+
+    RECIPE = "imageGen"
+    STEP_TYPE = "imageGen"
+    DISCRIMINATOR = {'engine': 'comfy', 'ecosystem': 'sd1', 'operation': 'createImage'}
+    CATEGORY = "Civitai/Image/sd1/comfy"
+    FUNCTION = "run"
+    RETURN_TYPES = ('IMAGE', 'STRING', 'STRING', 'STRING')
+    RETURN_NAMES = ('images', 'errors', 'workflow_id', 'raw_json')
+    FIELDS = {
+        "output_format": F("outputFormat", "value"),
+        "image_metadata": F("imageMetadata", "value"),
+        "prompt": F("prompt", "value"),
+        "negative_prompt": F("negativePrompt", "value"),
+        "sampler": F("sampler", "value"),
+        "scheduler": F("scheduler", "value"),
+        "steps": F("steps", "value"),
+        "cfg_scale": F("cfgScale", "value"),
+        "seed": F("seed", "value"),
+        "quantity": F("quantity", "value"),
+        "model": F("model", "air"),
+        "vae_model": F("vaeModel", "air"),
+        "loras": F("loras", "lora_strength_map"),
+        "clip_skip": F("clipSkip", "value"),
+        "control_nets": F("controlNets", "controlnet_array"),
+        "width": F("width", "value"),
+        "height": F("height", "value"),
+    }
+    OUTPUTS = (O("images", "image_list"), O("errors", "json"),)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "prompt": ("STRING", {'default': '', 'multiline': True}),
+                "model": ("CIVITAI_AIR", {}),
+            },
+            "optional": {
+                "output_format": (['', 'jpeg', 'png', 'webP'], {'default': ''}),
+                "image_metadata": ("STRING", {'tooltip': 'External metadata that will be stored with the image', 'default': ''}),
+                "negative_prompt": ("STRING", {'default': '', 'multiline': True}),
+                "sampler": (['', 'euler', 'euler_ancestral', 'euler_cfg_pp', 'euler_ancestral_cfg_pp', 'heun', 'heunpp2', 'dpm_2', 'dpm_2_ancestral', 'lms', 'dpm_fast', 'dpm_adaptive', 'dpmpp_2s_ancestral', 'dpmpp_2s_ancestral_cfg_pp', 'dpmpp_sde', 'dpmpp_sde_gpu', 'dpmpp_2m', 'dpmpp_2m_cfg_pp', 'dpmpp_2m_sde', 'dpmpp_2m_sde_gpu', 'dpmpp_3m_sde', 'dpmpp_3m_sde_gpu', 'ddpm', 'lcm', 'ipndm', 'ipndm_v', 'deis', 'ddim', 'uni_pc', 'uni_pc_bh2', 'res_multistep', 'er_sde'], {'default': ''}),
+                "scheduler": (['', 'normal', 'karras', 'exponential', 'sgm_uniform', 'simple', 'ddim_uniform', 'beta'], {'default': ''}),
+                "steps": ("INT", {'default': 30, 'min': 1, 'max': 150, 'step': 1}),
+                "cfg_scale": ("FLOAT", {'default': 7.0, 'min': 0.0, 'max': 30.0, 'step': 0.01}),
+                "seed": ("INT", {'control_after_generate': True, 'default': 0, 'min': 0, 'max': 4294967295, 'step': 1}),
+                "quantity": ("INT", {'default': 1, 'min': 1, 'max': 12, 'step': 1}),
+                "vae_model": ("CIVITAI_AIR", {}),
+                "loras": ("CIVITAI_LORAS", {}),
+                "clip_skip": ("INT", {'default': 2, 'min': 0, 'max': 2147483647, 'step': 1}),
+                "control_nets": ("CIVITAI_CONTROLNETS", {}),
+                "width": ("INT", {'default': 512, 'min': 64, 'max': 1024, 'step': 1}),
+                "height": ("INT", {'default': 512, 'min': 64, 'max': 1024, 'step': 1}),
+                "api_config": ("CIVITAI_CONFIG", {"tooltip": "Optional Civitai Auth connection; defaults to CIVITAI_API_TOKEN or stored OAuth login."}),
+            },
+        }

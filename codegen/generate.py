@@ -23,7 +23,6 @@ RECIPE_PATH_RE = re.compile(r"^/v2/consumer/recipes/(\w+)$")
 
 # recipe -> (module, category); every non-skipped recipe must be listed.
 MODULES = {
-    "textToImage": ("image", "Civitai/Image"),
     "imageGen": ("image", "Civitai/Image"),
     "imageUpscaler": ("image", "Civitai/Image"),
     "imageBackgroundRemoval": ("image", "Civitai/Image"),
@@ -315,7 +314,7 @@ def assemble_node(
 
     # Variant nodes are titled by their discriminator path (ecosystem-first), which doubles as the
     # category submenu (Civitai/Image/<ecosystem>[/<engine>]). Non-discriminated nodes keep a
-    # descriptive name (e.g. "Civitai Text To Image").
+    # descriptive name (e.g. "Civitai Image Upscaler").
     display_name = " / ".join(path_labels) if path_labels else f"Civitai {ir.title_case(recipe)}"
     if eco_key is None:
         category = base_category

@@ -20,7 +20,8 @@
     "ageClassification",
     "comfy",
     "customComfy",
-    "echo"
+    "echo",
+    "textToImage"
   ],
   "_provider_engines": ["fal"],
   "videoGen": {

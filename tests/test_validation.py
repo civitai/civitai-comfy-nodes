@@ -5,7 +5,7 @@ from civitai_comfy_nodes.errors import CivitaiNodeError
 
 
 class _Node(CivitaiRecipeNodeBase):
-    STEP_TYPE = "textToImage"
+    STEP_TYPE = "imageGen"
     FIELDS = {
         "prompt": F("prompt"),
         "neg": F("negativePrompt"),

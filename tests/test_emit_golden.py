@@ -11,7 +11,7 @@ from codegen import emit, generate
 REPO_ROOT = Path(__file__).resolve().parent.parent
 GOLDEN_DIR = Path(__file__).resolve().parent / "golden"
 
-GOLDEN_CLASSES = ["CivitaiImageUpscaler", "CivitaiTextToImage", "CivitaiImageGenFlux1Kontext"]
+GOLDEN_CLASSES = ["CivitaiImageUpscaler", "CivitaiImageGenComfySd1CreateImage", "CivitaiImageGenFlux1Kontext"]
 
 
 def test_emitted_source_matches_golden():

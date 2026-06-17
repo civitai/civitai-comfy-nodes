@@ -4,42 +4,28 @@
   "nodes": [
     {
       "id": 1,
-      "type": "CivitaiTextToImage",
+      "type": "CivitaiImageGenOpenaiGptImage1CreateImage",
       "pos": [80, 120],
-      "size": [400, 580],
+      "size": [400, 320],
       "flags": {},
       "order": 0,
       "mode": 0,
-      "inputs": [
-        { "name": "source_image", "type": "IMAGE", "link": null },
-        { "name": "api_config", "type": "CIVITAI_CONFIG", "link": null }
-      ],
+      "inputs": [{ "name": "api_config", "type": "CIVITAI_CONFIG", "link": null }],
       "outputs": [
         { "name": "images", "type": "IMAGE", "links": [1], "slot_index": 0 },
+        { "name": "errors", "type": "STRING", "links": null },
         { "name": "workflow_id", "type": "STRING", "links": null },
         { "name": "raw_json", "type": "STRING", "links": null }
       ],
-      "properties": { "Node name for S&R": "CivitaiTextToImage" },
+      "properties": { "Node name for S&R": "CivitaiImageGenOpenaiGptImage1CreateImage" },
       "widgets_values": [
         "a lighthouse on a cliff at dusk, dramatic clouds, masterpiece",
-        7.5,
-        0,
-        "randomize",
+        "",
+        "",
+        "1024x1024",
         1,
-        1,
-        "urn:air:sd1:checkpoint:civitai:4384@128713",
-        "",
-        "",
-        "blurry, low quality",
-        "",
-        30,
-        512,
-        512,
-        2,
-        "",
-        "",
-        "",
-        0.8
+        "opaque",
+        "auto"
       ]
     },
     {
