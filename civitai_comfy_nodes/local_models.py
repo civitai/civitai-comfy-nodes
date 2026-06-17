@@ -47,6 +47,29 @@ def folder_for_air(air: str, default: str = "checkpoints") -> str:
     return AIR_TYPE_FOLDERS.get(air_type, default)
 
 
+# Civitai file `type` (the web app's `modelFileTypes`) -> the ComfyUI model folder. The download
+# folder follows the *file's* role, which can differ from the model's AIR type — e.g. a Checkpoint
+# model whose primary file is a "Diffusion Model" must land in diffusion_models/, not checkpoints/.
+FILE_TYPE_FOLDERS = {
+    "Model": "checkpoints",
+    "Pruned Model": "checkpoints",
+    "Diffusion Model": "diffusion_models",
+    "UNet": "diffusion_models",
+    "VAE": "vae",
+    "Text Encoder": "text_encoders",
+    "CLIPVision": "clip_vision",
+    "ControlNet": "controlnet",
+    "Upscaler": "upscale_models",
+    "Negative": "embeddings",
+}
+
+
+def folder_for_file_type(file_type: str | None, default: str = "checkpoints") -> str:
+    """The ComfyUI model folder for a Civitai file `type` (Diffusion Model -> diffusion_models, …),
+    falling back to `default` for non-model types (Config, Archive, …) or unknown ones."""
+    return FILE_TYPE_FOLDERS.get((file_type or "").strip(), default)
+
+
 def _model_dir(folder: str) -> str:
     import folder_paths
 

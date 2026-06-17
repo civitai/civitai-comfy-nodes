@@ -19,11 +19,12 @@ converts blob outputs to native Comfy types.
   field that lacks the pattern (e.g. `imageUpscaler.model`). `CivitaiModelSelector` outputs the
   `air` (`CIVITAI_AIR`) plus `path`/`clip`/`vae`/`clip 2`/`clip 3` (all `*`/AnyType — wire into a
   standard loader's file combo); `path` is the version's primary file, the rest are its additional
-  components (`catalog.components` groups the version `files[]` by Civitai `type`: VAE → `vae`,
-  Text Encoder → `clip` in API order). Each output downloads into the matching ComfyUI folder only
-  when wired (PROMPT/UNIQUE_ID `_consumed_slots` + `IS_CHANGED`); component files key on their file
-  id (`local_models.download_model(download_url=…, file_id=…)`) so siblings sharing a folder don't
-  collide. The picker (`web/civitai-catalog.js` `applyComponentOutputs`) keeps the node's outputs a
+  components (`catalog.components` returns the `primary` file plus VAE → `vae` / Text Encoder →
+  `clip` buckets, in API order). Each output downloads only when wired (PROMPT/UNIQUE_ID
+  `_consumed_slots` + `IS_CHANGED`) into the folder for its *file's* Civitai `type` via
+  `local_models.folder_for_file_type` (so a Checkpoint model whose primary file is a Diffusion
+  Model lands in `diffusion_models/`, not `checkpoints/`); component files key on their file id
+  (`download_model(download_url=…, file_id=…)`) so siblings sharing a folder don't collide. The picker (`web/civitai-catalog.js` `applyComponentOutputs`) keeps the node's outputs a
   prefix of the canonical list and collapses/relabels the component slots to the selected model.
   The Browse-Civitai picker button is on the selector nodes only (NODE_TARGETS), never on recipe nodes.
 - `civitai_comfy_nodes/base.py` — all runtime behavior: payload building from `FIELDS`,

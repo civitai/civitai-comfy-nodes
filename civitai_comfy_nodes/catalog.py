@@ -272,40 +272,41 @@ _FILE_TYPE_BUCKETS = {
 
 
 def _parse_components(files: list | None) -> dict:
-    """Group a version's non-primary files into the selector's component buckets, preserving API
-    order so multiple text encoders map to clip / clip 2 / clip 3 deterministically. Each entry is
-    {id, name, downloadUrl, isRequired} — enough to label the output and download the file."""
-    buckets: dict[str, list] = {"vae": [], "clip": []}
+    """Classify a version's files for the Model Selector. `primary` is the main file (whatever its
+    type — the download folder follows it, not the AIR), and `vae`/`clip` are the non-primary files
+    that get component outputs, in API order so multiple text encoders map to clip / clip 2 / clip 3
+    deterministically. Each entry is {id, name, type, downloadUrl, isRequired}."""
+    result: dict = {"primary": None, "vae": [], "clip": []}
     for f in files or []:
+        entry = {
+            "id": f.get("id"),
+            "name": f.get("name") or "",
+            "type": (f.get("type") or "").strip(),
+            "downloadUrl": f.get("downloadUrl"),
+            "isRequired": bool((f.get("metadata") or {}).get("isRequired")),
+        }
         if f.get("primary"):
+            if result["primary"] is None:
+                result["primary"] = entry
             continue
-        bucket = _FILE_TYPE_BUCKETS.get((f.get("type") or "").strip())
-        download_url = f.get("downloadUrl")
-        file_id = f.get("id")
-        if not bucket or not download_url or file_id is None:
+        bucket = _FILE_TYPE_BUCKETS.get(entry["type"])
+        if not bucket or not entry["downloadUrl"] or entry["id"] is None:
             continue
-        buckets[bucket].append(
-            {
-                "id": file_id,
-                "name": f.get("name") or "",
-                "downloadUrl": download_url,
-                "isRequired": bool((f.get("metadata") or {}).get("isRequired")),
-            }
-        )
-    return buckets
+        result[bucket].append(entry)
+    return result
 
 
 def components(air: str, timeout: int = 15, token: str | None = None) -> dict:
-    """A version's VAE/CLIP component files for the Model Selector's extra outputs. Empty buckets
+    """A version's files classified for the Model Selector (primary + VAE/CLIP components). Empty
     for an unparseable AIR or a deleted/unknown version (404)."""
     version_id = version_id_from_air(air)
     if not version_id:
-        return {"vae": [], "clip": []}
+        return {"primary": None, "vae": [], "clip": []}
     headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     response = requests.get(CIVITAI_VERSION_URL.format(version_id=version_id), headers=headers, timeout=timeout)
     if response.status_code == 404:
-        return {"vae": [], "clip": []}
+        return {"primary": None, "vae": [], "clip": []}
     response.raise_for_status()
     return _parse_components((response.json() or {}).get("files"))

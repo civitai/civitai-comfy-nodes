@@ -136,7 +136,7 @@ def test_lookup_maps_model_version_to_preview(monkeypatch):
     assert entry["ecosystem"] == "sd1"
     assert entry["trainedWords"] == ["dreamshaper"]
     assert entry["modelUrl"] == "https://civitai.com/models/4384?modelVersionId=128713"
-    assert entry["components"] == {"vae": [], "clip": []}  # no extra files in this version
+    assert entry["components"] == {"primary": None, "vae": [], "clip": []}  # no files in this version
 
 
 def _version_resp(files):
@@ -168,23 +168,26 @@ def test_components_groups_vae_and_clip_in_api_order(monkeypatch):
     ]
     monkeypatch.setattr(catalog.requests, "get", lambda *a, **k: _version_resp(files))
     comps = catalog.components("urn:air:zimage:checkpoint:civitai:1@999")
+    assert comps["primary"]["id"] == 1 and comps["primary"]["type"] == "Model"  # captured whatever its type
     assert [f["id"] for f in comps["vae"]] == [2]
     assert comps["vae"][0]["isRequired"] is True
     assert [f["name"] for f in comps["clip"]] == ["clip_l.safetensors", "t5.safetensors"]  # API order preserved
     assert comps["clip"][0]["downloadUrl"].endswith("part=1")  # the file's own URL drives the download
 
 
-def test_components_skips_primary_and_files_without_a_download_url(monkeypatch):
+def test_components_captures_primary_regardless_of_type(monkeypatch):
     files = [
-        {"id": 1, "name": "vae_primary", "type": "VAE", "primary": True, "downloadUrl": "u"},  # primary -> skipped
+        {"id": 1, "name": "diff.safetensors", "type": "Diffusion Model", "primary": True, "downloadUrl": "u1"},
         {"id": 2, "name": "te_no_url", "type": "Text Encoder", "primary": False},  # no downloadUrl -> skipped
     ]
     monkeypatch.setattr(catalog.requests, "get", lambda *a, **k: _version_resp(files))
-    assert catalog.components("urn:air:x:checkpoint:civitai:1@999") == {"vae": [], "clip": []}
+    comps = catalog.components("urn:air:x:checkpoint:civitai:1@999")
+    assert comps["primary"]["type"] == "Diffusion Model"  # AIR says checkpoint, primary file says otherwise
+    assert comps["vae"] == [] and comps["clip"] == []
 
 
 def test_components_empty_for_unparseable_air():
-    assert catalog.components("not-an-air") == {"vae": [], "clip": []}
+    assert catalog.components("not-an-air") == {"primary": None, "vae": [], "clip": []}
 
 
 def test_components_empty_on_404(monkeypatch):
@@ -198,7 +201,7 @@ def test_components_empty_on_404(monkeypatch):
             return {}
 
     monkeypatch.setattr(catalog.requests, "get", lambda *a, **k: _Resp())
-    assert catalog.components("urn:air:x:checkpoint:civitai:1@999") == {"vae": [], "clip": []}
+    assert catalog.components("urn:air:x:checkpoint:civitai:1@999") == {"primary": None, "vae": [], "clip": []}
 
 
 def test_lookup_returns_none_for_unparseable_air():

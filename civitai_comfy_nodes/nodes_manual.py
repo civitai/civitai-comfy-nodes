@@ -284,9 +284,10 @@ class CivitaiModelSelector:
     RETURN_TYPES = ("CIVITAI_AIR", ANY_TYPE, ANY_TYPE, ANY_TYPE, ANY_TYPE, ANY_TYPE)
     RETURN_NAMES = ("air", "path", "clip", "vae", "clip 2", "clip 3")
     _PATH_SLOT = 1
-    # Component output slot -> (catalog.components bucket, index within that bucket, ComfyUI folder).
-    # clip before vae so the outputs line up with loaders that list clip_name above vae_name; the
-    # extra clip slots stay at the tail so single-clip models still collapse to clip + vae.
+    # Component output slot -> (catalog.components bucket, index within that bucket, fallback folder).
+    # The download folder follows each file's Civitai type; the fallback only applies if that type is
+    # missing. clip before vae so the outputs line up with loaders that list clip_name above vae_name;
+    # the extra clip slots stay at the tail so single-clip models still collapse to clip + vae.
     _COMPONENT_SLOTS = {
         2: ("clip", 0, "text_encoders"),
         3: ("vae", 0, "vae"),
@@ -336,23 +337,33 @@ class CivitaiModelSelector:
             from .config import auth_state
 
             token = (api_config or {}).get("api_token") or auth_state()[0]
+            try:
+                files = catalog.components(air, token=token)
+            except Exception:
+                files = None  # metadata fetch failed; the primary falls back, components error below
 
             if self._PATH_SLOT in consumed:
-                full = local_models.download_model(air, folder=local_models.folder_for_air(air), token=token)
+                # Folder follows the primary file's type (e.g. a Checkpoint model whose primary file
+                # is a Diffusion Model -> diffusion_models/), falling back to the AIR's type.
+                primary = (files or {}).get("primary") or {}
+                folder = local_models.folder_for_file_type(primary.get("type"), local_models.folder_for_air(air))
+                full = local_models.download_model(air, folder=folder, token=token)
                 paths[self._PATH_SLOT] = os.path.basename(full)  # folder-relative name the combo resolves
 
             component_slots = [s for s in self._COMPONENT_SLOTS if s in consumed]
             if component_slots:
-                buckets = catalog.components(air, token=token)
+                if files is None:
+                    raise CivitaiNodeError("Could not load the model's component files from Civitai.")
                 for slot in component_slots:
-                    bucket, index, folder = self._COMPONENT_SLOTS[slot]
-                    files = buckets.get(bucket) or []
-                    if index >= len(files):
+                    bucket, index, fallback_folder = self._COMPONENT_SLOTS[slot]
+                    items = files.get(bucket) or []
+                    if index >= len(items):
                         raise CivitaiNodeError(
                             f"The selected model has no file for the '{self.RETURN_NAMES[slot]}' output "
-                            f"({len(files)} {bucket} file(s) available)."
+                            f"({len(items)} {bucket} file(s) available)."
                         )
-                    f = files[index]
+                    f = items[index]
+                    folder = local_models.folder_for_file_type(f.get("type"), fallback_folder)
                     full = local_models.download_model(
                         air, folder=folder, token=token, download_url=f["downloadUrl"], file_id=f["id"]
                     )

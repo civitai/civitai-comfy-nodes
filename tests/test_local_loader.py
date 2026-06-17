@@ -20,6 +20,17 @@ def test_folder_for_air_maps_type_to_comfy_folder():
     assert local_models.folder_for_air("garbage") == "checkpoints"  # default
 
 
+def test_folder_for_file_type_maps_civitai_file_type():
+    assert local_models.folder_for_file_type("Diffusion Model") == "diffusion_models"
+    assert local_models.folder_for_file_type("UNet") == "diffusion_models"
+    assert local_models.folder_for_file_type("Model") == "checkpoints"
+    assert local_models.folder_for_file_type("VAE") == "vae"
+    assert local_models.folder_for_file_type("Text Encoder") == "text_encoders"
+    assert local_models.folder_for_file_type("CLIPVision") == "clip_vision"
+    assert local_models.folder_for_file_type("Config", "checkpoints") == "checkpoints"  # non-model -> default
+    assert local_models.folder_for_file_type(None) == "checkpoints"
+
+
 def test_download_uses_disk_cache(monkeypatch, tmp_path):
     monkeypatch.setattr(local_models, "_model_dir", lambda folder: str(tmp_path))
     cached = tmp_path / "civitai_128078_dreamshaper.safetensors"
@@ -108,8 +119,9 @@ def test_select_air_only_does_not_download(monkeypatch):
     assert result[1:] == ("", "", "", "", "")  # path + vae + clip + clip 2 + clip 3 all empty
 
 
-def test_select_downloads_to_air_folder_when_path_wired(monkeypatch):
+def test_select_path_falls_back_to_air_folder_without_primary_type(monkeypatch):
     monkeypatch.setattr(config, "auth_state", lambda: (None, "none"))
+    monkeypatch.setattr(catalog, "components", lambda air, token=None: {"primary": None, "vae": [], "clip": []})
     captured = {}
 
     def fake_download(air, folder, token, **kw):
@@ -120,9 +132,34 @@ def test_select_downloads_to_air_folder_when_path_wired(monkeypatch):
     # ckpt_name on node "9" is wired to this node ("3") `path` output (slot 1)
     prompt = {"9": {"inputs": {"ckpt_name": ["3", 1]}}}
     result = CivitaiModelSelector().select("urn:air:sdxl:lora:civitai:1@2", prompt=prompt, unique_id="3")
-    assert captured["folder"] == "loras"  # folder derived from the AIR type
+    assert captured["folder"] == "loras"  # no primary file type -> fall back to the AIR type
     assert result[1] == "civitai_2_model.safetensors"  # folder-relative name for the loader combo
     assert result[0] == "urn:air:sdxl:lora:civitai:1@2"
+
+
+def test_select_path_folder_follows_primary_file_type(monkeypatch):
+    monkeypatch.setattr(config, "auth_state", lambda: (None, "none"))
+    # AIR type says checkpoint, but the primary file is a Diffusion Model -> diffusion_models/
+    monkeypatch.setattr(
+        catalog,
+        "components",
+        lambda air, token=None: {
+            "primary": {"id": 1, "name": "m.safetensors", "type": "Diffusion Model", "downloadUrl": "u"},
+            "vae": [],
+            "clip": [],
+        },
+    )
+    captured = {}
+
+    def fake_download(air, folder, token, **kw):
+        captured["folder"] = folder
+        return f"/models/{folder}/civitai_9_m.safetensors"
+
+    monkeypatch.setattr(local_models, "download_model", fake_download)
+    prompt = {"9": {"inputs": {"unet_name": ["3", 1]}}}
+    result = CivitaiModelSelector().select("urn:air:zimage:checkpoint:civitai:1@9", prompt=prompt, unique_id="3")
+    assert captured["folder"] == "diffusion_models"  # from the FILE type, not the AIR's "checkpoint"
+    assert result[1] == "civitai_9_m.safetensors"
 
 
 def test_select_downloads_components_when_wired(monkeypatch):
@@ -131,8 +168,9 @@ def test_select_downloads_components_when_wired(monkeypatch):
         catalog,
         "components",
         lambda air, token=None: {
-            "vae": [{"id": 22, "name": "ae.safetensors", "downloadUrl": "u-vae"}],
-            "clip": [{"id": 33, "name": "clip_l.safetensors", "downloadUrl": "u-clip"}],
+            "primary": None,
+            "vae": [{"id": 22, "name": "ae.safetensors", "type": "VAE", "downloadUrl": "u-vae"}],
+            "clip": [{"id": 33, "name": "clip_l.safetensors", "type": "Text Encoder", "downloadUrl": "u-clip"}],
         },
     )
     calls = []
