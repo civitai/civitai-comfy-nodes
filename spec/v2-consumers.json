@@ -5264,7 +5264,9 @@
             "in": "query",
             "description": "Whether to wait for the workflow to complete before returning or to return immediately\nThe request may return a 202 if the clients waits for the workflow to complete and the workflow does not complete within the requested timeout. \nIn which case the client should use the token to query the status of the workflow.",
             "schema": {
-              "type": "boolean"
+              "type": "integer",
+              "format": "int32",
+              "default": 0
             }
           },
           {
@@ -5290,6 +5292,16 @@
           },
           "200": {
             "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workflow"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Accepted",
             "content": {
               "application/json": {
                 "schema": {
@@ -5930,7 +5942,7 @@
                 "type": "string"
               },
               "epochs": {
-                "maximum": 20,
+                "maximum": 200,
                 "minimum": 1,
                 "type": [
                   "null",
@@ -7531,6 +7543,30 @@
           }
         ],
         "description": "An audio mixdown produced when the composition has no video."
+      },
+      "BasicAnimationsBlobs": {
+        "type": "object",
+        "properties": {
+          "walkingModel": {
+            "$ref": "#/components/schemas/Model3DBlob"
+          },
+          "walkingFbxModel": {
+            "$ref": "#/components/schemas/Model3DBlob"
+          },
+          "walkingArmatureModel": {
+            "$ref": "#/components/schemas/Model3DBlob"
+          },
+          "runningModel": {
+            "$ref": "#/components/schemas/Model3DBlob"
+          },
+          "runningFbxModel": {
+            "$ref": "#/components/schemas/Model3DBlob"
+          },
+          "runningArmatureModel": {
+            "$ref": "#/components/schemas/Model3DBlob"
+          }
+        },
+        "additionalProperties": false
       },
       "BatchOCRSafetyClassificationInput": {
         "required": [
@@ -12310,6 +12346,36 @@
               "string"
             ],
             "description": "Optional session identifier. When set, the scheduler prefers a\nworker that already holds this session's ComfyUI container (P5\nsession affinity). Null = no preference, treated as a fresh session."
+          },
+          "comfyImage": {
+            "pattern": "^(?:urn:)?(?:air:)?(?:(?<ecosystem>[a-zA-Z0-9_\\-\\/]+):)?(?:(?<type>[a-zA-Z0-9_\\-\\/]+):)?(?<source>[a-zA-Z0-9_\\-\\/]+):(?<id>[a-zA-Z0-9_\\-\\/\\.]+)(?:@(?<version>[a-zA-Z0-9_\\-\\/.=,%+:]+))?(?:\\.(?<format>[a-zA-Z0-9_\\-]+))?$",
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Optional custom comfy container image, declared as an\n`urn:air:oci:image:<source>:<repo>@<version|sha256:…>` AIR\n(e.g. `urn:air:oci:image:ghcr:civitai/civitai-spine-comfy@v2.5.5`).\nWhen set, the worker pulls and runs this image instead of its default\ncomfy image. Null = worker default."
+          },
+          "sessionOwnerApiToken": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Optional Civitai API token belonging to the session owner. When set,\nthe worker exposes it to the ComfyUI container as the\n`CIVITAI_API_TOKEN` environment variable, so custom-pack recipe\nnodes (e.g. civitai-comfy-nodes) can call the orchestrator and bill the\nuser. Sensitive: persisted on the workflow/job and forwarded to the\nclaiming worker — never log it. Null = no token exposed."
+          },
+          "minVramGb": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Optional minimum GPU VRAM (in GB) the claiming worker must have. The\nscheduler only offers the job to workers whose reported host VRAM\n(`WorkerCapabilities.HostResources.MaxVramGb`) is at least this.\nNull = no requirement (any comfy-capable worker). Lets a session\nrequest a higher-VRAM tier (e.g. 48) for heavy workflows.",
+            "format": "int32"
+          },
+          "useSageAttention": {
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "Optional toggle for ComfyUI's Sage Attention. When true, the worker\nlaunches ComfyUI with `--use-sage-attention`. Null/false = the\nimage's default (off for the cloud/slim images). The SageAttention\nwheel is baked into the comfy images; this only flips the flag."
           }
         },
         "additionalProperties": false,
@@ -12317,7 +12383,7 @@
       },
       "CustomComfyOutput": {
         "required": [
-          "assets",
+          "blobs",
           "workflow"
         ],
         "type": "object",
@@ -12325,13 +12391,12 @@
           "workflow": {
             "description": "The executed workflow JSON, with any `output/<filename>`\nreferences rewritten to blob URIs the consumer can fetch."
           },
-          "assets": {
+          "blobs": {
             "type": "array",
             "items": {
-              "type": "string",
-              "format": "uri"
+              "$ref": "#/components/schemas/Blob"
             },
-            "description": "Direct URIs to each generated asset (images, videos, etc)."
+            "description": "Blobs generated by the executed workflow (images, videos, etc)."
           }
         },
         "additionalProperties": false,
@@ -18149,9 +18214,7 @@
       },
       "MediaCaptioningInput": {
         "required": [
-          "maxNewTokens",
-          "mediaUrl",
-          "temperature"
+          "mediaUrl"
         ],
         "type": "object",
         "properties": {
@@ -18163,12 +18226,14 @@
           "temperature": {
             "type": "number",
             "description": "Sampling temperature for caption generation.",
-            "format": "double"
+            "format": "double",
+            "default": 0.5
           },
           "maxNewTokens": {
             "type": "integer",
             "description": "Maximum number of tokens to generate.",
-            "format": "int32"
+            "format": "int32",
+            "default": 300
           },
           "customInstructions": {
             "type": [
@@ -20646,6 +20711,21 @@
           },
           "thumbnail": {
             "$ref": "#/components/schemas/ImageBlob"
+          },
+          "riggedModel": {
+            "$ref": "#/components/schemas/Model3DBlob"
+          },
+          "riggedFbxModel": {
+            "$ref": "#/components/schemas/Model3DBlob"
+          },
+          "animatedModel": {
+            "$ref": "#/components/schemas/Model3DBlob"
+          },
+          "animatedFbxModel": {
+            "$ref": "#/components/schemas/Model3DBlob"
+          },
+          "basicAnimations": {
+            "$ref": "#/components/schemas/BasicAnimationsBlobs"
           }
         },
         "additionalProperties": false
@@ -23537,7 +23617,7 @@
               "clipSkip": {
                 "type": "integer",
                 "format": "int32",
-                "default": -1
+                "default": 2
               },
               "uCache": {
                 "$ref": "#/components/schemas/SdCppUCacheMode"
