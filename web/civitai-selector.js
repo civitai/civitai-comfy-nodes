@@ -6,6 +6,8 @@
 import { app } from "../../scripts/app.js";
 
 const PLACEHOLDER = "⬇ from Civitai (downloaded on run)";
+// The selector's download outputs (primary file + extra components), all fed into loader combos.
+const DOWNLOAD_OUTPUTS = new Set(["path", "vae", "clip", "clip 2", "clip 3"]);
 
 function fedComboWidget(node, slot) {
   const input = node?.inputs?.[slot];
@@ -23,7 +25,7 @@ app.registerExtension({
     nodeType.prototype.onConnectionsChange = function (type, index, connected, link) {
       onConnectionsChange?.apply(this, arguments);
       const OUTPUT = window.LiteGraph?.OUTPUT ?? 2;
-      if (type !== OUTPUT || !link || this.outputs?.[index]?.name !== "path") return;
+      if (type !== OUTPUT || !link || !DOWNLOAD_OUTPUTS.has(this.outputs?.[index]?.name)) return;
       const target = app.graph?.getNodeById?.(link.target_id);
       const widget = target && fedComboWidget(target, link.target_slot);
       if (!widget) return;

@@ -136,6 +136,69 @@ def test_lookup_maps_model_version_to_preview(monkeypatch):
     assert entry["ecosystem"] == "sd1"
     assert entry["trainedWords"] == ["dreamshaper"]
     assert entry["modelUrl"] == "https://civitai.com/models/4384?modelVersionId=128713"
+    assert entry["components"] == {"vae": [], "clip": []}  # no extra files in this version
+
+
+def _version_resp(files):
+    class _Resp:
+        status_code = 200
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"id": 999, "modelId": 1, "files": files}
+
+    return _Resp()
+
+
+def test_components_groups_vae_and_clip_in_api_order(monkeypatch):
+    files = [
+        {"id": 1, "name": "model.safetensors", "type": "Model", "primary": True,
+         "downloadUrl": "https://civitai.com/api/download/models/999"},
+        {"id": 2, "name": "ae.safetensors", "type": "VAE", "primary": False,
+         "downloadUrl": "https://civitai.com/api/download/models/999?type=VAE",
+         "metadata": {"isRequired": True}},
+        {"id": 3, "name": "clip_l.safetensors", "type": "Text Encoder", "primary": False,
+         "downloadUrl": "https://civitai.com/api/download/models/999?type=Text%20Encoder&part=1"},
+        {"id": 4, "name": "t5.safetensors", "type": "Text Encoder", "primary": False,
+         "downloadUrl": "https://civitai.com/api/download/models/999?type=Text%20Encoder&part=2"},
+        {"id": 5, "name": "config.json", "type": "Config", "primary": False,
+         "downloadUrl": "https://civitai.com/api/download/models/999?type=Config"},
+    ]
+    monkeypatch.setattr(catalog.requests, "get", lambda *a, **k: _version_resp(files))
+    comps = catalog.components("urn:air:zimage:checkpoint:civitai:1@999")
+    assert [f["id"] for f in comps["vae"]] == [2]
+    assert comps["vae"][0]["isRequired"] is True
+    assert [f["name"] for f in comps["clip"]] == ["clip_l.safetensors", "t5.safetensors"]  # API order preserved
+    assert comps["clip"][0]["downloadUrl"].endswith("part=1")  # the file's own URL drives the download
+
+
+def test_components_skips_primary_and_files_without_a_download_url(monkeypatch):
+    files = [
+        {"id": 1, "name": "vae_primary", "type": "VAE", "primary": True, "downloadUrl": "u"},  # primary -> skipped
+        {"id": 2, "name": "te_no_url", "type": "Text Encoder", "primary": False},  # no downloadUrl -> skipped
+    ]
+    monkeypatch.setattr(catalog.requests, "get", lambda *a, **k: _version_resp(files))
+    assert catalog.components("urn:air:x:checkpoint:civitai:1@999") == {"vae": [], "clip": []}
+
+
+def test_components_empty_for_unparseable_air():
+    assert catalog.components("not-an-air") == {"vae": [], "clip": []}
+
+
+def test_components_empty_on_404(monkeypatch):
+    class _Resp:
+        status_code = 404
+
+        def raise_for_status(self):
+            raise AssertionError("should not raise on 404")
+
+        def json(self):
+            return {}
+
+    monkeypatch.setattr(catalog.requests, "get", lambda *a, **k: _Resp())
+    assert catalog.components("urn:air:x:checkpoint:civitai:1@999") == {"vae": [], "clip": []}
 
 
 def test_lookup_returns_none_for_unparseable_air():

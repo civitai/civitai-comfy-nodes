@@ -281,9 +281,16 @@ class CivitaiModelSelector:
 
     CATEGORY = "Civitai/Loaders"
     FUNCTION = "select"
-    RETURN_TYPES = ("CIVITAI_AIR", ANY_TYPE)
-    RETURN_NAMES = ("air", "path")
-    _PATH_SLOT = 1  # downloading is driven by the `path` output being wired
+    RETURN_TYPES = ("CIVITAI_AIR", ANY_TYPE, ANY_TYPE, ANY_TYPE, ANY_TYPE, ANY_TYPE)
+    RETURN_NAMES = ("air", "path", "vae", "clip", "clip 2", "clip 3")
+    _PATH_SLOT = 1
+    # Component output slot -> (catalog.components bucket, index within that bucket, ComfyUI folder).
+    _COMPONENT_SLOTS = {
+        2: ("vae", 0, "vae"),
+        3: ("clip", 0, "text_encoders"),
+        4: ("clip", 1, "text_encoders"),
+        5: ("clip", 2, "text_encoders"),
+    }
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -296,40 +303,60 @@ class CivitaiModelSelector:
         }
 
     @classmethod
-    def _path_consumed(cls, prompt, unique_id) -> bool:
-        """True if the `path` output is wired downstream (so we should download the file)."""
+    def _consumed_slots(cls, prompt, unique_id) -> set:
+        """The output slots wired downstream — only those get downloaded (AIR-only use stays free)."""
+        consumed = set()
         if not prompt or unique_id is None:
-            return False
+            return consumed
         uid = str(unique_id)
         for node in prompt.values():
             for value in (node.get("inputs") or {}).values():
-                if not (isinstance(value, list) and len(value) == 2):
-                    continue
-                if str(value[0]) == uid and value[1] == cls._PATH_SLOT:
-                    return True
-        return False
+                if isinstance(value, list) and len(value) == 2 and str(value[0]) == uid:
+                    consumed.add(value[1])
+        return consumed
 
     @classmethod
     def IS_CHANGED(cls, air, api_config=None, prompt=None, unique_id=None):
-        # Re-run when `path` gets (dis)connected, not just when the AIR changes.
-        return f"{(air or '').strip()}|{cls._path_consumed(prompt, unique_id)}"
+        # Re-run when any download output gets (dis)connected, not just when the AIR changes.
+        return f"{(air or '').strip()}|{sorted(cls._consumed_slots(prompt, unique_id))}"
 
     def select(self, air, api_config=None, prompt=None, unique_id=None):
         air = (air or "").strip()
         if not air:
             raise CivitaiNodeError("No model AIR set — use the Browse Civitai button to pick one.")
-        path = ""
-        if self._path_consumed(prompt, unique_id):
+
+        consumed = self._consumed_slots(prompt, unique_id)
+        paths = {slot: "" for slot in (self._PATH_SLOT, *self._COMPONENT_SLOTS)}
+        if consumed & paths.keys():
             import os
 
-            from . import local_models
+            from . import catalog, local_models
             from .config import auth_state
 
             token = (api_config or {}).get("api_token") or auth_state()[0]
-            folder = local_models.folder_for_air(air)
-            full = local_models.download_model(air, folder=folder, token=token)
-            path = os.path.basename(full)  # folder-relative name the loader's combo resolves
-        return (air, path)
+
+            if self._PATH_SLOT in consumed:
+                full = local_models.download_model(air, folder=local_models.folder_for_air(air), token=token)
+                paths[self._PATH_SLOT] = os.path.basename(full)  # folder-relative name the combo resolves
+
+            component_slots = [s for s in self._COMPONENT_SLOTS if s in consumed]
+            if component_slots:
+                buckets = catalog.components(air, token=token)
+                for slot in component_slots:
+                    bucket, index, folder = self._COMPONENT_SLOTS[slot]
+                    files = buckets.get(bucket) or []
+                    if index >= len(files):
+                        raise CivitaiNodeError(
+                            f"The selected model has no file for the '{self.RETURN_NAMES[slot]}' output "
+                            f"({len(files)} {bucket} file(s) available)."
+                        )
+                    f = files[index]
+                    full = local_models.download_model(
+                        air, folder=folder, token=token, download_url=f["downloadUrl"], file_id=f["id"]
+                    )
+                    paths[slot] = os.path.basename(full)
+
+        return (air, paths[1], paths[2], paths[3], paths[4], paths[5])
 
 
 class CivitaiEmbeddingSelector:

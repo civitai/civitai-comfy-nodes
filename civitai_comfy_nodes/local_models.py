@@ -57,20 +57,33 @@ def _model_dir(folder: str) -> str:
     return dirs[0]
 
 
-def _filename(response: requests.Response, version_id: str) -> str:
+def _filename(response: requests.Response, version_id: str, prefix: str) -> str:
     disposition = response.headers.get("content-disposition") or ""
     match = re.search(r'filename="?([^";]+)"?', disposition)
     name = match.group(1) if match else f"{version_id}.safetensors"
-    # Prefix with the version id so the cache lookup is a cheap glob and names never collide.
-    return f"civitai_{version_id}_{name}"
+    # Prefix so the cache lookup is a cheap glob and names never collide.
+    return f"{prefix}{name}"
 
 
-def download_model(air: str, folder: str = "checkpoints", token: str | None = None) -> str:
-    """Download a Civitai resource into ComfyUI's model directory; returns the local path.
-    Cached by version id, so a second use loads from disk without re-downloading."""
+def download_model(
+    air: str,
+    folder: str = "checkpoints",
+    token: str | None = None,
+    *,
+    download_url: str | None = None,
+    file_id: int | str | None = None,
+) -> str:
+    """Download a Civitai resource into ComfyUI's model directory; returns the local path. Cached so
+    a second use loads from disk. Pass `download_url` + `file_id` to fetch a specific additional file
+    of the version (e.g. a VAE or text encoder) rather than the primary file; the file id keeps the
+    cache key distinct from the primary and from sibling files that share the same folder."""
     version_id = version_id_from_air(air)
     dest_dir = _model_dir(folder)
-    cached = glob.glob(os.path.join(dest_dir, f"civitai_{version_id}_*"))
+    # Additional files key on their file id so siblings sharing a folder (e.g. a model's several
+    # text encoders, all in text_encoders/) never collide. The primary file lands in its own
+    # type folder, separate from any component folder, so its plain version glob stays unambiguous.
+    prefix = f"civitai_{version_id}_f{file_id}_" if file_id is not None else f"civitai_{version_id}_"
+    cached = glob.glob(os.path.join(dest_dir, f"{prefix}*"))
     cached = [p for p in cached if not p.endswith(".part")]
     if cached:
         return cached[0]
@@ -78,14 +91,14 @@ def download_model(air: str, folder: str = "checkpoints", token: str | None = No
     headers = {"User-Agent": USER_AGENT}
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    url = CIVITAI_DOWNLOAD_URL.format(version_id=version_id)
+    url = download_url or CIVITAI_DOWNLOAD_URL.format(version_id=version_id)
     response = requests.get(url, headers=headers, stream=True, timeout=60, allow_redirects=True)
     if response.status_code >= 400:
         response.close()
         hint = " (this model may be gated — connect a Civitai Auth node)" if response.status_code in (401, 403) else ""
         raise CivitaiNodeError(f"Civitai download failed ({response.status_code}) for version {version_id}{hint}")
 
-    path = os.path.join(dest_dir, _filename(response, version_id))
+    path = os.path.join(dest_dir, _filename(response, version_id, prefix))
     tmp = path + ".part"
     total = int(response.headers.get("content-length") or 0)
     bar = comfy_compat.progress_bar(total or 100)

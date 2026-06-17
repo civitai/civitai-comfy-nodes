@@ -303,14 +303,56 @@ function renderPreview(node, { entry = null, air = "", sub = "", empty = false }
   st.el.title = entry?.modelUrl ? "Open on Civitai ↗" : "";
 }
 
+// Adaptive component outputs: keep the node's outputs a prefix of the canonical list
+// [air, path, vae, clip, clip 2, clip 3] so slot indices always match the Python node, growing /
+// collapsing the trailing component slots to fit the picked model and labelling each with its real
+// file. A slot with a live link is never removed (so loading a saved graph can't drop a wire).
+const COMPONENT_OUTPUTS = ["vae", "clip", "clip 2", "clip 3"]; // canonical output slots 2..5
+
+function applyComponentOutputs(node, components) {
+  if (!components || !node.outputs) return; // unknown (e.g. lookup failed) — leave outputs as they are
+  const vae = components.vae || [];
+  const clip = components.clip || [];
+  const fileFor = [vae[0], clip[0], clip[1], clip[2]]; // canonical slot 2..5 -> its file (or undefined)
+  let lastNeeded = 1; // 1 = `path`; nothing past it needed yet
+  fileFor.forEach((f, i) => { if (f) lastNeeded = Math.max(lastNeeded, 2 + i); });
+
+  let changed = false;
+  while (node.outputs.length <= lastNeeded && node.outputs.length <= 5) {
+    node.addOutput(COMPONENT_OUTPUTS[node.outputs.length - 2], "*");
+    changed = true;
+  }
+  for (let slot = node.outputs.length - 1; slot > Math.max(lastNeeded, 1); slot--) {
+    if (node.outputs[slot]?.links?.length) break; // keep a linked slot (and everything below it)
+    node.removeOutput(slot);
+    changed = true;
+  }
+  for (let slot = 2; slot < node.outputs.length; slot++) {
+    const out = node.outputs[slot];
+    if (!out) continue;
+    const f = fileFor[slot - 2];
+    out.label = f?.name ? `${COMPONENT_OUTPUTS[slot - 2]}: ${f.name}` : `${COMPONENT_OUTPUTS[slot - 2]} (none)`;
+  }
+  if (changed) {
+    node.setSize([node.size?.[0] || node.computeSize()[0], node.computeSize()[1]]);
+    node.graph?.setDirtyCanvas(true, true);
+  }
+}
+
 // Reflect the node's current `air` value: render from the stashed metadata when it matches, else
 // resolve the AIR via the lookup proxy (handles pasted AIRs and graphs saved before this existed).
+// The lookup carries the version's components, which drive the adaptive VAE/CLIP outputs.
 function refreshPreview(node, airWidget) {
   const air = (airWidget.value || "").trim();
-  if (!air) { renderPreview(node, { empty: true }); return; }
+  if (!air) { renderPreview(node, { empty: true }); applyComponentOutputs(node, { vae: [], clip: [] }); return; }
   const stored = node.properties?.civitai_model;
-  if (stored && stored.air === air) { renderPreview(node, { entry: stored }); return; }
-  renderPreview(node, { air, sub: "Loading…" });
+  if (stored && stored.air === air) {
+    renderPreview(node, { entry: stored });
+    if (stored.components) { applyComponentOutputs(node, stored.components); return; }
+    // Stored from a search pick (no component info yet) — fall through to fetch it via lookup.
+  } else {
+    renderPreview(node, { air, sub: "Loading…" });
+  }
   clearTimeout(node.__cvcLookupT);
   node.__cvcLookupT = setTimeout(async () => {
     try {
@@ -321,11 +363,14 @@ function refreshPreview(node, airWidget) {
         node.properties = node.properties || {};
         node.properties.civitai_model = data.entry;
         renderPreview(node, { entry: data.entry });
+        applyComponentOutputs(node, data.entry.components || { vae: [], clip: [] });
       } else {
         renderPreview(node, { air, sub: "Details unavailable" });
       }
     } catch {
-      if ((airWidget.value || "").trim() === air) renderPreview(node, { air, sub: "Details unavailable" });
+      if ((airWidget.value || "").trim() === air && !(stored && stored.air === air)) {
+        renderPreview(node, { air, sub: "Details unavailable" });
+      }
     }
   }, 250);
 }

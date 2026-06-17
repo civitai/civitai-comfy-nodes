@@ -258,4 +258,54 @@ def lookup(air: str, timeout: int = 15, token: str | None = None) -> dict | None
         "modelUrl": (
             CIVITAI_MODEL_URL.format(model_id=model_id, version_id=version_id) if model_id else None
         ),
+        "components": _parse_components(version.get("files")),
     }
+
+
+# Civitai file `type` -> the Model Selector component output it feeds. Files outside this map (the
+# primary Model/UNet, Config, Training Data, …) aren't exposed as separate component outputs.
+_FILE_TYPE_BUCKETS = {
+    "VAE": "vae",
+    "Text Encoder": "clip",
+    "TextEncoder": "clip",
+}
+
+
+def _parse_components(files: list | None) -> dict:
+    """Group a version's non-primary files into the selector's component buckets, preserving API
+    order so multiple text encoders map to clip / clip 2 / clip 3 deterministically. Each entry is
+    {id, name, downloadUrl, isRequired} — enough to label the output and download the file."""
+    buckets: dict[str, list] = {"vae": [], "clip": []}
+    for f in files or []:
+        if f.get("primary"):
+            continue
+        bucket = _FILE_TYPE_BUCKETS.get((f.get("type") or "").strip())
+        download_url = f.get("downloadUrl")
+        file_id = f.get("id")
+        if not bucket or not download_url or file_id is None:
+            continue
+        buckets[bucket].append(
+            {
+                "id": file_id,
+                "name": f.get("name") or "",
+                "downloadUrl": download_url,
+                "isRequired": bool((f.get("metadata") or {}).get("isRequired")),
+            }
+        )
+    return buckets
+
+
+def components(air: str, timeout: int = 15, token: str | None = None) -> dict:
+    """A version's VAE/CLIP component files for the Model Selector's extra outputs. Empty buckets
+    for an unparseable AIR or a deleted/unknown version (404)."""
+    version_id = version_id_from_air(air)
+    if not version_id:
+        return {"vae": [], "clip": []}
+    headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    response = requests.get(CIVITAI_VERSION_URL.format(version_id=version_id), headers=headers, timeout=timeout)
+    if response.status_code == 404:
+        return {"vae": [], "clip": []}
+    response.raise_for_status()
+    return _parse_components((response.json() or {}).get("files"))
