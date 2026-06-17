@@ -3,12 +3,19 @@ name: Publish to Comfy Registry
 # Publishes to registry.comfy.org whenever the version in pyproject.toml changes on main
 # (the sync-spec PR does this), or on demand. The registry rejects a duplicate version,
 # so re-running on an unchanged version is a no-op.
+#
+# Release notes come from the CHANGELOG.md section matching the pyproject version: it is
+# pushed to the registry's "Updates" tab (comfy node publish --changelog-file) and to a
+# GitHub Release tagged v<version>.
 on:
   push:
     branches: [main]
     paths:
       - pyproject.toml
   workflow_dispatch:
+
+permissions:
+  contents: write # create the git tag + GitHub Release
 
 jobs:
   publish:
@@ -18,14 +25,46 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Extract version + changelog section
+        id: meta
+        run: |
+          version="$(grep -oP '^version\s*=\s*"\K[^"]+' pyproject.toml)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # Lines between this version's "## [x.y.z]" heading and the next "## " heading.
+          awk -v h="## [$version]" 'index($0,h)==1 {g=1; next} g && /^## / {exit} g {print}' \
+            CHANGELOG.md > changelog-section.md
+          if ! grep -q '[^[:space:]]' changelog-section.md; then
+            echo "::warning::No CHANGELOG.md section for $version — publishing with empty release notes."
+          fi
+          echo "----- release notes for $version -----"
+          cat changelog-section.md
+
       # We call comfy-cli directly rather than Comfy-Org/publish-node-action: that action's
       # tagged releases shell out to `comfy --yes env`, an option current comfy-cli dropped,
       # so they fail. Pin the cli and use its current non-interactive flags.
+      # 1.10.5 is the first release with --changelog-file.
       - name: Install comfy-cli
-        run: pip install "comfy-cli==1.10.4"
+        run: pip install "comfy-cli==1.10.5"
+
       - name: Publish
         env:
           REGISTRY_ACCESS_TOKEN: ${{ secrets.REGISTRY_ACCESS_TOKEN }}
         run: |
           comfy --skip-prompt env
-          comfy --skip-prompt node publish --token "$REGISTRY_ACCESS_TOKEN"
+          comfy --skip-prompt node publish --token "$REGISTRY_ACCESS_TOKEN" \
+            --changelog-file changelog-section.md
+
+      # Reached only when Publish succeeds — a duplicate-version publish fails the job above,
+      # so a tag/release is cut exactly once, for a genuinely new version.
+      - name: Tag + GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v${{ steps.meta.outputs.version }}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists — skipping."
+          else
+            gh release create "$tag" --target "$GITHUB_SHA" --title "$tag" \
+              --notes-file changelog-section.md
+          fi
