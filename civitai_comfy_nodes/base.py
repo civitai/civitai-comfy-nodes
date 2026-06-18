@@ -11,7 +11,7 @@ import threading
 import time
 from dataclasses import dataclass
 
-from . import comfy_compat, conversions
+from . import comfy_compat, conversions, prompt_context
 from .client import TERMINAL_STATUSES, OrchestrationClient
 from .config import resolve_config, submit_tags
 from .errors import CivitaiNodeError, workflow_failure_message
@@ -91,7 +91,10 @@ class CivitaiRecipeNodeBase:
         missing = self._missing_required(widgets)
         if missing:
             raise CivitaiNodeError(self._missing_message(missing))
-        config = resolve_config(api_config)
+        # A hosted prompt carries its credentials in extra_data; never fall back
+        # to a browser login there — the container is headless.
+        interactive = prompt_context.current() is None
+        config = resolve_config(api_config, interactive=interactive)
         client = OrchestrationClient(config)
         payload = self._build_payload(client, widgets)
         payload.update(self.DISCRIMINATOR)

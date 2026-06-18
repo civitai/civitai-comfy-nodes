@@ -35,7 +35,7 @@ class _Node(base.CivitaiRecipeNodeBase):
 
 def test_run_logs_workflow_id_and_status_transitions(monkeypatch, caplog):
     cfg = ClientConfig("http://x", "t", timeout_minutes=30)
-    monkeypatch.setattr(base, "resolve_config", lambda api_config=None: cfg)
+    monkeypatch.setattr(base, "resolve_config", lambda api_config=None, **_: cfg)
     monkeypatch.setattr(base, "OrchestrationClient", _FakeClient)
     monkeypatch.setattr(base.CivitaiRecipeNodeBase, "_interruptible_sleep", staticmethod(lambda seconds: None))
 

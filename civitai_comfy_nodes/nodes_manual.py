@@ -210,13 +210,10 @@ class CivitaiLoraLoader:
 
         # Local mode: model + clip wired in -> download and apply the whole accumulated stack.
         if model is not None and clip is not None and stack:
-            import os
+            from . import local_models
+            from .config import auth_state
 
-            from . import local_models, oauth
-
-            token = (api_config or {}).get("api_token") or os.environ.get("CIVITAI_API_TOKEN")
-            if not token:
-                token = oauth.get_valid_access_token()
+            token = (api_config or {}).get("api_token") or auth_state()[0]
             for item in stack:
                 path = local_models.download_model(item["air"], folder="loras", token=token)
                 model, clip = local_models.apply_lora(model, clip, path, item.get("strength", 1.0))
@@ -284,9 +281,19 @@ class CivitaiModelSelector:
 
     CATEGORY = "Civitai/Loaders"
     FUNCTION = "select"
-    RETURN_TYPES = ("CIVITAI_AIR", ANY_TYPE)
-    RETURN_NAMES = ("air", "path")
-    _PATH_SLOT = 1  # downloading is driven by the `path` output being wired
+    RETURN_TYPES = ("CIVITAI_AIR", ANY_TYPE, ANY_TYPE, ANY_TYPE, ANY_TYPE, ANY_TYPE)
+    RETURN_NAMES = ("air", "path", "clip", "vae", "clip 2", "clip 3")
+    _PATH_SLOT = 1
+    # Component output slot -> (catalog.components bucket, index within that bucket, fallback folder).
+    # The download folder follows each file's Civitai type; the fallback only applies if that type is
+    # missing. clip before vae so the outputs line up with loaders that list clip_name above vae_name;
+    # the extra clip slots stay at the tail so single-clip models still collapse to clip + vae.
+    _COMPONENT_SLOTS = {
+        2: ("clip", 0, "text_encoders"),
+        3: ("vae", 0, "vae"),
+        4: ("clip", 1, "text_encoders"),
+        5: ("clip", 2, "text_encoders"),
+    }
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -299,41 +306,70 @@ class CivitaiModelSelector:
         }
 
     @classmethod
-    def _path_consumed(cls, prompt, unique_id) -> bool:
-        """True if the `path` output is wired downstream (so we should download the file)."""
+    def _consumed_slots(cls, prompt, unique_id) -> set:
+        """The output slots wired downstream — only those get downloaded (AIR-only use stays free)."""
+        consumed = set()
         if not prompt or unique_id is None:
-            return False
+            return consumed
         uid = str(unique_id)
         for node in prompt.values():
             for value in (node.get("inputs") or {}).values():
-                if not (isinstance(value, list) and len(value) == 2):
-                    continue
-                if str(value[0]) == uid and value[1] == cls._PATH_SLOT:
-                    return True
-        return False
+                if isinstance(value, list) and len(value) == 2 and str(value[0]) == uid:
+                    consumed.add(value[1])
+        return consumed
 
     @classmethod
     def IS_CHANGED(cls, air, api_config=None, prompt=None, unique_id=None):
-        # Re-run when `path` gets (dis)connected, not just when the AIR changes.
-        return f"{(air or '').strip()}|{cls._path_consumed(prompt, unique_id)}"
+        # Re-run when any download output gets (dis)connected, not just when the AIR changes.
+        return f"{(air or '').strip()}|{sorted(cls._consumed_slots(prompt, unique_id))}"
 
     def select(self, air, api_config=None, prompt=None, unique_id=None):
         air = (air or "").strip()
         if not air:
             raise CivitaiNodeError("No model AIR set — use the Browse Civitai button to pick one.")
-        path = ""
-        if self._path_consumed(prompt, unique_id):
+
+        consumed = self._consumed_slots(prompt, unique_id)
+        paths = {slot: "" for slot in (self._PATH_SLOT, *self._COMPONENT_SLOTS)}
+        if consumed & paths.keys():
             import os
 
-            from . import local_models, oauth
+            from . import catalog, local_models
+            from .config import auth_state
 
-            token = (api_config or {}).get("api_token") or os.environ.get("CIVITAI_API_TOKEN")
-            if not token:
-                token = oauth.get_valid_access_token()  # best-effort; public models need no token
-            folder = local_models.folder_for_air(air)
-            full = local_models.download_model(air, folder=folder, token=token)
-            path = os.path.basename(full)  # folder-relative name the loader's combo resolves
-        return (air, path)
+            token = (api_config or {}).get("api_token") or auth_state()[0]
+            try:
+                files = catalog.components(air, token=token)
+            except Exception:
+                files = None  # metadata fetch failed; the primary falls back, components error below
+
+            if self._PATH_SLOT in consumed:
+                # Folder follows the primary file's type (e.g. a Checkpoint model whose primary file
+                # is a Diffusion Model -> diffusion_models/), falling back to the AIR's type.
+                primary = (files or {}).get("primary") or {}
+                folder = local_models.folder_for_file_type(primary.get("type"), local_models.folder_for_air(air))
+                full = local_models.download_model(air, folder=folder, token=token)
+                paths[self._PATH_SLOT] = os.path.basename(full)  # folder-relative name the combo resolves
+
+            component_slots = [s for s in self._COMPONENT_SLOTS if s in consumed]
+            if component_slots:
+                if files is None:
+                    raise CivitaiNodeError("Could not load the model's component files from Civitai.")
+                for slot in component_slots:
+                    bucket, index, fallback_folder = self._COMPONENT_SLOTS[slot]
+                    items = files.get(bucket) or []
+                    if index >= len(items):
+                        raise CivitaiNodeError(
+                            f"The selected model has no file for the '{self.RETURN_NAMES[slot]}' output "
+                            f"({len(items)} {bucket} file(s) available)."
+                        )
+                    f = items[index]
+                    folder = local_models.folder_for_file_type(f.get("type"), fallback_folder)
+                    full = local_models.download_model(
+                        air, folder=folder, token=token, download_url=f["downloadUrl"], file_id=f["id"]
+                    )
+                    paths[slot] = os.path.basename(full)
+
+        return (air, paths[1], paths[2], paths[3], paths[4], paths[5])
 
 
 class CivitaiEmbeddingSelector:

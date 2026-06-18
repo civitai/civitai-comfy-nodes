@@ -17,10 +17,16 @@ converts blob outputs to native Comfy types.
   → `CIVITAI_CONTROLNETS`. `base._build_payload` serializes each (AIR string, AIR list, lora
   array/AIR-keyed map, controlnet array). `field_types: {field: "air"}` forces an AIR-by-description
   field that lacks the pattern (e.g. `imageUpscaler.model`). `CivitaiModelSelector` outputs the
-  `air` (`CIVITAI_AIR`) plus a `path` (`*`/AnyType — wires into any standard loader's file combo);
-  the model downloads into `local_models.folder_for_air(air)` only when `path` is wired (PROMPT/
-  UNIQUE_ID `_path_consumed` + `IS_CHANGED`). The Browse-Civitai picker button is on the selector
-  nodes only (`web/civitai-catalog.js` NODE_TARGETS), never on recipe nodes.
+  `air` (`CIVITAI_AIR`) plus `path`/`clip`/`vae`/`clip 2`/`clip 3` (all `*`/AnyType — wire into a
+  standard loader's file combo); `path` is the version's primary file, the rest are its additional
+  components (`catalog.components` returns the `primary` file plus VAE → `vae` / Text Encoder →
+  `clip` buckets, in API order). Each output downloads only when wired (PROMPT/UNIQUE_ID
+  `_consumed_slots` + `IS_CHANGED`) into the folder for its *file's* Civitai `type` via
+  `local_models.folder_for_file_type` (so a Checkpoint model whose primary file is a Diffusion
+  Model lands in `diffusion_models/`, not `checkpoints/`); component files key on their file id
+  (`download_model(download_url=…, file_id=…)`) so siblings sharing a folder don't collide. The picker (`web/civitai-catalog.js` `applyComponentOutputs`) keeps the node's outputs a
+  prefix of the canonical list and collapses/relabels the component slots to the selected model.
+  The Browse-Civitai picker button is on the selector nodes only (NODE_TARGETS), never on recipe nodes.
 - `civitai_comfy_nodes/base.py` — all runtime behavior: payload building from `FIELDS`,
   submit → poll loop (interrupt-aware, ProgressBar), output conversion per `OUTPUTS`. `run()`
   returns `{"ui": {"civitai_status": [...]}, "result": (...)}`; the `ui` payload (workflow id +
