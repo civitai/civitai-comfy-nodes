@@ -300,12 +300,15 @@ class CivitaiModelSelector:
         return {
             "required": {
                 "air": ("STRING", {"default": "", "tooltip": "Model AIR (use the Browse Civitai button)"}),
-                # Hidden on the node, populated by web/civitai-catalog.js with the file-pinned resource
-                # AIRs per output slot. Rides into the prompt so a customComfy submitter can declare them
-                # as resources and rewrite (bake) the loader slots. JSON: {"bySlot": {"1": air, …}, "all": [air, …]}.
-                "resources_json": ("STRING", {"default": "{}"}),
             },
-            "optional": {"api_config": ("CIVITAI_CONFIG", {})},
+            "optional": {
+                # Optional so plain local execution and older saved graphs still validate (a required
+                # widget on this pre-existing node would reject any prompt lacking it). Hidden on the node,
+                # populated by web/civitai-catalog.js with the file-pinned resource AIRs per output slot; a
+                # customComfy submitter reads it. JSON: {"bySlot": {"1": air, …}, "all": [air, …]}.
+                "resources_json": ("STRING", {"default": "{}"}),
+                "api_config": ("CIVITAI_CONFIG", {}),
+            },
             "hidden": {"prompt": "PROMPT", "unique_id": "UNIQUE_ID"},
         }
 
