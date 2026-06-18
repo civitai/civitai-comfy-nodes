@@ -4,6 +4,7 @@ No-op when imported outside ComfyUI (e.g. pytest)."""
 
 import asyncio
 import os
+import threading
 import time
 import uuid
 
@@ -236,6 +237,59 @@ def _offload_inventory() -> dict:
     }
 
 
+def _extract_trace_url(workflow: dict) -> str | None:
+    for step in workflow.get("steps") or []:
+        url = (step.get("output") or {}).get("traceUrl")
+        if url:
+            return url
+    return None
+
+
+class _TraceTailHandle:
+    def __init__(self, thread: threading.Thread, stop_event: threading.Event, box: dict):
+        self._thread = thread
+        self._stop_event = stop_event
+        self._box = box
+
+    def stop(self, grace: float = 10.0) -> None:
+        self._stop_event.set()
+        self._thread.join(timeout=grace)
+
+    def summary(self) -> dict | None:
+        stats = self._box.get("stats")
+        return stats.as_dict() if stats is not None else None
+
+
+def _start_trace_tail(client, workflow: dict, *, sid: str | None) -> _TraceTailHandle | None:
+    """Resolve the customComfy step's traceUrl (polling briefly if the submit response doesn't
+    carry it yet) and spawn a daemon thread that replays the binary trace onto the local
+    websocket. Returns None when no traceUrl ever appears (e.g. orchestration without tracing)."""
+    from . import trace_tail
+
+    workflow_id = workflow.get("id") or workflow.get("workflowId")
+    trace_url = _extract_trace_url(workflow)
+    attempts = 0
+    while not trace_url and workflow_id and attempts < 5:
+        attempts += 1
+        time.sleep(0.5)
+        try:
+            trace_url = _extract_trace_url(client.get_workflow(workflow_id))
+        except CivitaiNodeError:
+            break
+    if not trace_url:
+        return None
+
+    stop_event = threading.Event()
+    box: dict = {}
+
+    def _run():
+        box["stats"] = trace_tail.tail_trace_to_websocket(trace_url, stop_event=stop_event, sid=sid)
+
+    thread = threading.Thread(target=_run, name="civitai-trace-tail", daemon=True)
+    thread.start()
+    return _TraceTailHandle(thread, stop_event, box)
+
+
 def _offload_run(
     prompt: dict,
     selected_node_ids: list[str] | None,
@@ -244,23 +298,39 @@ def _offload_run(
     whatif: bool,
     *,
     wait_until_complete: bool = False,
+    live_progress: bool = False,
+    client_id: str | None = None,
 ) -> dict:
     from . import offload
     from .client import OrchestrationClient
     from .config import resolve_config
 
     config = resolve_config(interactive=False)
+    # Only record + tail a trace when we're actually going to wait out the run; a fire-and-forget
+    # submit has nobody to replay frames to.
+    do_tail = live_progress and wait_until_complete and not whatif
     build = offload.build_custom_comfy_offload(
         prompt,
         selected_node_ids=selected_node_ids,
         workflow=workflow,
         token=config.token,
+        trace="binary" if do_tail else None,
     )
     client = OrchestrationClient(config)
     workflow = client.submit_steps(build.steps, wait=wait, whatif=whatif)
-    if wait_until_complete and not whatif:
-        workflow = _poll_workflow_to_terminal(client, workflow, config.timeout_minutes)
-    return {"workflow": workflow, "offload": build.as_dict()}
+
+    tail = _start_trace_tail(client, workflow, sid=client_id) if do_tail else None
+    try:
+        if wait_until_complete and not whatif:
+            workflow = _poll_workflow_to_terminal(client, workflow, config.timeout_minutes)
+    finally:
+        if tail is not None:
+            tail.stop()
+
+    result = {"workflow": workflow, "offload": build.as_dict()}
+    if tail is not None:
+        result["trace"] = tail.summary()
+    return result
 
 
 def _run_local_tail(prompt: dict, offload_result: dict, comfy_base_url: str) -> dict | None:
@@ -432,6 +502,10 @@ if _server is not None:
             wait = 0
         whatif = bool(body.get("whatif", False))
         run_local_tail = bool(body.get("runLocalTail", False))
+        live_progress = bool(body.get("liveProgress", True))
+        client_id = body.get("clientId")
+        if not isinstance(client_id, str):
+            client_id = None
         comfy_base_url = f"{request.scheme}://{request.host}"
         loop = asyncio.get_event_loop()
         try:
@@ -445,6 +519,8 @@ if _server is not None:
                     wait,
                     whatif,
                     wait_until_complete=run_local_tail,
+                    live_progress=live_progress,
+                    client_id=client_id,
                 ),
             )
             if run_local_tail and not whatif:

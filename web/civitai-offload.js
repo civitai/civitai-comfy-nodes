@@ -1,6 +1,7 @@
 // Adds a "Run in Civitai" action that sends the current ComfyUI API prompt to the pack's
 // /civitai/offload/run route. The backend handles OAuth, local model AIR lookup, and nodepack AIRs.
 import { app } from "../../scripts/app.js";
+import { api } from "../../scripts/api.js";
 
 let stylesInjected = false;
 
@@ -60,6 +61,9 @@ async function runInCivitai(button) {
     payload.selectedNodeIds = selectedNodeIds();
     payload.wait = 5;
     payload.runLocalTail = true;
+    // Replay the remote run's /ws frames (progress + previews) onto this tab's canvas.
+    payload.liveProgress = true;
+    payload.clientId = api.clientId;
     const res = await fetch("/civitai/offload/run", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

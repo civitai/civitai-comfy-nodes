@@ -1121,6 +1121,7 @@ def build_custom_comfy_offload(
     token: str | None = None,
     session: requests.Session | None = None,
     civitai_base_url: str | None = None,
+    trace: str | None = None,
 ) -> OffloadBuildResult:
     normalized = _normalize_prompt(prompt)
     if not normalized:
@@ -1175,7 +1176,9 @@ def build_custom_comfy_offload(
     if (visual_region_selection or region_selection) and not explicit_selection:
         warnings.append("Using Civitai Offload Start/End markers to select the submitted graph")
 
-    custom_input = {"resources": sorted(resources), "workflow": rewritten}
+    custom_input: dict[str, Any] = {"resources": sorted(resources), "workflow": rewritten}
+    if trace:
+        custom_input["trace"] = trace
     return OffloadBuildResult(
         steps=[{"$type": "customComfy", "input": custom_input}],
         workflow=rewritten,

@@ -337,3 +337,26 @@ def test_build_local_continuation_returns_none_when_no_local_tail():
         )
         is None
     )
+
+
+def test_build_custom_comfy_offload_includes_trace_when_requested():
+    prompt = {
+        "1": {"class_type": "EmptyImage", "inputs": {"width": 64, "height": 64, "batch_size": 1}},
+        "2": {"class_type": "SaveImage", "inputs": {"images": ["1", 0]}},
+    }
+
+    build = offload.build_custom_comfy_offload(prompt, model_records=[], nodepacks=[], trace="binary")
+
+    assert build.steps[0]["$type"] == "customComfy"
+    assert build.steps[0]["input"]["trace"] == "binary"
+
+
+def test_build_custom_comfy_offload_omits_trace_by_default():
+    prompt = {
+        "1": {"class_type": "EmptyImage", "inputs": {"width": 64, "height": 64, "batch_size": 1}},
+        "2": {"class_type": "SaveImage", "inputs": {"images": ["1", 0]}},
+    }
+
+    build = offload.build_custom_comfy_offload(prompt, model_records=[], nodepacks=[])
+
+    assert "trace" not in build.steps[0]["input"]
