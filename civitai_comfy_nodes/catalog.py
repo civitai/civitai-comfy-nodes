@@ -307,19 +307,26 @@ def _parse_components(files: list | None, version_air: str | None = None) -> dic
     file-pinned resource AIR (None if `version_air` is missing/unparseable)."""
     result: dict = {"primary": None, "vae": [], "clip": []}
     for f in files or []:
+        is_primary = bool(f.get("primary"))
+        ftype = (f.get("type") or "").strip()
+        # The primary file IS the version — declare it under the plain version AIR so it shares the
+        # cache identity the rest of the orchestrator uses (a worker that already holds the model
+        # reuses it instead of re-downloading). Non-primary files (VAE/CLIP) have no version-level
+        # identity, so pin them by file id.
+        air = version_air if is_primary else _resource_air(version_air, ftype, f.get("id"))
         entry = {
             "id": f.get("id"),
             "name": f.get("name") or "",
-            "type": (f.get("type") or "").strip(),
+            "type": ftype,
             "downloadUrl": f.get("downloadUrl"),
             "isRequired": bool((f.get("metadata") or {}).get("isRequired")),
-            "air": _resource_air(version_air, (f.get("type") or "").strip(), f.get("id")),
+            "air": air,
         }
-        if f.get("primary"):
+        if is_primary:
             if result["primary"] is None:
                 result["primary"] = entry
             continue
-        bucket = _FILE_TYPE_BUCKETS.get(entry["type"])
+        bucket = _FILE_TYPE_BUCKETS.get(ftype)
         if not bucket or not entry["downloadUrl"] or entry["id"] is None:
             continue
         result[bucket].append(entry)
