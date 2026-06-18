@@ -337,6 +337,29 @@ function applyComponentOutputs(node, components) {
     node.setSize([node.size?.[0] || node.computeSize()[0], node.computeSize()[1]]);
     node.graph?.setDirtyCanvas(true, true);
   }
+  writeResourcesJson(node, components);
+}
+
+// Stash the file-pinned resource AIRs into the hidden `resources_json` widget, keyed by output slot
+// (1=path/primary, 2=clip, 3=vae, 4=clip 2, 5=clip 3 — the canonical layout). This rides into the
+// prompt so a customComfy submitter can declare them as resources and bake them into loader slots.
+function writeResourcesJson(node, components) {
+  const widget = node.widgets?.find((w) => w.name === "resources_json");
+  if (!widget) return;
+  const vae = components?.vae || [];
+  const clip = components?.clip || [];
+  const bySlotPairs = [
+    ["1", components?.primary?.air],
+    ["2", clip[0]?.air],
+    ["3", vae[0]?.air],
+    ["4", clip[1]?.air],
+    ["5", clip[2]?.air],
+  ];
+  const bySlot = {};
+  for (const [slot, air] of bySlotPairs) if (air) bySlot[slot] = air;
+  const all = [...new Set(Object.values(bySlot))];
+  const value = all.length ? JSON.stringify({ bySlot, all }) : "{}";
+  if (widget.value !== value) widget.value = value;
 }
 
 // Reflect the node's current `air` value: render from the stashed metadata when it matches, else
@@ -377,6 +400,13 @@ function refreshPreview(node, airWidget) {
 
 function setupPreview(node, airWidget) {
   previewState(node); // create up-front so the preview sits above the Browse button
+  const resWidget = node.widgets?.find((w) => w.name === "resources_json");
+  if (resWidget) {
+    // Serialized data for the customComfy submitter; hide its raw text widget.
+    resWidget.hidden = true;
+    resWidget.type = "hidden";
+    resWidget.computeSize = () => [0, -4];
+  }
   const origCb = airWidget.callback;
   airWidget.callback = function (...a) {
     const r = origCb?.apply(this, a);

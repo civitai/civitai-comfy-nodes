@@ -258,7 +258,7 @@ def lookup(air: str, timeout: int = 15, token: str | None = None) -> dict | None
         "modelUrl": (
             CIVITAI_MODEL_URL.format(model_id=model_id, version_id=version_id) if model_id else None
         ),
-        "components": _parse_components(version.get("files")),
+        "components": _parse_components(version.get("files"), air),
     }
 
 
@@ -270,12 +270,41 @@ _FILE_TYPE_BUCKETS = {
     "TextEncoder": "clip",
 }
 
+# Civitai file `type` -> the AIR type segment used in a file-pinned resource AIR. Descriptive only:
+# a customComfy worker downloads by version+fileId and rewrites the workflow slot to the file's
+# absolute mounted path, so this segment is for readability, not folder routing.
+_FILE_TYPE_AIR_TYPES = {
+    "Model": "checkpoint",
+    "Pruned Model": "checkpoint",
+    "Diffusion Model": "diffusion_model",
+    "UNet": "unet",
+    "VAE": "vae",
+    "Text Encoder": "text_encoders",
+    "TextEncoder": "text_encoders",
+    "CLIPVision": "clip_vision",
+}
 
-def _parse_components(files: list | None) -> dict:
+
+def _resource_air(version_air: str, file_type: str, file_id) -> str | None:
+    """A file-pinned resource AIR `urn:air:<eco>:<type>:civitai:<modelId>@<versionId>+<fileId>` that a
+    customComfy submitter declares as a resource and bakes into the workflow. The `+fileId` makes it
+    download this exact file; the worker rewrites the matching workflow slot to its mounted path."""
+    eco = air_ecosystem(version_air)
+    version_id = version_id_from_air(version_air)
+    parts = (version_air or "").split(":")
+    if not eco or not version_id or file_id is None or len(parts) < 6 or "@" not in parts[5]:
+        return None
+    model_id = parts[5].split("@", 1)[0]
+    air_type = _FILE_TYPE_AIR_TYPES.get((file_type or "").strip(), parts[3])
+    return f"urn:air:{eco}:{air_type}:civitai:{model_id}@{version_id}+{file_id}"
+
+
+def _parse_components(files: list | None, version_air: str | None = None) -> dict:
     """Classify a version's files for the Model Selector. `primary` is the main file (whatever its
     type — the download folder follows it, not the AIR), and `vae`/`clip` are the non-primary files
     that get component outputs, in API order so multiple text encoders map to clip / clip 2 / clip 3
-    deterministically. Each entry is {id, name, type, downloadUrl, isRequired}."""
+    deterministically. Each entry is {id, name, type, downloadUrl, isRequired, air} — `air` is the
+    file-pinned resource AIR (None if `version_air` is missing/unparseable)."""
     result: dict = {"primary": None, "vae": [], "clip": []}
     for f in files or []:
         entry = {
@@ -284,6 +313,7 @@ def _parse_components(files: list | None) -> dict:
             "type": (f.get("type") or "").strip(),
             "downloadUrl": f.get("downloadUrl"),
             "isRequired": bool((f.get("metadata") or {}).get("isRequired")),
+            "air": _resource_air(version_air, (f.get("type") or "").strip(), f.get("id")),
         }
         if f.get("primary"):
             if result["primary"] is None:
@@ -309,4 +339,4 @@ def components(air: str, timeout: int = 15, token: str | None = None) -> dict:
     if response.status_code == 404:
         return {"primary": None, "vae": [], "clip": []}
     response.raise_for_status()
-    return _parse_components((response.json() or {}).get("files"))
+    return _parse_components((response.json() or {}).get("files"), air)

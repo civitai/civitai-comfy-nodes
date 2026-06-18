@@ -300,6 +300,10 @@ class CivitaiModelSelector:
         return {
             "required": {
                 "air": ("STRING", {"default": "", "tooltip": "Model AIR (use the Browse Civitai button)"}),
+                # Hidden on the node, populated by web/civitai-catalog.js with the file-pinned resource
+                # AIRs per output slot. Rides into the prompt so a customComfy submitter can declare them
+                # as resources and rewrite (bake) the loader slots. JSON: {"bySlot": {"1": air, …}, "all": [air, …]}.
+                "resources_json": ("STRING", {"default": "{}"}),
             },
             "optional": {"api_config": ("CIVITAI_CONFIG", {})},
             "hidden": {"prompt": "PROMPT", "unique_id": "UNIQUE_ID"},
@@ -319,11 +323,12 @@ class CivitaiModelSelector:
         return consumed
 
     @classmethod
-    def IS_CHANGED(cls, air, api_config=None, prompt=None, unique_id=None):
+    def IS_CHANGED(cls, air, resources_json="{}", api_config=None, prompt=None, unique_id=None):
         # Re-run when any download output gets (dis)connected, not just when the AIR changes.
         return f"{(air or '').strip()}|{sorted(cls._consumed_slots(prompt, unique_id))}"
 
-    def select(self, air, api_config=None, prompt=None, unique_id=None):
+    def select(self, air, resources_json="{}", api_config=None, prompt=None, unique_id=None):
+        # resources_json is populated by the frontend for the customComfy submitter; unused at runtime.
         air = (air or "").strip()
         if not air:
             raise CivitaiNodeError("No model AIR set — use the Browse Civitai button to pick one.")

@@ -173,6 +173,13 @@ def test_components_groups_vae_and_clip_in_api_order(monkeypatch):
     assert comps["vae"][0]["isRequired"] is True
     assert [f["name"] for f in comps["clip"]] == ["clip_l.safetensors", "t5.safetensors"]  # API order preserved
     assert comps["clip"][0]["downloadUrl"].endswith("part=1")  # the file's own URL drives the download
+    # file-pinned resource AIRs: type segment from the file type, +fileId pins the exact file
+    assert comps["primary"]["air"] == "urn:air:zimage:checkpoint:civitai:1@999+1"
+    assert comps["vae"][0]["air"] == "urn:air:zimage:vae:civitai:1@999+2"
+    assert [f["air"] for f in comps["clip"]] == [
+        "urn:air:zimage:text_encoders:civitai:1@999+3",
+        "urn:air:zimage:text_encoders:civitai:1@999+4",
+    ]
 
 
 def test_components_captures_primary_regardless_of_type(monkeypatch):
@@ -183,6 +190,7 @@ def test_components_captures_primary_regardless_of_type(monkeypatch):
     monkeypatch.setattr(catalog.requests, "get", lambda *a, **k: _version_resp(files))
     comps = catalog.components("urn:air:x:checkpoint:civitai:1@999")
     assert comps["primary"]["type"] == "Diffusion Model"  # AIR says checkpoint, primary file says otherwise
+    assert comps["primary"]["air"] == "urn:air:x:diffusion_model:civitai:1@999+1"  # type segment follows the file
     assert comps["vae"] == [] and comps["clip"] == []
 
 
