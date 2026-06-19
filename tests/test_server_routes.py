@@ -1,4 +1,5 @@
 from civitai_comfy_nodes import server_routes as sr
+from civitai_comfy_nodes import trace_tail
 
 
 def _wf(steps, **extra):
@@ -128,3 +129,188 @@ def test_workflow_asset_urls_reads_custom_comfy_assets_and_blobs():
         "http://asset/b.png",
         "http://blob/c.png",
     ]
+
+
+def test_offload_output_node_ids_detects_save_image_node():
+    result = {
+        "offload": {
+            "workflow": {
+                "8": {"class_type": "VAEDecode", "inputs": {}},
+                "46": {"class_type": "SaveImage", "inputs": {}},
+            }
+        }
+    }
+
+    assert sr._offload_output_node_ids(result) == ["46"]
+
+
+def test_publish_local_output_preview_sends_local_executed_event(monkeypatch):
+    import sys
+    import types
+
+    class FakeServer:
+        def __init__(self):
+            self.calls = []
+
+        def send_sync(self, event, data, sid=None):
+            self.calls.append((event, data, sid))
+
+    fake_server = FakeServer()
+    monkeypatch.setitem(
+        sys.modules,
+        "server",
+        types.SimpleNamespace(PromptServer=types.SimpleNamespace(instance=fake_server)),
+    )
+
+    sr._publish_local_output_preview(
+        ["46"],
+        [
+            {
+                "filename": "civitai_offload_abc.png",
+                "subfolder": "",
+                "type": "output",
+                "asset": {"id": "asset-1"},
+            }
+        ],
+        prompt_id="wf-1",
+        sid="browser-1",
+    )
+
+    assert fake_server.calls == [
+        (
+            "executed",
+            {
+                "node": "46",
+                "display_node": "46",
+                "output": {
+                    "images": [{"filename": "civitai_offload_abc.png", "subfolder": "", "type": "output"}]
+                },
+                "prompt_id": "wf-1",
+            },
+            "browser-1",
+        )
+    ]
+
+
+def test_publish_local_job_history_adds_completed_output_job(monkeypatch):
+    import sys
+    import threading
+    import types
+
+    class FakeQueue:
+        def __init__(self):
+            self.mutex = threading.RLock()
+            self.history = {}
+
+    class FakeServer:
+        def __init__(self):
+            self.prompt_queue = FakeQueue()
+            self.queue_updates = 0
+
+        def queue_updated(self):
+            self.queue_updates += 1
+
+    fake_server = FakeServer()
+    monkeypatch.setitem(
+        sys.modules,
+        "server",
+        types.SimpleNamespace(PromptServer=types.SimpleNamespace(instance=fake_server)),
+    )
+
+    sr._publish_local_job_history(
+        {"46": {"class_type": "SaveImage", "inputs": {}}},
+        ["46"],
+        [
+            {
+                "filename": "civitai_offload_abc.png",
+                "subfolder": "",
+                "type": "output",
+                "asset": {"id": "asset-1"},
+            }
+        ],
+        prompt_id="wf-1",
+        workflow_id="wf-1",
+    )
+
+    assert fake_server.queue_updates == 1
+    history = fake_server.prompt_queue.history["wf-1"]
+    assert history["prompt"][1] == "wf-1"
+    assert history["prompt"][4] == ["46"]
+    assert history["status"]["status_str"] == "success"
+    assert history["outputs"] == {
+        "46": {"images": [{"filename": "civitai_offload_abc.png", "subfolder": "", "type": "output"}]}
+    }
+
+
+def test_start_trace_tail_returns_none_without_trace_target():
+    assert sr._start_trace_tail(object(), {"steps": []}, sid=None) is None
+
+
+def test_start_trace_tail_waits_for_delayed_trace_url(monkeypatch):
+    from civitai_comfy_nodes import client as client_mod
+
+    calls = []
+
+    class FakeClient:
+        def __init__(self, config):
+            self.config = config
+
+        def get_workflow(self, workflow_id, wait=0):
+            calls.append((workflow_id, wait))
+            if len(calls) == 1:
+                return {"id": workflow_id, "status": "processing", "steps": [{"output": {}}]}
+            return {"id": workflow_id, "status": "processing", "steps": [{"output": {"traceUrl": "http://trace"}}]}
+
+    seen = {}
+
+    def fake_tail_trace_to_websocket(url, *, stop_event, sid=None, session=None):
+        seen["url"] = url
+        seen["sid"] = sid
+        seen["stopped"] = stop_event.is_set()
+        return trace_tail.TraceTailStats(bytes_in=10, frames=2, emitted=2)
+
+    monkeypatch.setattr(client_mod, "OrchestrationClient", FakeClient)
+    monkeypatch.setattr(trace_tail, "tail_trace_to_websocket", fake_tail_trace_to_websocket)
+
+    handle = sr._start_trace_tail(object(), {"id": "wf-1", "steps": [{"output": {}}]}, sid="browser-1")
+    assert handle is not None
+    handle.drain()
+
+    assert calls == [("wf-1", 5), ("wf-1", 5)]
+    assert seen == {"url": "http://trace", "sid": "browser-1", "stopped": False}
+    assert handle.summary() == {"bytes_in": 10, "frames": 2, "emitted": 2, "errors": 0}
+
+
+def test_start_trace_tail_keeps_polling_briefly_after_terminal_without_trace(monkeypatch):
+    from civitai_comfy_nodes import client as client_mod
+
+    calls = []
+
+    class FakeClient:
+        def __init__(self, config):
+            self.config = config
+
+        def get_workflow(self, workflow_id, wait=0):
+            calls.append((workflow_id, wait))
+            if len(calls) == 1:
+                return {"id": workflow_id, "status": "succeeded", "steps": [{"output": {}}]}
+            return {"id": workflow_id, "status": "succeeded", "steps": [{"output": {"traceUrl": "http://trace"}}]}
+
+    seen = {}
+
+    def fake_tail_trace_to_websocket(url, *, stop_event, sid=None, session=None):
+        seen["url"] = url
+        seen["sid"] = sid
+        return trace_tail.TraceTailStats(bytes_in=5, frames=1, emitted=1)
+
+    monkeypatch.setattr(sr, "TRACE_URL_POLL_DELAY_SECONDS", 0.0)
+    monkeypatch.setattr(client_mod, "OrchestrationClient", FakeClient)
+    monkeypatch.setattr(trace_tail, "tail_trace_to_websocket", fake_tail_trace_to_websocket)
+
+    handle = sr._start_trace_tail(object(), {"id": "wf-1", "steps": [{"output": {}}]}, sid="browser-1")
+    assert handle is not None
+    handle.drain()
+
+    assert calls == [("wf-1", 5), ("wf-1", 5)]
+    assert seen == {"url": "http://trace", "sid": "browser-1"}
+    assert handle.summary() == {"bytes_in": 5, "frames": 1, "emitted": 1, "errors": 0}

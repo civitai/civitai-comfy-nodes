@@ -3,6 +3,7 @@ Civitai sidebar can list the user's generations, and each node learns its expect
 No-op when imported outside ComfyUI (e.g. pytest)."""
 
 import asyncio
+import logging
 import os
 import threading
 import time
@@ -12,6 +13,8 @@ import requests
 
 from . import catalog
 from .errors import CivitaiAuthError, CivitaiNodeError
+
+_log = logging.getLogger("civitai_comfy_nodes.server_routes")
 
 try:
     from aiohttp import web
@@ -25,6 +28,8 @@ except Exception:
 # ── Generation gallery: flatten workflows → media items (pure; unit-tested without ComfyUI) ──────
 
 _BLOB_KINDS = {"image", "video", "audio", "model3d"}
+TRACE_URL_TERMINAL_GRACE_SECONDS = 10.0
+TRACE_URL_POLL_DELAY_SECONDS = 0.5
 
 
 def _walk_blobs(node, key=None):
@@ -169,19 +174,55 @@ def _import_blob(blob_id: str | None, url: str | None, kind: str) -> dict:
     return {"name": name, "subfolder": "", "type": "input"}
 
 
-def _download_url_to_input(url: str, kind: str = "image") -> dict:
-    import folder_paths  # ComfyUI runtime
-
+def _download_url_bytes(url: str) -> bytes:
     response = requests.get(url, timeout=300)
     if response.status_code >= 400:
         raise CivitaiNodeError(f"Asset download failed ({response.status_code})")
-    data = response.content
+    return response.content
+
+
+def _write_bytes_to_input(data: bytes, kind: str = "image") -> dict:
+    import folder_paths  # ComfyUI runtime
+
     safe = uuid.uuid4().hex[:16]
     name = f"civitai_offload_{safe}{_guess_ext(kind, data)}"
     path = os.path.join(folder_paths.get_input_directory(), name)
     with open(path, "wb") as handle:
         handle.write(data)
     return {"name": name, "subfolder": "", "type": "input"}
+
+
+def _write_bytes_to_output(data: bytes, kind: str = "image") -> dict:
+    import folder_paths  # ComfyUI runtime
+
+    safe = uuid.uuid4().hex[:16]
+    name = f"civitai_offload_{safe}{_guess_ext(kind, data)}"
+    path = os.path.join(folder_paths.get_output_directory(), name)
+    with open(path, "wb") as handle:
+        handle.write(data)
+    result = {"filename": name, "subfolder": "", "type": "output"}
+    asset = _register_output_asset(path, name)
+    if asset:
+        result["asset"] = asset
+    return result
+
+
+def _register_output_asset(path: str, name: str) -> dict | None:
+    try:
+        from app.assets.services.ingest import register_file_in_place  # ComfyUI runtime
+
+        result = register_file_in_place(abs_path=path, name=name, tags=["output"])
+        return {
+            "id": result.ref.id,
+            "name": result.ref.name,
+            "asset_hash": result.asset.hash,
+            "size": result.asset.size_bytes,
+            "mime_type": result.asset.mime_type,
+            "tags": result.tags,
+        }
+    except Exception:
+        _log.debug("Could not register offload output asset", exc_info=True)
+        return None
 
 
 def _workflow_asset_urls(workflow: dict) -> list[str]:
@@ -202,6 +243,116 @@ def _workflow_asset_urls(workflow: dict) -> list[str]:
             if url:
                 urls.append(url)
     return list(dict.fromkeys(urls))
+
+
+def _offload_output_node_ids(offload_result: dict) -> list[str]:
+    from . import offload
+
+    workflow = (offload_result.get("offload") or {}).get("workflow") or {}
+    output_ids = []
+    for node_id, node in workflow.items():
+        class_type = str((node or {}).get("class_type") or "")
+        if offload._is_output_node(class_type):  # keep output detection aligned with the builder
+            output_ids.append(str(node_id))
+    return sorted(output_ids, key=offload._node_sort_key)
+
+
+def _publish_local_output_preview(
+    output_nodes: list[str],
+    outputs: list[dict],
+    *,
+    prompt_id: str | None,
+    sid: str | None,
+) -> None:
+    if not output_nodes or not outputs:
+        return
+    try:
+        from server import PromptServer  # ComfyUI runtime
+    except Exception:
+        return
+
+    # The first offloaded output node gets the returned customComfy assets. This mirrors Comfy's
+    # SaveImage websocket shape, but uses local filenames created in this user's output directory.
+    node_id = output_nodes[0]
+    preview_outputs = _preview_output_items(outputs)
+    if not preview_outputs:
+        return
+    PromptServer.instance.send_sync(
+        "executed",
+        {
+            "node": node_id,
+            "display_node": node_id,
+            "output": {"images": preview_outputs},
+            "prompt_id": prompt_id,
+        },
+        sid,
+    )
+
+
+def _preview_output_items(outputs: list[dict]) -> list[dict]:
+    return [
+        {
+            "filename": item["filename"],
+            "subfolder": item.get("subfolder", ""),
+            "type": item.get("type", "output"),
+        }
+        for item in outputs
+        if item.get("filename")
+    ]
+
+
+def _publish_local_job_history(
+    prompt: dict,
+    output_nodes: list[str],
+    outputs: list[dict],
+    *,
+    prompt_id: str,
+    workflow_id: str | None,
+) -> None:
+    if not output_nodes or not outputs or not prompt_id:
+        return
+    try:
+        from server import PromptServer  # ComfyUI runtime
+    except Exception:
+        return
+
+    preview_outputs = _preview_output_items(outputs)
+    if not preview_outputs:
+        return
+
+    now_ms = int(time.time() * 1000)
+    node_id = output_nodes[0]
+    prompt_queue = getattr(PromptServer.instance, "prompt_queue", None)
+    if prompt_queue is None:
+        return
+
+    extra_data = {
+        "create_time": now_ms,
+        "extra_pnginfo": {
+            "workflow": {
+                "id": workflow_id or prompt_id,
+                "source": "civitai_offload",
+            }
+        },
+    }
+    history_item = {
+        "prompt": (0, prompt_id, prompt, extra_data, output_nodes),
+        "outputs": {node_id: {"images": preview_outputs}},
+        "status": {
+            "status_str": "success",
+            "completed": True,
+            "messages": [
+                ("execution_start", {"prompt_id": prompt_id, "timestamp": now_ms}),
+                ("execution_success", {"prompt_id": prompt_id, "timestamp": now_ms}),
+            ],
+        },
+    }
+    with prompt_queue.mutex:
+        prompt_queue.history[prompt_id] = history_item
+    try:
+        PromptServer.instance.queue_updated()
+    except Exception:
+        _log.debug("Could not notify Comfy queue update for offload history", exc_info=True)
 
 
 def _poll_workflow_to_terminal(client, workflow: dict, timeout_minutes: float) -> dict:
@@ -255,35 +406,55 @@ class _TraceTailHandle:
         self._stop_event.set()
         self._thread.join(timeout=grace)
 
+    def drain(self, grace: float = 10.0) -> None:
+        self._thread.join(timeout=grace)
+        if self._thread.is_alive():
+            self.stop(grace=1.0)
+
     def summary(self) -> dict | None:
         stats = self._box.get("stats")
         return stats.as_dict() if stats is not None else None
 
 
-def _start_trace_tail(client, workflow: dict, *, sid: str | None) -> _TraceTailHandle | None:
-    """Resolve the customComfy step's traceUrl (polling briefly if the submit response doesn't
-    carry it yet) and spawn a daemon thread that replays the binary trace onto the local
-    websocket. Returns None when no traceUrl ever appears (e.g. orchestration without tracing)."""
+def _start_trace_tail(config, workflow: dict, *, sid: str | None) -> _TraceTailHandle | None:
+    """Spawn a daemon thread that waits for the customComfy traceUrl and replays it locally."""
     from . import trace_tail
+    from .client import OrchestrationClient
 
     workflow_id = workflow.get("id") or workflow.get("workflowId")
     trace_url = _extract_trace_url(workflow)
-    attempts = 0
-    while not trace_url and workflow_id and attempts < 5:
-        attempts += 1
-        time.sleep(0.5)
-        try:
-            trace_url = _extract_trace_url(client.get_workflow(workflow_id))
-        except CivitaiNodeError:
-            break
-    if not trace_url:
+    if not trace_url and not workflow_id:
         return None
 
     stop_event = threading.Event()
     box: dict = {}
 
     def _run():
-        box["stats"] = trace_tail.tail_trace_to_websocket(trace_url, stop_event=stop_event, sid=sid)
+        resolved_url = trace_url
+        poll_client = OrchestrationClient(config)
+        terminal_seen_at = None
+        while not resolved_url and workflow_id and not stop_event.is_set():
+            try:
+                current = poll_client.get_workflow(workflow_id, wait=5)
+            except CivitaiNodeError:
+                if stop_event.wait(1.0):
+                    return
+                continue
+            resolved_url = _extract_trace_url(current)
+            if resolved_url:
+                break
+            status = str(current.get("status") or "").lower()
+            if status in {"succeeded", "failed", "expired", "canceled"}:
+                now = time.monotonic()
+                terminal_seen_at = terminal_seen_at or now
+                if now - terminal_seen_at >= TRACE_URL_TERMINAL_GRACE_SECONDS:
+                    return
+                if stop_event.wait(TRACE_URL_POLL_DELAY_SECONDS):
+                    return
+            else:
+                terminal_seen_at = None
+        if resolved_url and not stop_event.is_set():
+            box["stats"] = trace_tail.tail_trace_to_websocket(resolved_url, stop_event=stop_event, sid=sid)
 
     thread = threading.Thread(target=_run, name="civitai-trace-tail", daemon=True)
     thread.start()
@@ -319,13 +490,17 @@ def _offload_run(
     client = OrchestrationClient(config)
     workflow = client.submit_steps(build.steps, wait=wait, whatif=whatif)
 
-    tail = _start_trace_tail(client, workflow, sid=client_id) if do_tail else None
+    tail = _start_trace_tail(config, workflow, sid=client_id) if do_tail else None
     try:
         if wait_until_complete and not whatif:
             workflow = _poll_workflow_to_terminal(client, workflow, config.timeout_minutes)
-    finally:
+    except Exception:
         if tail is not None:
             tail.stop()
+        raise
+    else:
+        if tail is not None:
+            tail.drain()
 
     result = {"workflow": workflow, "offload": build.as_dict()}
     if tail is not None:
@@ -333,22 +508,56 @@ def _offload_run(
     return result
 
 
-def _run_local_tail(prompt: dict, offload_result: dict, comfy_base_url: str) -> dict | None:
+def _run_local_tail(prompt: dict, offload_result: dict, comfy_base_url: str, *, client_id: str | None = None) -> dict | None:
     from . import offload
 
     assets = _workflow_asset_urls(offload_result["workflow"])
     if not assets:
         raise CivitaiNodeError("Civitai workflow completed but returned no downloadable customComfy assets")
-    imported = _download_url_to_input(assets[0], kind="image")
+    data = _download_url_bytes(assets[0])
+    local_output = _write_bytes_to_output(data, kind="image")
+    output_nodes = _offload_output_node_ids(offload_result)
+    workflow_id = (
+        (offload_result.get("workflow") or {}).get("id")
+        or (offload_result.get("workflow") or {}).get("workflowId")
+        or f"civitai-offload-{uuid.uuid4()}"
+    )
+    _publish_local_output_preview(
+        output_nodes,
+        [local_output],
+        prompt_id=workflow_id,
+        sid=client_id,
+    )
+    _publish_local_job_history(
+        prompt,
+        output_nodes,
+        [local_output],
+        prompt_id=workflow_id,
+        workflow_id=workflow_id,
+    )
     continuation = offload.build_local_continuation_prompt(
         prompt,
         remote_node_ids=offload_result["offload"].get("included_node_ids") or [],
-        imported_image_name=imported["name"],
+        imported_image_name="civitai_offload_result.png",
     )
     if continuation is None:
-        return {"imported": imported, "continuation": None, "queue": None}
+        return {
+            "imported": None,
+            "output": local_output,
+            "outputNodeIds": output_nodes,
+            "continuation": None,
+            "queue": None,
+        }
+    imported = _write_bytes_to_input(data, kind="image")
+    continuation.prompt[continuation.bridge_node_id]["inputs"]["image"] = imported["name"]
     queue = _queue_local_prompt(comfy_base_url, continuation.prompt)
-    return {"imported": imported, "continuation": continuation.as_dict(), "queue": queue}
+    return {
+        "imported": imported,
+        "output": local_output,
+        "outputNodeIds": output_nodes,
+        "continuation": continuation.as_dict(),
+        "queue": queue,
+    }
 
 
 def node_ecosystem_map() -> dict:
@@ -526,7 +735,7 @@ if _server is not None:
             if run_local_tail and not whatif:
                 result["local"] = await loop.run_in_executor(
                     None,
-                    lambda: _run_local_tail(prompt, result, comfy_base_url),
+                    lambda: _run_local_tail(prompt, result, comfy_base_url, client_id=client_id),
                 )
         except CivitaiAuthError:
             return web.json_response({"error": "auth_required"}, status=401)

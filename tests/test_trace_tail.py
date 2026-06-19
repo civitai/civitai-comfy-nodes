@@ -96,6 +96,38 @@ def test_emit_frame_forwards_only_allowlisted_text_events():
     assert server.calls == [("progress", {"value": 3, "max": 10}, "sid1")]
 
 
+def test_emit_frame_strips_remote_file_refs_from_executed_events():
+    server = _RecordingServer()
+    payload = {
+        "type": "executed",
+        "data": {
+            "node": "46",
+            "output": {
+                "images": [
+                    {"filename": "ComfyUI_00010_.png", "subfolder": "", "type": "output"},
+                ],
+                "text": ["done"],
+            },
+        },
+    }
+
+    assert trace_tail.emit_frame(
+        server,
+        1,
+        trace_tail.OPCODE_TEXT,
+        json.dumps(payload).encode("utf-8"),
+        "sid1",
+    ) is True
+
+    assert server.calls == [
+        (
+            "executed",
+            {"node": "46", "output": {"text": ["done"]}},
+            "sid1",
+        )
+    ]
+
+
 def test_emit_frame_binary_prepends_png_format_header():
     server = _RecordingServer()
     image = b"\x89PNG\r\n\x1a\n rest of png"

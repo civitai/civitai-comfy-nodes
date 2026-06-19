@@ -4,6 +4,16 @@ import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 
 let stylesInjected = false;
+let civitaiRunMode = false;
+let civitaiRunInProgress = false;
+let activeOffloadPromise = null;
+
+const NATIVE_RUN_LABELS = new Set(["Run", "Run (On Change)", "Run (Instant)"]);
+const CIVITAI_MENU_LABEL = "Run in Civitai";
+const CIVITAI_BUTTON_LABEL = "Run on Civitai";
+const SUBMITTING_LABEL = "Submitting...";
+const QUEUE_PROMPT_PATCH = "__civitaiOffloadQueuePrompt";
+const MAX_SAFE_SEED = Number.MAX_SAFE_INTEGER;
 
 function injectStyles() {
   if (stylesInjected) return;
@@ -22,7 +32,6 @@ function injectStyles() {
     }
     .cvo-run:hover { border-color: #2563eb; }
     .cvo-run[disabled] { opacity: .6; cursor: progress; }
-    .cvo-run-inline { height: 32px; margin-left: 6px; }
     .cvo-run-menu {
       width: 100%;
       text-align: left;
@@ -40,78 +49,247 @@ function toast(severity, summary, detail) {
   }
 }
 
+async function currentPrompt() {
+  if (!app.graphToPrompt) throw new Error("This ComfyUI frontend does not expose graphToPrompt()");
+  const graph = await app.graphToPrompt();
+  return promptPayloadFromGraph(graph);
+}
+
 function selectedNodeIds() {
   return Object.values(app.canvas?.selected_nodes || {}).map((node) => String(node.id));
 }
 
-async function currentPrompt() {
-  if (!app.graphToPrompt) throw new Error("This ComfyUI frontend does not expose graphToPrompt()");
-  const graph = await app.graphToPrompt();
+function promptPayloadFromGraph(graph) {
   const prompt = graph?.output || graph?.prompt || graph;
-  if (!prompt || typeof prompt !== "object") throw new Error("Could not serialize the current workflow as an API prompt");
+  if (!looksLikeApiPrompt(prompt)) throw new Error("Could not serialize the current workflow as an API prompt");
   return { prompt, workflow: graph?.workflow || app.graph?.serialize?.() };
 }
 
-async function runInCivitai(button) {
-  button.disabled = true;
-  const oldText = button.textContent;
-  button.textContent = "Submitting...";
-  try {
-    const payload = await currentPrompt();
+function randomSeed() {
+  const cryptoApi = globalThis.crypto;
+  if (cryptoApi?.getRandomValues) {
+    const values = new Uint32Array(2);
+    cryptoApi.getRandomValues(values);
+    return ((values[0] & 0x1fffff) * 0x100000000 + values[1]) % MAX_SAFE_SEED;
+  }
+  return Math.floor(Math.random() * MAX_SAFE_SEED);
+}
+
+function serializedWorkflowNodes(workflow) {
+  if (!workflow || typeof workflow !== "object") return [];
+  if (Array.isArray(workflow.nodes)) return workflow.nodes;
+  if (workflow.workflow && typeof workflow.workflow === "object") return serializedWorkflowNodes(workflow.workflow);
+  return [];
+}
+
+function syncGraphSeed(nodeId, seed) {
+  const graphNode = app.graph?.getNodeById?.(Number(nodeId)) || app.graph?.getNodeById?.(nodeId);
+  const widget = graphNode?.widgets?.find((item) => item?.name === "seed") || graphNode?.widgets?.[0];
+  if (widget && typeof widget.value !== "undefined") widget.value = seed;
+}
+
+function applySeedControls(payload) {
+  const prompt = payload?.prompt;
+  if (!looksLikeApiPrompt(prompt)) return payload;
+  const nodesById = new Map(serializedWorkflowNodes(payload.workflow).map((node) => [String(node.id), node]));
+  for (const [nodeId, node] of Object.entries(prompt)) {
+    const inputs = node?.inputs;
+    if (!inputs || !Object.prototype.hasOwnProperty.call(inputs, "seed")) continue;
+    const workflowNode = nodesById.get(String(nodeId));
+    const widgets = workflowNode?.widgets_values;
+    if (!Array.isArray(widgets) || widgets[1] !== "randomize") continue;
+    const seed = randomSeed();
+    inputs.seed = seed;
+    widgets[0] = seed;
+    syncGraphSeed(nodeId, seed);
+  }
+  return payload;
+}
+
+function looksLikeApiPrompt(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  return Object.values(value).some(
+    (node) => node && typeof node === "object" && typeof node.class_type === "string" && node.inputs && typeof node.inputs === "object"
+  );
+}
+
+async function submitOffload(payload) {
+  payload.wait = 5;
+  payload.runLocalTail = true;
+  // Replay the remote run's /ws frames (progress + previews) onto this tab's canvas.
+  payload.liveProgress = true;
+  payload.clientId = api.clientId;
+  const res = await fetch("/civitai/offload/run", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (res.status === 401 || data.error === "auth_required") {
+    throw new Error("Connect Civitai OAuth or save an API key first");
+  }
+  if (!res.ok || data.error) throw new Error(data.error || `request failed (${res.status})`);
+  return data;
+}
+
+function offloadQueueResult(data, number) {
+  const id =
+    data?.local?.queue?.prompt_id ||
+    data?.workflow?.id ||
+    data?.workflow?.workflowId ||
+    `civitai-offload-${Date.now()}`;
+  return { prompt_id: String(id), number: number || 0, node_errors: {} };
+}
+
+async function runInCivitai(button, graph = null, { throwOnError = false } = {}) {
+  if (activeOffloadPromise) return activeOffloadPromise;
+  civitaiRunInProgress = true;
+  const queueButton = button || findQueueButton();
+  const oldText = queueButton ? normalizedText(queueButton) : "";
+  if (queueButton) {
+    queueButton.disabled = true;
+    setButtonLabel(queueButton, SUBMITTING_LABEL);
+  }
+  activeOffloadPromise = (async () => {
+    const payload = graph ? promptPayloadFromGraph(graph) : await currentPrompt();
     payload.selectedNodeIds = selectedNodeIds();
-    payload.wait = 5;
-    payload.runLocalTail = true;
-    // Replay the remote run's /ws frames (progress + previews) onto this tab's canvas.
-    payload.liveProgress = true;
-    payload.clientId = api.clientId;
-    const res = await fetch("/civitai/offload/run", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if (res.status === 401 || data.error === "auth_required") {
-      throw new Error("Connect Civitai OAuth or save an API key first");
-    }
-    if (!res.ok || data.error) throw new Error(data.error || `request failed (${res.status})`);
+    return submitOffload(applySeedControls(payload));
+  })();
+  try {
+    const data = await activeOffloadPromise;
     const id = data.workflow?.id || data.workflow?.workflowId || "submitted";
     const local = data.local?.queue?.prompt_id ? ` Local continuation ${data.local.queue.prompt_id} queued.` : "";
     const warnings = data.offload?.warnings?.length ? ` ${data.offload.warnings.join(" ")}` : "";
     toast("success", "Submitted to Civitai", `${id}.${local}${warnings}`);
+    return data;
   } catch (e) {
     toast("error", "Civitai offload failed", String(e.message || e));
+    if (throwOnError) throw e;
+    return null;
   } finally {
-    button.disabled = false;
-    button.textContent = oldText;
+    if (queueButton) {
+      queueButton.disabled = false;
+      setButtonLabel(queueButton, civitaiRunMode ? CIVITAI_BUTTON_LABEL : oldText);
+    }
+    civitaiRunInProgress = false;
+    activeOffloadPromise = null;
   }
 }
 
 function findQueueButton() {
-  const byId = document.querySelector(
-    '#queue-button, .comfyui-button-queue, [data-testid="queue-button"]'
-  );
-  if (byId) return byId;
+  const direct = [...document.querySelectorAll('[data-testid="queue-button"], .comfyui-button-queue, #queue-button')];
+  const visible = direct.find(isVisible);
+  if (visible) return visible;
+  if (direct[0]) return direct[0];
   const buttons = [...document.querySelectorAll("button")];
-  return buttons.find((button) => /queue|run/i.test(button.textContent || ""));
+  return buttons.find(
+    (button) =>
+      isVisible(button) && (NATIVE_RUN_LABELS.has(normalizedText(button)) || normalizedText(button) === CIVITAI_BUTTON_LABEL)
+  );
 }
 
-function installRunButton() {
-  if (document.querySelector(".cvo-run-inline")) return true;
-  const queue = findQueueButton();
-  if (!queue || !queue.parentElement) return false;
-  const button = document.createElement("button");
-  button.className = "cvo-run cvo-run-inline";
-  button.type = "button";
-  button.title = "Submit this workflow through Civitai customComfy offload";
-  button.textContent = "Run in Civitai";
-  button.addEventListener("click", () => runInCivitai(button));
-  const group = queue.closest(".queue-button-group") || queue.parentElement;
-  group.insertAdjacentElement("afterend", button);
-  return true;
+function isVisible(el) {
+  return !!(el && (el.offsetParent || el.getClientRects?.().length));
 }
 
 function normalizedText(el) {
   return (el.textContent || "").replace(/\s+/g, " ").trim();
+}
+
+function findButtonLabelTextNode(button) {
+  const walker = document.createTreeWalker(button, NodeFilter.SHOW_TEXT);
+  let fallback = null;
+  while (walker.nextNode()) {
+    const node = walker.currentNode;
+    const text = (node.nodeValue || "").replace(/\s+/g, " ").trim();
+    if (!text) continue;
+    if (
+      NATIVE_RUN_LABELS.has(text) ||
+      text === CIVITAI_MENU_LABEL ||
+      text === CIVITAI_BUTTON_LABEL ||
+      text === SUBMITTING_LABEL
+    ) {
+      return node;
+    }
+    fallback ||= node;
+  }
+  return fallback;
+}
+
+function setButtonLabel(button, label) {
+  if (!button) return;
+  const textNode = findButtonLabelTextNode(button);
+  if (textNode) {
+    if (normalizedText({ textContent: textNode.nodeValue }) === label) return;
+    const hasLeadingSpace = /^\s/.test(textNode.nodeValue || "");
+    const hasTrailingSpace = /\s$/.test(textNode.nodeValue || "");
+    textNode.nodeValue = `${hasLeadingSpace ? " " : ""}${label}${hasTrailingSpace ? " " : ""}`;
+  } else {
+    button.appendChild(document.createTextNode(label));
+  }
+}
+
+function setCivitaiRunMode(enabled) {
+  civitaiRunMode = enabled;
+  const queue = findQueueButton();
+  if (queue) {
+    queue.dataset.civitaiRunMode = enabled ? "true" : "false";
+    if (enabled) setButtonLabel(queue, CIVITAI_BUTTON_LABEL);
+  }
+  updateOpenMenuState();
+}
+
+function buttonFromEvent(event) {
+  const target = event.target;
+  return target instanceof Element ? target.closest("button") : null;
+}
+
+function closeRunMenu() {
+  document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
+}
+
+function updateOpenMenuState() {
+  const menu = findOpenRunMenu();
+  if (!menu) return;
+  const civitaiItem = menu.querySelector(".cvo-run-menu");
+  if (!civitaiItem) return;
+  civitaiItem.setAttribute("aria-selected", civitaiRunMode ? "true" : "false");
+  civitaiItem.classList.toggle("p-highlight", civitaiRunMode);
+  civitaiItem.classList.toggle("p-focus", civitaiRunMode);
+}
+
+function syncRunModeUi() {
+  installDropdownItem();
+  const queue = findQueueButton();
+  if (queue) queue.dataset.civitaiRunMode = civitaiRunMode ? "true" : "false";
+  if (civitaiRunMode && !civitaiRunInProgress) setButtonLabel(queue, CIVITAI_BUTTON_LABEL);
+}
+
+function installQueuePromptOverride() {
+  if (api[QUEUE_PROMPT_PATCH] || typeof api.queuePrompt !== "function") return;
+  const originalQueuePrompt = api.queuePrompt.bind(api);
+  api[QUEUE_PROMPT_PATCH] = originalQueuePrompt;
+  api.queuePrompt = async function civitaiAwareQueuePrompt(number, graph, options) {
+    if (!civitaiRunMode) return originalQueuePrompt(number, graph, options);
+    const data = await runInCivitai(findQueueButton(), graph, { throwOnError: true });
+    return offloadQueueResult(data, number);
+  };
+}
+
+function isQueueButtonClick(button) {
+  if (!button) return false;
+  if (button.dataset.civitaiRunMode === "true") return true;
+  if (normalizedText(button) === CIVITAI_BUTTON_LABEL) return true;
+  return button.matches?.('#queue-button, .comfyui-button-queue, [data-testid="queue-button"]') || false;
+}
+
+function commitActiveWidgetValue() {
+  const active = document.activeElement;
+  if (!(active instanceof HTMLElement)) return;
+  if (!["INPUT", "TEXTAREA", "SELECT"].includes(active.tagName)) return;
+  active.dispatchEvent(new Event("input", { bubbles: true }));
+  active.dispatchEvent(new Event("change", { bubbles: true }));
+  active.blur();
 }
 
 function findOpenRunMenu() {
@@ -156,9 +334,11 @@ function installDropdownItem() {
   button.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    runInCivitai(button);
+    setCivitaiRunMode(true);
+    closeRunMenu();
   });
   menu.appendChild(button);
+  updateOpenMenuState();
   return true;
 }
 
@@ -166,14 +346,33 @@ app.registerExtension({
   name: "civitai.offload",
   async setup() {
     injectStyles();
-    let tries = 0;
-    const timer = setInterval(() => {
-      tries += 1;
-      if (installRunButton() || tries > 40) clearInterval(timer);
-    }, 500);
-    const observer = new MutationObserver(() => installDropdownItem());
+    installQueuePromptOverride();
+    const observer = new MutationObserver(() => syncRunModeUi());
     observer.observe(document.body, { childList: true, subtree: true });
-    document.addEventListener("click", () => setTimeout(installDropdownItem, 0), true);
+    document.addEventListener(
+      "click",
+      (event) => {
+        const button = buttonFromEvent(event);
+        if (!button) {
+          setTimeout(syncRunModeUi, 0);
+          return;
+        }
+        const text = normalizedText(button);
+        if (button.classList.contains("cvo-run-menu")) return;
+        if (civitaiRunMode && isQueueButtonClick(button)) {
+          commitActiveWidgetValue();
+          setTimeout(syncRunModeUi, 0);
+          return;
+        }
+        if (NATIVE_RUN_LABELS.has(text)) {
+          setCivitaiRunMode(false);
+          setTimeout(syncRunModeUi, 0);
+          return;
+        }
+        setTimeout(syncRunModeUi, 0);
+      },
+      true
+    );
   },
   nodeCreated(node) {
     if (node.comfyClass === "CivitaiOffloadStart") node.color = "#1d4ed8";

@@ -19,6 +19,7 @@ Everything here is best-effort: any network/parse/emit error is logged and swall
 must never break the offload it observes.
 """
 
+import copy
 import json
 import logging
 import struct
@@ -53,6 +54,8 @@ FORWARDED_EVENTS = frozenset(
         "logs",
     }
 )
+
+REMOTE_FILE_TYPES = {"input", "output", "temp"}
 
 
 @dataclass
@@ -103,6 +106,54 @@ def _load_comfy_server():
     return PromptServer.instance, preview_event
 
 
+def _strip_remote_file_refs(value):
+    if isinstance(value, dict):
+        if isinstance(value.get("filename"), str) and value.get("type") in REMOTE_FILE_TYPES:
+            return None
+        cleaned = {}
+        for key, child in value.items():
+            stripped = _strip_remote_file_refs(child)
+            if stripped is None:
+                continue
+            if stripped == [] or stripped == {}:
+                continue
+            cleaned[key] = stripped
+        return cleaned
+    if isinstance(value, list):
+        cleaned = []
+        for child in value:
+            stripped = _strip_remote_file_refs(child)
+            if stripped is None:
+                continue
+            if stripped == [] or stripped == {}:
+                continue
+            cleaned.append(stripped)
+        return cleaned
+    return value
+
+
+def sanitize_text_message(message: dict) -> dict:
+    """Drop remote Comfy file references before replaying events into the local UI.
+
+    The worker may emit `executed` output refs such as `ComfyUI_00010_.png`. Those filenames live
+    in the worker's output directory, but the local frontend resolves them through the user's local
+    `/view` route. If the user has an old local file with the same name, the canvas shows that stale
+    image instead of the offloaded result.
+    """
+    if message.get("type") != "executed":
+        return message
+    data = message.get("data")
+    if not isinstance(data, dict):
+        return message
+    output = data.get("output")
+    if not isinstance(output, dict):
+        return message
+    sanitized = copy.deepcopy(message)
+    sanitized_data = sanitized.get("data") or {}
+    sanitized_data["output"] = _strip_remote_file_refs(sanitized_data.get("output") or {}) or {}
+    return sanitized
+
+
 def emit_frame(server, preview_event: int, opcode: int, payload: bytes, sid: str | None) -> bool:
     """Replay one trace frame onto the local websocket. Returns True if a message was sent."""
     if opcode == OPCODE_TEXT:
@@ -115,6 +166,7 @@ def emit_frame(server, preview_event: int, opcode: int, payload: bytes, sid: str
         event = message.get("type")
         if event not in FORWARDED_EVENTS:
             return False
+        message = sanitize_text_message(message)
         server.send_sync(event, message.get("data"), sid)
         return True
     if opcode == OPCODE_BINARY:
