@@ -477,6 +477,7 @@ def _offload_run(
     from .config import resolve_config
 
     config = resolve_config(interactive=False)
+    client = OrchestrationClient(config)
     # Only record + tail a trace when we're actually going to wait out the run; a fire-and-forget
     # submit has nobody to replay frames to.
     do_tail = live_progress and wait_until_complete and not whatif
@@ -486,8 +487,8 @@ def _offload_run(
         workflow=workflow,
         token=config.token,
         trace="binary" if do_tail else None,
+        upload_blob_file=client.upload_blob_file,
     )
-    client = OrchestrationClient(config)
     workflow = client.submit_steps(build.steps, wait=wait, whatif=whatif)
 
     tail = _start_trace_tail(config, workflow, sid=client_id) if do_tail else None

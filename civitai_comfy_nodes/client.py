@@ -1,5 +1,7 @@
 import random
 import time
+from pathlib import Path
+from urllib import parse
 
 import requests
 
@@ -145,3 +147,33 @@ class OrchestrationClient:
         except ValueError:
             blob = {}
         return blob.get("url") or upload_url.split("?")[0]
+
+    def upload_blob_file(self, path: str | Path, content_type: str) -> dict:
+        """Upload a local file through the consumer blob endpoint and return the blob metadata."""
+        path = Path(path)
+        size = path.stat().st_size
+        with path.open("rb") as handle:
+            response = self._request(
+                "POST",
+                "/v2/consumer/blobs",
+                data=handle,
+                headers={"Content-Type": content_type, "Content-Length": str(size)},
+                timeout=300,
+            )
+        try:
+            blob = response.json()
+        except ValueError as e:
+            raise CivitaiNodeError("Blob upload did not return JSON metadata") from e
+        if not isinstance(blob, dict) or not (blob.get("id") or blob.get("url")):
+            raise CivitaiNodeError("Blob upload did not return an id or URL")
+        return blob
+
+    @staticmethod
+    def blob_air(blob: dict) -> str:
+        blob_id = blob.get("id")
+        if not blob_id and blob.get("url"):
+            path = parse.urlparse(blob["url"]).path.rstrip("/")
+            blob_id = parse.unquote(path.rsplit("/", 1)[-1])
+        if not blob_id:
+            raise CivitaiNodeError("Blob metadata does not contain a usable id")
+        return f"urn:air:other:other:orchestrator:blob@{blob_id}"

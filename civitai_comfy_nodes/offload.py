@@ -9,14 +9,15 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import mimetypes
 import os
 import re
 import subprocess
 import sys
 import zlib
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib import parse
 
 import requests
@@ -50,6 +51,8 @@ OUTPUT_NODE_CLASSES = {
     "SaveVideo",
     "SaveWEBM",
 }
+LOAD_IMAGE_CLASSES = {"LoadImage", "LoadImageMask", "LoadImageOutput"}
+UPLOAD_IMAGE_CONTENT_TYPES = {"image/png", "image/jpeg", "image/webp"}
 
 MODEL_WIDGET_FOLDERS = {
     "ckpt_name": ("checkpoints",),
@@ -102,6 +105,22 @@ class InstalledNodepack:
 
 
 @dataclass
+class UploadedInputBlob:
+    node_id: str
+    input_name: str
+    original_name: str
+    path: str
+    content_type: str
+    air: str
+    blob_id: str | None = None
+    url: str | None = None
+    size: int | None = None
+
+    def as_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass
 class OffloadBuildResult:
     steps: list[dict[str, Any]]
     workflow: dict[str, Any]
@@ -111,6 +130,7 @@ class OffloadBuildResult:
     included_node_ids: list[str]
     model_resources: list[dict[str, Any]]
     nodepack_resources: list[dict[str, Any]]
+    input_blobs: list[dict[str, Any]] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -1111,6 +1131,124 @@ def replace_local_models_with_airs(
     return rewritten, resolved_models, warnings
 
 
+def _is_remote_or_air_image_value(value: str) -> bool:
+    cleaned = value.strip()
+    return bool(
+        AIR_RE.match(cleaned)
+        or cleaned.startswith("http://")
+        or cleaned.startswith("https://")
+        or cleaned.startswith("data:")
+    )
+
+
+def _resolve_comfy_input_path(name: str) -> Path:
+    try:
+        import folder_paths  # type: ignore[import-not-found]
+    except Exception as e:
+        raise CivitaiNodeError(
+            f"Cannot resolve local LoadImage input '{name}' outside a running ComfyUI environment"
+        ) from e
+
+    try:
+        exists = folder_paths.exists_annotated_filepath(name)
+        path = folder_paths.get_annotated_filepath(name)
+    except Exception as e:
+        raise CivitaiNodeError(f"Could not resolve local LoadImage input '{name}': {e}") from e
+
+    if not exists:
+        raise CivitaiNodeError(f"Local LoadImage input '{name}' does not exist in ComfyUI input storage")
+    return Path(path)
+
+
+def _image_content_type(path: str | os.PathLike[str]) -> str:
+    path = str(path)
+    try:
+        with open(path, "rb") as handle:
+            header = handle.read(16)
+    except OSError as e:
+        raise CivitaiNodeError(f"Could not read local LoadImage input '{path}': {e}") from e
+
+    if header.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if header.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if header[:4] == b"RIFF" and header[8:12] == b"WEBP":
+        return "image/webp"
+
+    guessed = mimetypes.guess_type(path)[0]
+    if guessed in UPLOAD_IMAGE_CONTENT_TYPES:
+        return guessed
+    raise CivitaiNodeError(
+        f"Local LoadImage input '{path}' has unsupported content type '{guessed or 'unknown'}'. "
+        "Civitai blob upload supports PNG, JPEG, and WebP images for offload inputs."
+    )
+
+
+def _blob_air_from_upload(blob: dict[str, Any]) -> str:
+    blob_id = blob.get("id")
+    if not blob_id and blob.get("url"):
+        parsed = parse.urlparse(str(blob["url"]))
+        blob_id = parse.unquote(parsed.path.rstrip("/").rsplit("/", 1)[-1])
+    if not blob_id:
+        raise CivitaiNodeError("Blob upload response did not include a blob id or usable URL")
+    return f"urn:air:other:other:orchestrator:blob@{blob_id}"
+
+
+def replace_local_load_images_with_blob_airs(
+    workflow: dict[str, Any],
+    *,
+    resources: set[str],
+    upload_blob_file: Callable[[Path, str], dict[str, Any]] | None,
+    path_resolver: Callable[[str], str | os.PathLike[str]] | None = None,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Upload local LoadImage inputs and replace widget filenames with blob AIRs."""
+    rewritten = copy.deepcopy(workflow)
+    if upload_blob_file is None:
+        return rewritten, []
+
+    resolver = path_resolver or _resolve_comfy_input_path
+    uploaded: list[UploadedInputBlob] = []
+    cache: dict[Path, dict[str, Any]] = {}
+
+    for node_id, node in rewritten.items():
+        if node.get("class_type") not in LOAD_IMAGE_CLASSES:
+            continue
+        inputs = _node_inputs(node)
+        value = inputs.get("image")
+        if not isinstance(value, str) or not value.strip() or _is_remote_or_air_image_value(value):
+            continue
+
+        path = Path(resolver(value)).expanduser().resolve()
+        if not path.exists():
+            raise CivitaiNodeError(f"Local LoadImage input '{value}' resolved to missing file '{path}'")
+        if not path.is_file():
+            raise CivitaiNodeError(f"Local LoadImage input '{value}' resolved to non-file path '{path}'")
+
+        content_type = _image_content_type(path)
+        blob = cache.get(path)
+        if blob is None:
+            blob = upload_blob_file(path, content_type)
+            cache[path] = blob
+        air = _blob_air_from_upload(blob)
+        inputs["image"] = air
+        resources.add(air)
+        uploaded.append(
+            UploadedInputBlob(
+                node_id=str(node_id),
+                input_name="image",
+                original_name=value,
+                path=str(path),
+                content_type=content_type,
+                air=air,
+                blob_id=blob.get("id"),
+                url=blob.get("url"),
+                size=path.stat().st_size,
+            )
+        )
+
+    return rewritten, [item.as_dict() for item in uploaded]
+
+
 def build_custom_comfy_offload(
     prompt: dict[str, Any],
     *,
@@ -1122,6 +1260,8 @@ def build_custom_comfy_offload(
     session: requests.Session | None = None,
     civitai_base_url: str | None = None,
     trace: str | None = None,
+    upload_blob_file: Callable[[Path, str], dict[str, Any]] | None = None,
+    input_path_resolver: Callable[[str], str | os.PathLike[str]] | None = None,
 ) -> OffloadBuildResult:
     normalized = _normalize_prompt(prompt)
     if not normalized:
@@ -1158,6 +1298,12 @@ def build_custom_comfy_offload(
         session=session,
         civitai_base_url=civitai_base_url,
     )
+    rewritten, input_blobs = replace_local_load_images_with_blob_airs(
+        rewritten,
+        resources=resources,
+        upload_blob_file=upload_blob_file,
+        path_resolver=input_path_resolver,
+    )
 
     nodepacks = nodepacks if nodepacks is not None else scan_installed_nodepacks()
     used_nodepack_folders = _workflow_nodepack_folders(rewritten)
@@ -1188,4 +1334,5 @@ def build_custom_comfy_offload(
         included_node_ids=sorted(included, key=_node_sort_key),
         model_resources=resolved_models,
         nodepack_resources=nodepack_resources,
+        input_blobs=input_blobs,
     )

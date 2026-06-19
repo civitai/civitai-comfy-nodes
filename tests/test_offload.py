@@ -139,6 +139,86 @@ def test_build_custom_comfy_offload_rewrites_local_models_and_adds_nodepacks(tmp
     ]
 
 
+def test_build_custom_comfy_offload_uploads_load_image_inputs_as_blob_airs(tmp_path):
+    image = tmp_path / "fried-duck.png"
+    image.write_bytes(b"\x89PNG\r\n\x1a\nfake-png")
+    uploads = []
+
+    def upload(path, content_type):
+        uploads.append((path, content_type))
+        return {"id": "abc123.png", "url": "http://orch/v2/consumer/blobs/abc123.png"}
+
+    prompt = {
+        "1": {"class_type": "LoadImage", "inputs": {"image": "fried-duck.png"}},
+        "2": {"class_type": "SaveImage", "inputs": {"images": ["1", 0]}},
+    }
+
+    built = offload.build_custom_comfy_offload(
+        prompt,
+        model_records=[],
+        nodepacks=[],
+        upload_blob_file=upload,
+        input_path_resolver=lambda name: tmp_path / name,
+    )
+
+    air = "urn:air:other:other:orchestrator:blob@abc123.png"
+    assert uploads == [(image.resolve(), "image/png")]
+    assert built.workflow["1"]["inputs"]["image"] == air
+    assert built.steps[0]["input"]["workflow"]["1"]["inputs"]["image"] == air
+    assert built.steps[0]["input"]["resources"] == [air]
+    assert built.input_blobs[0]["original_name"] == "fried-duck.png"
+    assert built.input_blobs[0]["air"] == air
+
+
+def test_build_custom_comfy_offload_uploads_duplicate_load_images_once(tmp_path):
+    image = tmp_path / "source.png"
+    image.write_bytes(b"\x89PNG\r\n\x1a\nfake-png")
+    calls = []
+
+    def upload(path, content_type):
+        calls.append((path, content_type))
+        return {"id": "dup.png"}
+
+    prompt = {
+        "1": {"class_type": "LoadImage", "inputs": {"image": "source.png"}},
+        "2": {"class_type": "LoadImageMask", "inputs": {"image": "source.png", "channel": "alpha"}},
+        "3": {"class_type": "SaveImage", "inputs": {"images": ["1", 0]}},
+    }
+
+    built = offload.build_custom_comfy_offload(
+        prompt,
+        model_records=[],
+        nodepacks=[],
+        upload_blob_file=upload,
+        input_path_resolver=lambda name: tmp_path / name,
+    )
+
+    air = "urn:air:other:other:orchestrator:blob@dup.png"
+    assert calls == [(image.resolve(), "image/png")]
+    assert built.workflow["1"]["inputs"]["image"] == air
+    assert built.workflow["2"]["inputs"]["image"] == air
+    assert built.resources == [air]
+
+
+def test_build_custom_comfy_offload_keeps_existing_load_image_air():
+    air = "urn:air:other:other:orchestrator:blob@already.png"
+    prompt = {
+        "1": {"class_type": "LoadImage", "inputs": {"image": air}},
+        "2": {"class_type": "SaveImage", "inputs": {"images": ["1", 0]}},
+    }
+
+    built = offload.build_custom_comfy_offload(
+        prompt,
+        model_records=[],
+        nodepacks=[],
+        upload_blob_file=lambda _path, _content_type: (_ for _ in ()).throw(AssertionError("should not upload")),
+    )
+
+    assert built.workflow["1"]["inputs"]["image"] == air
+    assert built.resources == [air]
+    assert built.input_blobs == []
+
+
 def test_build_custom_comfy_offload_only_adds_used_nodepacks(monkeypatch):
     class UsedNode:
         RELATIVE_PYTHON_MODULE = "custom_nodes.rgthree-comfy.nodes"
