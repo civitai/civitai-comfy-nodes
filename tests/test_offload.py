@@ -219,6 +219,120 @@ def test_build_custom_comfy_offload_keeps_existing_load_image_air():
     assert built.input_blobs == []
 
 
+def test_build_custom_comfy_offload_uploads_audio_inputs_as_blob_airs(tmp_path):
+    audio = tmp_path / "voice.mp3"
+    audio.write_bytes(b"ID3\x04\x00\x00\x00\x00\x00\x00fake-audio")
+    uploads = []
+
+    def upload(path, content_type):
+        uploads.append((path, content_type))
+        return {"id": "voice.mp3"}
+
+    prompt = {
+        "1": {"class_type": "LoadAudio", "inputs": {"audio": "voice.mp3"}},
+        "2": {"class_type": "SaveAudioMP3", "inputs": {"filename_prefix": "audio-test", "audio": ["1", 0]}},
+    }
+
+    built = offload.build_custom_comfy_offload(
+        prompt,
+        model_records=[],
+        nodepacks=[],
+        upload_blob_file=upload,
+        input_path_resolver=lambda name: tmp_path / name,
+    )
+
+    air = "urn:air:other:other:orchestrator:blob@voice.mp3"
+    assert uploads == [(audio.resolve(), "audio/mpeg")]
+    assert built.workflow["1"]["inputs"]["audio"] == air
+    assert built.resources == [air]
+    assert built.input_blobs[0]["content_type"] == "audio/mpeg"
+
+
+def test_build_custom_comfy_offload_uploads_video_inputs_as_blob_airs(tmp_path):
+    video = tmp_path / "clip.mp4"
+    video.write_bytes(b"\x00\x00\x00\x18ftypmp42fake-video")
+    uploads = []
+
+    def upload(path, content_type):
+        uploads.append((path, content_type))
+        return {"id": "clip.mp4"}
+
+    prompt = {
+        "1": {"class_type": "LoadVideo", "inputs": {"file": "clip.mp4"}},
+        "2": {"class_type": "SaveVideo", "inputs": {"filename_prefix": "video-test", "video": ["1", 0]}},
+    }
+
+    built = offload.build_custom_comfy_offload(
+        prompt,
+        model_records=[],
+        nodepacks=[],
+        upload_blob_file=upload,
+        input_path_resolver=lambda name: tmp_path / name,
+    )
+
+    air = "urn:air:other:other:orchestrator:blob@clip.mp4"
+    assert uploads == [(video.resolve(), "video/mp4")]
+    assert built.workflow["1"]["inputs"]["file"] == air
+    assert built.steps[0]["input"]["resources"] == [air]
+    assert built.input_blobs[0]["input_name"] == "file"
+
+
+def test_build_custom_comfy_offload_prefers_audio_webm_for_audio_loader(tmp_path):
+    audio = tmp_path / "voice.webm"
+    audio.write_bytes(b"\x1a\x45\xdf\xa3fake-webm")
+
+    prompt = {
+        "1": {"class_type": "LoadAudio", "inputs": {"audio": "voice.webm"}},
+    }
+
+    built = offload.build_custom_comfy_offload(
+        prompt,
+        model_records=[],
+        nodepacks=[],
+        upload_blob_file=lambda _path, _content_type: {"id": "voice.webm"},
+        input_path_resolver=lambda name: tmp_path / name,
+    )
+
+    assert built.input_blobs[0]["content_type"] == "audio/webm"
+
+
+def test_build_custom_comfy_offload_uploads_video_helper_suite_upload_inputs(tmp_path):
+    video = tmp_path / "clip.webm"
+    video.write_bytes(b"\x1a\x45\xdf\xa3fake-webm")
+
+    prompt = {
+        "1": {"class_type": "VHS_LoadVideo", "inputs": {"video": "clip.webm", "frame_load_cap": 1}},
+    }
+
+    built = offload.build_custom_comfy_offload(
+        prompt,
+        model_records=[],
+        nodepacks=[],
+        upload_blob_file=lambda _path, _content_type: {"id": "clip.webm"},
+        input_path_resolver=lambda name: tmp_path / name,
+    )
+
+    assert built.workflow["1"]["inputs"]["video"] == "urn:air:other:other:orchestrator:blob@clip.webm"
+    assert built.input_blobs[0]["content_type"] == "video/webm"
+
+
+def test_build_custom_comfy_offload_keeps_existing_media_url():
+    prompt = {
+        "1": {"class_type": "LoadAudio", "inputs": {"audio": "https://example.test/voice.mp3"}},
+    }
+
+    built = offload.build_custom_comfy_offload(
+        prompt,
+        model_records=[],
+        nodepacks=[],
+        upload_blob_file=lambda _path, _content_type: (_ for _ in ()).throw(AssertionError("should not upload")),
+    )
+
+    assert built.workflow["1"]["inputs"]["audio"] == "https://example.test/voice.mp3"
+    assert built.resources == []
+    assert built.input_blobs == []
+
+
 def test_build_custom_comfy_offload_only_adds_used_nodepacks(monkeypatch):
     class UsedNode:
         RELATIVE_PYTHON_MODULE = "custom_nodes.rgthree-comfy.nodes"

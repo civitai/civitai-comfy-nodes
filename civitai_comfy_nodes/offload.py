@@ -51,8 +51,16 @@ OUTPUT_NODE_CLASSES = {
     "SaveVideo",
     "SaveWEBM",
 }
-LOAD_IMAGE_CLASSES = {"LoadImage", "LoadImageMask", "LoadImageOutput"}
-UPLOAD_IMAGE_CONTENT_TYPES = {"image/png", "image/jpeg", "image/webp"}
+UPLOAD_MEDIA_INPUTS = {
+    "LoadImage": {"image": {"image/png", "image/jpeg", "image/webp"}},
+    "LoadImageMask": {"image": {"image/png", "image/jpeg", "image/webp"}},
+    "LoadImageOutput": {"image": {"image/png", "image/jpeg", "image/webp"}},
+    "LoadAudio": {"audio": {"audio/mpeg", "audio/webm", "video/mp4", "video/webm"}},
+    "LoadVideo": {"file": {"video/mp4", "video/webm"}},
+    "VHS_LoadAudioUpload": {"audio": {"audio/mpeg", "audio/webm"}},
+    "VHS_LoadVideo": {"video": {"video/mp4", "video/webm"}},
+    "VHS_LoadVideoFFmpeg": {"video": {"video/mp4", "video/webm"}},
+}
 
 MODEL_WIDGET_FOLDERS = {
     "ckpt_name": ("checkpoints",),
@@ -1131,7 +1139,7 @@ def replace_local_models_with_airs(
     return rewritten, resolved_models, warnings
 
 
-def _is_remote_or_air_image_value(value: str) -> bool:
+def _is_remote_or_air_media_value(value: str) -> bool:
     cleaned = value.strip()
     return bool(
         AIR_RE.match(cleaned)
@@ -1146,41 +1154,62 @@ def _resolve_comfy_input_path(name: str) -> Path:
         import folder_paths  # type: ignore[import-not-found]
     except Exception as e:
         raise CivitaiNodeError(
-            f"Cannot resolve local LoadImage input '{name}' outside a running ComfyUI environment"
+            f"Cannot resolve local media input '{name}' outside a running ComfyUI environment"
         ) from e
 
     try:
         exists = folder_paths.exists_annotated_filepath(name)
         path = folder_paths.get_annotated_filepath(name)
     except Exception as e:
-        raise CivitaiNodeError(f"Could not resolve local LoadImage input '{name}': {e}") from e
+        raise CivitaiNodeError(f"Could not resolve local media input '{name}': {e}") from e
 
     if not exists:
-        raise CivitaiNodeError(f"Local LoadImage input '{name}' does not exist in ComfyUI input storage")
+        raise CivitaiNodeError(f"Local media input '{name}' does not exist in ComfyUI input storage")
     return Path(path)
 
 
-def _image_content_type(path: str | os.PathLike[str]) -> str:
+def _media_content_type(path: str | os.PathLike[str], allowed: set[str]) -> str:
     path = str(path)
     try:
         with open(path, "rb") as handle:
             header = handle.read(16)
     except OSError as e:
-        raise CivitaiNodeError(f"Could not read local LoadImage input '{path}': {e}") from e
+        raise CivitaiNodeError(f"Could not read local media input '{path}': {e}") from e
 
     if header.startswith(b"\x89PNG\r\n\x1a\n"):
-        return "image/png"
-    if header.startswith(b"\xff\xd8\xff"):
-        return "image/jpeg"
-    if header[:4] == b"RIFF" and header[8:12] == b"WEBP":
-        return "image/webp"
+        detected = "image/png"
+    elif header.startswith(b"\xff\xd8\xff"):
+        detected = "image/jpeg"
+    elif header[:4] == b"RIFF" and header[8:12] == b"WEBP":
+        detected = "image/webp"
+    elif header[4:8] == b"ftyp":
+        detected = "video/mp4"
+    elif header.startswith(b"\x1a\x45\xdf\xa3"):
+        detected = "audio/webm" if "audio/webm" in allowed else "video/webm"
+    elif header.startswith(b"ID3") or (len(header) >= 2 and header[0] == 0xFF and (header[1] & 0xE0) == 0xE0):
+        detected = "audio/mpeg"
+    else:
+        detected = mimetypes.guess_type(path)[0]
+
+    if detected in allowed:
+        return detected
+    if detected == "video/webm" and "audio/webm" in allowed and "video/webm" not in allowed:
+        return "audio/webm"
+    if detected == "audio/webm" and "video/webm" in allowed and "audio/webm" not in allowed:
+        return "video/webm"
 
     guessed = mimetypes.guess_type(path)[0]
-    if guessed in UPLOAD_IMAGE_CONTENT_TYPES:
+    if guessed in allowed:
         return guessed
+    if guessed == "video/webm" and "audio/webm" in allowed:
+        return "audio/webm"
+    if guessed == "audio/webm" and "video/webm" in allowed:
+        return "video/webm"
+
+    supported = ", ".join(sorted(allowed))
     raise CivitaiNodeError(
-        f"Local LoadImage input '{path}' has unsupported content type '{guessed or 'unknown'}'. "
-        "Civitai blob upload supports PNG, JPEG, and WebP images for offload inputs."
+        f"Local media input '{path}' has unsupported content type '{detected or guessed or 'unknown'}'. "
+        f"Civitai blob upload supports {supported} for this node input."
     )
 
 
@@ -1194,14 +1223,14 @@ def _blob_air_from_upload(blob: dict[str, Any]) -> str:
     return f"urn:air:other:other:orchestrator:blob@{blob_id}"
 
 
-def replace_local_load_images_with_blob_airs(
+def replace_local_media_inputs_with_blob_airs(
     workflow: dict[str, Any],
     *,
     resources: set[str],
     upload_blob_file: Callable[[Path, str], dict[str, Any]] | None,
     path_resolver: Callable[[str], str | os.PathLike[str]] | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    """Upload local LoadImage inputs and replace widget filenames with blob AIRs."""
+    """Upload local media loader inputs and replace widget filenames with blob AIRs."""
     rewritten = copy.deepcopy(workflow)
     if upload_blob_file is None:
         return rewritten, []
@@ -1211,40 +1240,43 @@ def replace_local_load_images_with_blob_airs(
     cache: dict[Path, dict[str, Any]] = {}
 
     for node_id, node in rewritten.items():
-        if node.get("class_type") not in LOAD_IMAGE_CLASSES:
+        class_type = node.get("class_type")
+        upload_inputs = UPLOAD_MEDIA_INPUTS.get(class_type)
+        if not upload_inputs:
             continue
         inputs = _node_inputs(node)
-        value = inputs.get("image")
-        if not isinstance(value, str) or not value.strip() or _is_remote_or_air_image_value(value):
-            continue
+        for input_name, allowed_content_types in upload_inputs.items():
+            value = inputs.get(input_name)
+            if not isinstance(value, str) or not value.strip() or _is_remote_or_air_media_value(value):
+                continue
 
-        path = Path(resolver(value)).expanduser().resolve()
-        if not path.exists():
-            raise CivitaiNodeError(f"Local LoadImage input '{value}' resolved to missing file '{path}'")
-        if not path.is_file():
-            raise CivitaiNodeError(f"Local LoadImage input '{value}' resolved to non-file path '{path}'")
+            path = Path(resolver(value)).expanduser().resolve()
+            if not path.exists():
+                raise CivitaiNodeError(f"Local media input '{value}' resolved to missing file '{path}'")
+            if not path.is_file():
+                raise CivitaiNodeError(f"Local media input '{value}' resolved to non-file path '{path}'")
 
-        content_type = _image_content_type(path)
-        blob = cache.get(path)
-        if blob is None:
-            blob = upload_blob_file(path, content_type)
-            cache[path] = blob
-        air = _blob_air_from_upload(blob)
-        inputs["image"] = air
-        resources.add(air)
-        uploaded.append(
-            UploadedInputBlob(
-                node_id=str(node_id),
-                input_name="image",
-                original_name=value,
-                path=str(path),
-                content_type=content_type,
-                air=air,
-                blob_id=blob.get("id"),
-                url=blob.get("url"),
-                size=path.stat().st_size,
+            content_type = _media_content_type(path, allowed_content_types)
+            blob = cache.get(path)
+            if blob is None:
+                blob = upload_blob_file(path, content_type)
+                cache[path] = blob
+            air = _blob_air_from_upload(blob)
+            inputs[input_name] = air
+            resources.add(air)
+            uploaded.append(
+                UploadedInputBlob(
+                    node_id=str(node_id),
+                    input_name=input_name,
+                    original_name=value,
+                    path=str(path),
+                    content_type=content_type,
+                    air=air,
+                    blob_id=blob.get("id"),
+                    url=blob.get("url"),
+                    size=path.stat().st_size,
+                )
             )
-        )
 
     return rewritten, [item.as_dict() for item in uploaded]
 
@@ -1298,7 +1330,7 @@ def build_custom_comfy_offload(
         session=session,
         civitai_base_url=civitai_base_url,
     )
-    rewritten, input_blobs = replace_local_load_images_with_blob_airs(
+    rewritten, input_blobs = replace_local_media_inputs_with_blob_airs(
         rewritten,
         resources=resources,
         upload_blob_file=upload_blob_file,

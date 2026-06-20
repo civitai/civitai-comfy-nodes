@@ -131,6 +131,27 @@ def test_workflow_asset_urls_reads_custom_comfy_assets_and_blobs():
     ]
 
 
+def test_workflow_asset_items_infers_media_kind_from_custom_comfy_blob_id():
+    workflow = _wf(
+        [
+            {
+                "$type": "customComfy",
+                "output": {
+                    "blobs": [
+                        {"id": "customcomfy-asset-audio.mp3", "available": True, "url": "http://blob/a"},
+                        {"id": "customcomfy-asset-video.mp4", "available": True, "url": "http://blob/v"},
+                    ]
+                },
+            }
+        ]
+    )
+
+    assert sr._workflow_asset_items(workflow) == [
+        {"url": "http://blob/a", "kind": "audio"},
+        {"url": "http://blob/v", "kind": "video"},
+    ]
+
+
 def test_offload_output_node_ids_detects_save_image_node():
     result = {
         "offload": {
@@ -190,6 +211,36 @@ def test_publish_local_output_preview_sends_local_executed_event(monkeypatch):
             "browser-1",
         )
     ]
+
+
+def test_publish_local_output_preview_uses_audio_key(monkeypatch):
+    import sys
+    import types
+
+    class FakeServer:
+        def __init__(self):
+            self.calls = []
+
+        def send_sync(self, event, data, sid=None):
+            self.calls.append((event, data, sid))
+
+    fake_server = FakeServer()
+    monkeypatch.setitem(
+        sys.modules,
+        "server",
+        types.SimpleNamespace(PromptServer=types.SimpleNamespace(instance=fake_server)),
+    )
+
+    sr._publish_local_output_preview(
+        ["46"],
+        [{"filename": "civitai_offload_abc.mp3", "subfolder": "", "type": "output", "kind": "audio"}],
+        prompt_id="wf-1",
+        sid="browser-1",
+    )
+
+    assert fake_server.calls[0][1]["output"] == {
+        "audio": [{"filename": "civitai_offload_abc.mp3", "subfolder": "", "type": "output"}]
+    }
 
 
 def test_publish_local_job_history_adds_completed_output_job(monkeypatch):

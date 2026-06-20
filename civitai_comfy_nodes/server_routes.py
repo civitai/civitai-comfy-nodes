@@ -32,6 +32,23 @@ TRACE_URL_TERMINAL_GRACE_SECONDS = 10.0
 TRACE_URL_POLL_DELAY_SECONDS = 0.5
 
 
+def _kind_from_media_ref(value: str | None) -> str | None:
+    if not value:
+        return None
+    lower = value.lower()
+    if lower.startswith(("http://", "https://")):
+        lower = requests.utils.urlparse(lower).path
+    if lower.endswith((".mp4", ".webm", ".mov", ".mkv")):
+        return "video"
+    if lower.endswith((".mp3", ".flac", ".wav", ".ogg", ".opus", ".m4a")):
+        return "audio"
+    if lower.endswith((".glb", ".gltf", ".fbx")):
+        return "model3d"
+    if lower.endswith((".png", ".jpg", ".jpeg", ".webp", ".gif")):
+        return "image"
+    return None
+
+
 def _walk_blobs(node, key=None):
     """Yield (blob, containing_key) for every blob anywhere in a step output. A blob is any dict with
     the required Blob fields (`id` + `available`); the `type` discriminator is NOT reliable because
@@ -53,6 +70,16 @@ def _blob_kind(blob: dict, key: str | None) -> str:
     declared = blob.get("type")
     if declared in _BLOB_KINDS:
         return declared
+    content_type = blob.get("contentType") or blob.get("content_type") or blob.get("mimeType") or blob.get("mime_type")
+    if isinstance(content_type, str):
+        if content_type.startswith("video/"):
+            return "video"
+        if content_type.startswith("audio/"):
+            return "audio"
+        if content_type in {"model/gltf-binary", "model/gltf+json"}:
+            return "model3d"
+        if content_type.startswith("image/"):
+            return "image"
     name = (key or "").lower()
     if "video" in name:
         return "video"
@@ -60,6 +87,10 @@ def _blob_kind(blob: dict, key: str | None) -> str:
         return "audio"
     if "model" in name or "fbx" in name or "3d" in name:
         return "model3d"
+    for field in ("id", "url", "previewUrl", "name", "filename"):
+        kind = _kind_from_media_ref(blob.get(field))
+        if kind:
+            return kind
     return "image"  # images, frames, thumbnails, samples, and the lone `ImageBlob Blob` field
 
 
@@ -200,7 +231,7 @@ def _write_bytes_to_output(data: bytes, kind: str = "image") -> dict:
     path = os.path.join(folder_paths.get_output_directory(), name)
     with open(path, "wb") as handle:
         handle.write(data)
-    result = {"filename": name, "subfolder": "", "type": "output"}
+    result = {"filename": name, "subfolder": "", "type": "output", "kind": kind}
     asset = _register_output_asset(path, name)
     if asset:
         result["asset"] = asset
@@ -226,23 +257,39 @@ def _register_output_asset(path: str, name: str) -> dict | None:
 
 
 def _workflow_asset_urls(workflow: dict) -> list[str]:
+    return [item["url"] for item in _workflow_asset_items(workflow)]
+
+
+def _workflow_asset_items(workflow: dict) -> list[dict]:
     urls: list[str] = []
+    items: list[dict] = []
     for step in workflow.get("steps") or []:
         output = step.get("output") or {}
         assets = output.get("assets")
         if isinstance(assets, list):
             for asset in assets:
                 if isinstance(asset, str) and asset:
-                    urls.append(asset)
+                    kind = _kind_from_media_ref(asset) or "image"
+                    if asset not in urls:
+                        urls.append(asset)
+                        items.append({"url": asset, "kind": kind})
                 elif isinstance(asset, dict):
                     url = asset.get("url") or asset.get("previewUrl")
                     if url:
-                        urls.append(url)
+                        declared = asset.get("kind") or asset.get("type")
+                        kind = declared if declared in _BLOB_KINDS else None
+                        kind = kind or _kind_from_media_ref(url) or _kind_from_media_ref(asset.get("name")) or "image"
+                        if url not in urls:
+                            urls.append(url)
+                            items.append({"url": url, "kind": kind})
         for blob, _key in _walk_blobs(output):
             url = blob.get("url") or blob.get("previewUrl")
             if url:
-                urls.append(url)
-    return list(dict.fromkeys(urls))
+                kind = _blob_kind(blob, _key)
+                if url not in urls:
+                    urls.append(url)
+                    items.append({"url": url, "kind": kind})
+    return items
 
 
 def _offload_output_node_ids(offload_result: dict) -> list[str]:
@@ -277,16 +324,21 @@ def _publish_local_output_preview(
     preview_outputs = _preview_output_items(outputs)
     if not preview_outputs:
         return
+    output_key = _preview_output_key(outputs)
     PromptServer.instance.send_sync(
         "executed",
         {
             "node": node_id,
             "display_node": node_id,
-            "output": {"images": preview_outputs},
+            "output": {output_key: preview_outputs},
             "prompt_id": prompt_id,
         },
         sid,
     )
+
+
+def _preview_output_key(outputs: list[dict]) -> str:
+    return "audio" if (outputs[0].get("kind") if outputs else None) == "audio" else "images"
 
 
 def _preview_output_items(outputs: list[dict]) -> list[dict]:
@@ -322,6 +374,7 @@ def _publish_local_job_history(
 
     now_ms = int(time.time() * 1000)
     node_id = output_nodes[0]
+    output_key = _preview_output_key(outputs)
     prompt_queue = getattr(PromptServer.instance, "prompt_queue", None)
     if prompt_queue is None:
         return
@@ -337,7 +390,7 @@ def _publish_local_job_history(
     }
     history_item = {
         "prompt": (0, prompt_id, prompt, extra_data, output_nodes),
-        "outputs": {node_id: {"images": preview_outputs}},
+        "outputs": {node_id: {output_key: preview_outputs}},
         "status": {
             "status_str": "success",
             "completed": True,
@@ -512,11 +565,13 @@ def _offload_run(
 def _run_local_tail(prompt: dict, offload_result: dict, comfy_base_url: str, *, client_id: str | None = None) -> dict | None:
     from . import offload
 
-    assets = _workflow_asset_urls(offload_result["workflow"])
+    assets = _workflow_asset_items(offload_result["workflow"])
     if not assets:
         raise CivitaiNodeError("Civitai workflow completed but returned no downloadable customComfy assets")
-    data = _download_url_bytes(assets[0])
-    local_output = _write_bytes_to_output(data, kind="image")
+    asset = assets[0]
+    kind = asset.get("kind") or "image"
+    data = _download_url_bytes(asset["url"])
+    local_output = _write_bytes_to_output(data, kind=kind)
     output_nodes = _offload_output_node_ids(offload_result)
     workflow_id = (
         (offload_result.get("workflow") or {}).get("id")
@@ -536,11 +591,13 @@ def _run_local_tail(prompt: dict, offload_result: dict, comfy_base_url: str, *, 
         prompt_id=workflow_id,
         workflow_id=workflow_id,
     )
-    continuation = offload.build_local_continuation_prompt(
-        prompt,
-        remote_node_ids=offload_result["offload"].get("included_node_ids") or [],
-        imported_image_name="civitai_offload_result.png",
-    )
+    continuation = None
+    if kind == "image":
+        continuation = offload.build_local_continuation_prompt(
+            prompt,
+            remote_node_ids=offload_result["offload"].get("included_node_ids") or [],
+            imported_image_name="civitai_offload_result.png",
+        )
     if continuation is None:
         return {
             "imported": None,
