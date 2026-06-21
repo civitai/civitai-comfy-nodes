@@ -14,6 +14,7 @@ const CIVITAI_BUTTON_LABEL = "Run on Civitai";
 const SUBMITTING_LABEL = "Submitting...";
 const QUEUE_PROMPT_PATCH = "__civitaiOffloadQueuePrompt";
 const MAX_SAFE_SEED = Number.MAX_SAFE_INTEGER;
+const TERMS_STORAGE_KEY = "civitai.offload.billingTermsAccepted.v1";
 
 function injectStyles() {
   if (stylesInjected) return;
@@ -37,6 +38,51 @@ function injectStyles() {
       text-align: left;
     }
     .cvo-run-menu[disabled] { opacity: .6; cursor: progress; }
+    .cvo-modal-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 11000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, .6);
+      padding: 20px;
+    }
+    .cvo-modal {
+      background: var(--comfy-menu-bg, #202020);
+      color: var(--input-text, #e4e4e7);
+      border: 1px solid var(--border-color, #3f3f46);
+      border-radius: 10px;
+      max-width: 520px;
+      width: 100%;
+      padding: 20px 22px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, .5);
+      font: inherit;
+    }
+    .cvo-modal-title { margin: 0 0 10px; font-size: 1.15em; font-weight: 600; }
+    .cvo-modal-intro { margin: 0 0 12px; }
+    .cvo-modal-list {
+      margin: 0 0 12px;
+      padding-left: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .cvo-modal-list li { line-height: 1.45; }
+    .cvo-modal-note { margin: 0 0 16px; opacity: .7; font-size: .9em; }
+    .cvo-modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+    .cvo-modal-btn {
+      border: 1px solid var(--border-color, #3f3f46);
+      background: var(--comfy-input-bg, #27272a);
+      color: var(--input-text, #e4e4e7);
+      border-radius: 6px;
+      padding: 7px 14px;
+      font: inherit;
+      cursor: pointer;
+    }
+    .cvo-modal-btn:hover { border-color: #2563eb; }
+    .cvo-modal-accept { background: #2563eb; border-color: #2563eb; color: #fff; }
+    .cvo-modal-accept:hover { background: #1d4ed8; border-color: #1d4ed8; }
   `;
   document.head.appendChild(style);
 }
@@ -141,8 +187,75 @@ function offloadQueueResult(data, number) {
   return { prompt_id: String(id), number: number || 0, node_errors: {} };
 }
 
+function hasAcceptedBillingTerms() {
+  try {
+    return localStorage.getItem(TERMS_STORAGE_KEY) === "true";
+  } catch (e) {
+    return false;
+  }
+}
+
+function setBillingTermsAccepted() {
+  try {
+    localStorage.setItem(TERMS_STORAGE_KEY, "true");
+  } catch (e) {
+    // localStorage unavailable (private mode / blocked) — re-prompt next run rather than fail.
+  }
+}
+
+function showBillingTermsDialog() {
+  injectStyles();
+  return new Promise((resolve) => {
+    let settled = false;
+    const overlay = document.createElement("div");
+    overlay.className = "cvo-modal-overlay";
+    overlay.innerHTML = `
+      <div class="cvo-modal" role="dialog" aria-modal="true" aria-labelledby="cvo-terms-title">
+        <h2 id="cvo-terms-title" class="cvo-modal-title">Run on Civitai — billing terms</h2>
+        <p class="cvo-modal-intro">Running this workflow on Civitai spends Buzz. Before your first run, please acknowledge:</p>
+        <ul class="cvo-modal-list">
+          <li><strong>You're billed for compute time, not results.</strong> Buzz is charged for the full duration your workflow runs on Civitai's hardware, regardless of the outcome. The only exception is a system failure on our side — you aren't charged for those.</li>
+          <li><strong>Canceling stops the run, but not the bill for time already used.</strong> You can cancel at any time, but Buzz for the compute time spent up to that point is still charged.</li>
+          <li><strong>Models and node packs are fetched before the meter starts.</strong> Civitai downloads the required models and custom node packs in advance, before billing begins. But if your workflow uses custom node packs that download assets on the fly, or calls external API nodes, you're billed for the time spent waiting on those during the run.</li>
+        </ul>
+        <p class="cvo-modal-note">You'll only see this once on this browser.</p>
+        <div class="cvo-modal-actions">
+          <button type="button" class="cvo-modal-btn cvo-modal-cancel">Cancel</button>
+          <button type="button" class="cvo-modal-btn cvo-modal-accept">Accept &amp; Run</button>
+        </div>
+      </div>`;
+    const finish = (accepted) => {
+      if (settled) return;
+      settled = true;
+      document.removeEventListener("keydown", onKey, true);
+      overlay.remove();
+      resolve(accepted);
+    };
+    function onKey(event) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        event.stopPropagation();
+        finish(false);
+      }
+    }
+    overlay.addEventListener("mousedown", (event) => {
+      if (event.target === overlay) finish(false);
+    });
+    overlay.querySelector(".cvo-modal-cancel").addEventListener("click", () => finish(false));
+    overlay.querySelector(".cvo-modal-accept").addEventListener("click", () => finish(true));
+    document.addEventListener("keydown", onKey, true);
+    document.body.appendChild(overlay);
+    overlay.querySelector(".cvo-modal-accept").focus();
+  });
+}
+
 async function runInCivitai(button, graph = null, { throwOnError = false } = {}) {
   if (activeOffloadPromise) return activeOffloadPromise;
+  if (!hasAcceptedBillingTerms()) {
+    const accepted = await showBillingTermsDialog();
+    if (!accepted) return null;
+    setBillingTermsAccepted();
+  }
   civitaiRunInProgress = true;
   const queueButton = button || findQueueButton();
   const oldText = queueButton ? normalizedText(queueButton) : "";
@@ -272,6 +385,7 @@ function installQueuePromptOverride() {
   api.queuePrompt = async function civitaiAwareQueuePrompt(number, graph, options) {
     if (!civitaiRunMode) return originalQueuePrompt(number, graph, options);
     const data = await runInCivitai(findQueueButton(), graph, { throwOnError: true });
+    if (!data) return { prompt_id: null, number, node_errors: {} };
     return offloadQueueResult(data, number);
   };
 }
