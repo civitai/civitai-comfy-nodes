@@ -1,4 +1,4 @@
-// Adds a "Run in Civitai" action that sends the current ComfyUI API prompt to the pack's
+// Adds a "Run on Civitai" action that sends the current ComfyUI API prompt to the pack's
 // /civitai/offload/run route. The backend handles OAuth, local model AIR lookup, and nodepack AIRs.
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
@@ -9,7 +9,7 @@ let civitaiRunInProgress = false;
 let activeOffloadPromise = null;
 
 const NATIVE_RUN_LABELS = new Set(["Run", "Run (On Change)", "Run (Instant)"]);
-const CIVITAI_MENU_LABEL = "Run in Civitai";
+const CIVITAI_MENU_LABEL = "Run on Civitai";
 const CIVITAI_BUTTON_LABEL = "Run on Civitai";
 const SUBMITTING_LABEL = "Submitting...";
 const QUEUE_PROMPT_PATCH = "__civitaiOffloadQueuePrompt";
@@ -320,7 +320,7 @@ function installDropdownItem() {
   button.className = reference?.className || "cvo-run-menu";
   button.classList.add("cvo-run-menu");
   button.type = "button";
-  button.textContent = "Run in Civitai";
+  button.textContent = "Run on Civitai";
   button.title = "Submit this workflow through Civitai customComfy offload";
   if (reference) {
     const style = window.getComputedStyle(reference);

@@ -132,7 +132,7 @@
   "groups": [
     {
       "id": 1,
-      "title": "Offloaded by Run in Civitai",
+      "title": "Offloaded by Run on Civitai",
       "bounding": [315, 25, 1010, 260],
       "color": "#3f789e",
       "font_size": 24,

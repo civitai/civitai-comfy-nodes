@@ -121,7 +121,7 @@ configured, the tab shows a connect panel (OAuth sign-in or paste an API key).
 
 ### CustomComfy offload
 
-The **Run in Civitai** action submits the current graph as a `customComfy` workflow. Local model
+The **Run on Civitai** action submits the current graph as a `customComfy` workflow. Local model
 widgets are rewritten to AIRs when the model can be resolved by embedded metadata hash or computed
 hash, and installed custom node packs are advertised when a versioned nodepack AIR can be inferred.
 
@@ -130,7 +130,7 @@ Place `Start` to the left of the nodes to offload, put the normal Comfy workflow
 include the user output node such as `SaveImage` inside that region, and place `End` to the right.
 Nodes after `End` are not included in the submitted customComfy job.
 
-The markers are selection hints for **Run in Civitai**. When the cloud job returns an output asset,
+The markers are selection hints for **Run on Civitai**. When the cloud job returns an output asset,
 the node pack imports that asset into local Comfy and queues the downstream nodes after `End` as a
 local continuation.
 
