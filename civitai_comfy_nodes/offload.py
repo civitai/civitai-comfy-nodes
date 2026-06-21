@@ -1292,6 +1292,8 @@ def build_custom_comfy_offload(
     session: requests.Session | None = None,
     civitai_base_url: str | None = None,
     trace: str | None = None,
+    min_vram_gb: int | None = None,
+    use_sage_attention: bool | None = None,
     upload_blob_file: Callable[[Path, str], dict[str, Any]] | None = None,
     input_path_resolver: Callable[[str], str | os.PathLike[str]] | None = None,
 ) -> OffloadBuildResult:
@@ -1357,6 +1359,10 @@ def build_custom_comfy_offload(
     custom_input: dict[str, Any] = {"resources": sorted(resources), "workflow": rewritten}
     if trace:
         custom_input["trace"] = trace
+    if min_vram_gb is not None:
+        custom_input["minVramGb"] = min_vram_gb
+    if use_sage_attention:
+        custom_input["useSageAttention"] = True
     return OffloadBuildResult(
         steps=[{"$type": "customComfy", "input": custom_input}],
         workflow=rewritten,

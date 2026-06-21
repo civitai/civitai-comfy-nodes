@@ -527,7 +527,7 @@ def _offload_run(
 ) -> dict:
     from . import offload
     from .client import OrchestrationClient
-    from .config import resolve_config
+    from .config import resolve_config, stored_min_vram_gb, stored_use_sage_attention
 
     config = resolve_config(interactive=False)
     client = OrchestrationClient(config)
@@ -540,6 +540,8 @@ def _offload_run(
         workflow=workflow,
         token=config.token,
         trace="binary" if do_tail else None,
+        min_vram_gb=stored_min_vram_gb(),
+        use_sage_attention=stored_use_sage_attention(),
         upload_blob_file=client.upload_blob_file,
     )
     workflow = client.submit_steps(build.steps, wait=wait, whatif=whatif)
@@ -630,6 +632,56 @@ def node_ecosystem_map() -> dict:
     return result
 
 
+def _pack_config_payload() -> dict:
+    from . import config as cfg
+
+    stored_url = cfg.stored_orchestrator_url()
+    source = "env" if os.environ.get("CIVITAI_ORCHESTRATION_URL") else "stored" if stored_url else "default"
+    return {
+        "orchestratorUrl": stored_url or "",
+        "orchestratorEffective": cfg.base_url(),
+        "orchestratorDefault": cfg.DEFAULT_BASE_URL,
+        "orchestratorSource": source,
+        "minVramGb": cfg.stored_min_vram_gb(),
+        "vramTiers": cfg.VRAM_TIERS,
+        "allowMatureContent": cfg.stored_mature_content(),
+        "useSageAttention": cfg.stored_use_sage_attention(),
+        "gpuGeneration": cfg.GPU_GENERATION_LABEL,
+    }
+
+
+def _apply_pack_config_update(body: dict) -> None:
+    """Validate a settings patch from POST /civitai/config and persist it. Raises ValueError on bad
+    input (the route maps it to HTTP 400). `gpuGeneration` is display-only and ignored."""
+    from . import config as cfg
+
+    settings = cfg.load_pack_settings()
+    if "orchestratorUrl" in body:
+        url = (body.get("orchestratorUrl") or "").strip().rstrip("/")
+        if url and not url.startswith(("http://", "https://")):
+            raise ValueError("Orchestrator URL must start with http:// or https://")
+        if url:
+            settings["orchestratorUrl"] = url
+        else:
+            settings.pop("orchestratorUrl", None)
+    if "minVramGb" in body:
+        vram = body.get("minVramGb")
+        if vram in (None, "", 0):
+            settings.pop("minVramGb", None)
+        elif vram in cfg.VRAM_TIERS:
+            settings["minVramGb"] = vram
+        else:
+            raise ValueError(f"minVramGb must be one of {cfg.VRAM_TIERS}")
+    if "allowMatureContent" in body:
+        mode = body.get("allowMatureContent")
+        if mode not in cfg.MATURE_CONTENT_MODES:
+            raise ValueError(f"allowMatureContent must be one of {list(cfg.MATURE_CONTENT_MODES)}")
+        settings["allowMatureContent"] = mode
+    if "useSageAttention" in body:
+        settings["useSageAttention"] = bool(body.get("useSageAttention"))
+    cfg.save_pack_settings(settings)
+
+
 if _server is not None:
 
     @_server.routes.get("/civitai/catalog/search")
@@ -703,6 +755,19 @@ if _server is not None:
         from . import oauth
 
         oauth.clear_credentials()
+        return web.json_response({"ok": True})
+
+    @_server.routes.get("/civitai/config")
+    async def _civitai_config_get(request):
+        return web.json_response(_pack_config_payload())
+
+    @_server.routes.post("/civitai/config")
+    async def _civitai_config_post(request):
+        body = await request.json()
+        try:
+            _apply_pack_config_update(body)
+        except ValueError as e:
+            return web.json_response({"error": str(e)}, status=400)
         return web.json_response({"ok": True})
 
     @_server.routes.get("/civitai/workflows/list")

@@ -1,3 +1,5 @@
+import pytest
+
 from civitai_comfy_nodes import server_routes as sr
 from civitai_comfy_nodes import trace_tail
 
@@ -291,6 +293,51 @@ def test_publish_local_job_history_adds_completed_output_job(monkeypatch):
     assert history["outputs"] == {
         "46": {"images": [{"filename": "civitai_offload_abc.png", "subfolder": "", "type": "output"}]}
     }
+
+
+@pytest.fixture()
+def settings_store(tmp_path, monkeypatch):
+    monkeypatch.delenv("CIVITAI_ORCHESTRATION_URL", raising=False)
+    monkeypatch.setenv("CIVITAI_COMFY_SETTINGS_STORE", str(tmp_path / "settings.json"))
+    return tmp_path
+
+
+def test_pack_config_payload_defaults(settings_store):
+    payload = sr._pack_config_payload()
+    assert payload["orchestratorUrl"] == ""
+    assert payload["orchestratorSource"] == "default"
+    assert payload["minVramGb"] is None
+    assert payload["allowMatureContent"] == "auto"
+    assert payload["useSageAttention"] is True  # Sage Attention defaults on
+    assert payload["gpuGeneration"] == "Ada"
+    assert payload["vramTiers"] == [24]
+
+
+def test_apply_pack_config_update_round_trip(settings_store):
+    sr._apply_pack_config_update(
+        {"orchestratorUrl": "http://dev/", "minVramGb": 24, "allowMatureContent": "true", "useSageAttention": True}
+    )
+    payload = sr._pack_config_payload()
+    assert payload["orchestratorUrl"] == "http://dev"  # trailing slash stripped
+    assert payload["orchestratorSource"] == "stored"
+    assert payload["minVramGb"] == 24
+    assert payload["allowMatureContent"] == "true"
+    assert payload["useSageAttention"] is True
+
+
+def test_apply_pack_config_update_blank_url_clears_override(settings_store):
+    sr._apply_pack_config_update({"orchestratorUrl": "http://dev"})
+    sr._apply_pack_config_update({"orchestratorUrl": "  "})
+    assert sr._pack_config_payload()["orchestratorSource"] == "default"
+
+
+def test_apply_pack_config_update_rejects_bad_input(settings_store):
+    with pytest.raises(ValueError):
+        sr._apply_pack_config_update({"orchestratorUrl": "ftp://nope"})
+    with pytest.raises(ValueError):
+        sr._apply_pack_config_update({"minVramGb": 999})
+    with pytest.raises(ValueError):
+        sr._apply_pack_config_update({"allowMatureContent": "maybe"})
 
 
 def test_start_trace_tail_returns_none_without_trace_target():

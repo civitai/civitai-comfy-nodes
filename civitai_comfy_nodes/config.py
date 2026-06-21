@@ -1,3 +1,4 @@
+import json
 import os
 import uuid
 from dataclasses import dataclass
@@ -7,6 +8,15 @@ from . import oauth, prompt_context
 from .errors import CivitaiAuthError, CivitaiNodeError
 
 DEFAULT_BASE_URL = "https://orchestration.civitai.com"
+
+# The GPU generation offloaded jobs currently run on. Surfaced read-only in the settings panel;
+# not yet a selectable control (the consumer API has no field for it).
+GPU_GENERATION_LABEL = "Ada"
+
+# Allowed required-VRAM tiers (GB) offered by the settings panel.
+VRAM_TIERS = [24]
+
+MATURE_CONTENT_MODES = ("auto", "true", "false")
 
 # Workflows submitted by this pack carry two indexed tags so the gallery can scope its listing:
 # SOURCE_TAG (any workflow from this pack) and a per-session tag identifying the submitter.
@@ -65,12 +75,61 @@ _NO_CREDS_MESSAGE = (
 class ClientConfig:
     base_url: str
     token: str
-    allow_mature_content: bool = False
+    mature_content: str = "auto"
     timeout_minutes: float = 30.0
+
+    @property
+    def allow_mature_content(self) -> bool:
+        return self.mature_content == "true"
+
+
+def settings_store_path() -> Path:
+    override = os.environ.get("CIVITAI_COMFY_SETTINGS_STORE")
+    if override:
+        return Path(override)
+    return Path.home() / ".civitai" / "comfy-settings.json"
+
+
+def load_pack_settings() -> dict:
+    """Persisted pack settings written by the sidebar Settings panel ({} when absent/corrupt)."""
+    try:
+        data = json.loads(settings_store_path().read_text())
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def save_pack_settings(data: dict) -> None:
+    path = settings_store_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2))
+    path.chmod(0o600)
+
+
+def stored_orchestrator_url() -> str | None:
+    url = (load_pack_settings().get("orchestratorUrl") or "").strip()
+    return url or None
+
+
+def stored_min_vram_gb() -> int | None:
+    value = load_pack_settings().get("minVramGb")
+    try:
+        return int(value) if value is not None else None
+    except (TypeError, ValueError):
+        return None
+
+
+def stored_mature_content() -> str:
+    mode = load_pack_settings().get("allowMatureContent")
+    return mode if mode in MATURE_CONTENT_MODES else "auto"
+
+
+def stored_use_sage_attention() -> bool:
+    return bool(load_pack_settings().get("useSageAttention", True))
 
 
 def base_url() -> str:
-    return (os.environ.get("CIVITAI_ORCHESTRATION_URL") or DEFAULT_BASE_URL).rstrip("/")
+    return (os.environ.get("CIVITAI_ORCHESTRATION_URL") or stored_orchestrator_url() or DEFAULT_BASE_URL).rstrip("/")
 
 
 def auth_state() -> tuple[str | None, str | None]:
@@ -99,9 +158,15 @@ def resolve_config(api_config: dict | None = None, *, interactive: bool = True) 
     (when `interactive`) browser login. With `interactive=False` (server routes), raise
     CivitaiAuthError instead of opening a browser."""
     resolved_base = (
-        (api_config or {}).get("base_url") or os.environ.get("CIVITAI_ORCHESTRATION_URL") or DEFAULT_BASE_URL
+        (api_config or {}).get("base_url")
+        or os.environ.get("CIVITAI_ORCHESTRATION_URL")
+        or stored_orchestrator_url()
+        or DEFAULT_BASE_URL
     ).rstrip("/")
-    allow_mature = bool((api_config or {}).get("allow_mature_content", False))
+    if api_config is not None and "allow_mature_content" in api_config:
+        mature_content = "true" if api_config["allow_mature_content"] else "false"
+    else:
+        mature_content = stored_mature_content()
     timeout_minutes = float((api_config or {}).get("timeout_minutes") or os.environ.get("CIVITAI_COMFY_TIMEOUT", 30))
 
     mode = (api_config or {}).get("mode", "auto")
@@ -117,6 +182,6 @@ def resolve_config(api_config: dict | None = None, *, interactive: bool = True) 
     return ClientConfig(
         base_url=resolved_base,
         token=token,
-        allow_mature_content=allow_mature,
+        mature_content=mature_content,
         timeout_minutes=timeout_minutes,
     )

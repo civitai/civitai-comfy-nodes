@@ -139,6 +139,24 @@ def test_build_custom_comfy_offload_rewrites_local_models_and_adds_nodepacks(tmp
     ]
 
 
+def test_build_custom_comfy_offload_includes_vram_and_sage_when_set():
+    prompt = {"1": {"class_type": "SaveImage", "inputs": {}}}
+    built = offload.build_custom_comfy_offload(
+        prompt, model_records=[], nodepacks=[], min_vram_gb=24, use_sage_attention=True
+    )
+    custom_input = built.steps[0]["input"]
+    assert custom_input["minVramGb"] == 24
+    assert custom_input["useSageAttention"] is True
+
+
+def test_build_custom_comfy_offload_omits_vram_sage_and_gpu_by_default():
+    prompt = {"1": {"class_type": "SaveImage", "inputs": {}}}
+    custom_input = offload.build_custom_comfy_offload(prompt, model_records=[], nodepacks=[]).steps[0]["input"]
+    assert "minVramGb" not in custom_input
+    assert "useSageAttention" not in custom_input
+    assert "gpuGeneration" not in custom_input  # GPU generation is display-only, never submitted
+
+
 def test_build_custom_comfy_offload_uploads_load_image_inputs_as_blob_airs(tmp_path):
     image = tmp_path / "fried-duck.png"
     image.write_bytes(b"\x89PNG\r\n\x1a\nfake-png")
