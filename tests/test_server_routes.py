@@ -311,6 +311,18 @@ def test_pack_config_payload_defaults(settings_store):
     assert payload["useSageAttention"] is True  # Sage Attention defaults on
     assert payload["gpuGeneration"] == "Ada"
     assert payload["vramTiers"] == [24]
+    assert payload["enableOffload"] is True
+    assert payload["enableRecipeNodes"] is True
+
+
+def test_apply_pack_config_update_feature_toggles(settings_store):
+    sr._apply_pack_config_update({"enableOffload": False, "enableRecipeNodes": False})
+    payload = sr._pack_config_payload()
+    assert payload["enableOffload"] is False
+    assert payload["enableRecipeNodes"] is False
+    sr._apply_pack_config_update({"enableOffload": True})
+    assert sr._pack_config_payload()["enableOffload"] is True
+    assert sr._pack_config_payload()["enableRecipeNodes"] is False  # untouched by the second patch
 
 
 def test_apply_pack_config_update_round_trip(settings_store):

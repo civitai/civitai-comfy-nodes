@@ -456,9 +456,19 @@ function installDropdownItem() {
   return true;
 }
 
+async function offloadEnabled() {
+  try {
+    const cfg = await (await fetch("/civitai/config")).json();
+    return cfg.enableOffload !== false;
+  } catch (e) {
+    return true; // default on if the config route is unavailable
+  }
+}
+
 app.registerExtension({
   name: "civitai.offload",
   async setup() {
+    if (!(await offloadEnabled())) return;
     injectStyles();
     installQueuePromptOverride();
     const observer = new MutationObserver(() => syncRunModeUi());

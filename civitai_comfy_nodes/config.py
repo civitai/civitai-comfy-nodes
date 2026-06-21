@@ -128,6 +128,14 @@ def stored_use_sage_attention() -> bool:
     return bool(load_pack_settings().get("useSageAttention", True))
 
 
+def stored_enable_offload() -> bool:
+    return bool(load_pack_settings().get("enableOffload", True))
+
+
+def stored_enable_recipe_nodes() -> bool:
+    return bool(load_pack_settings().get("enableRecipeNodes", True))
+
+
 def base_url() -> str:
     return (os.environ.get("CIVITAI_ORCHESTRATION_URL") or stored_orchestrator_url() or DEFAULT_BASE_URL).rstrip("/")
 

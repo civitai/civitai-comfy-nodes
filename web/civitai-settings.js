@@ -10,6 +10,8 @@ const IDS = {
   mature: "Civitai.allowMatureContent",
   sage: "Civitai.useSageAttention",
   gpu: "Civitai.gpuGeneration",
+  enableOffload: "Civitai.enableOffload",
+  enableRecipeNodes: "Civitai.enableRecipeNodes",
 };
 
 // Start suppressed: ComfyUI may fire each setting's onChange with its persisted value during init.
@@ -43,6 +45,24 @@ async function pushConfig(payload) {
 app.registerExtension({
   name: "civitai.settings",
   settings: [
+    {
+      id: IDS.enableRecipeNodes,
+      name: "Civitai recipe nodes",
+      category: ["Civitai", "Features", "Civitai recipe nodes"],
+      type: "boolean",
+      defaultValue: true,
+      tooltip: "Register the Civitai recipe nodes (sdcpp, etc.) and their selectors. Restart ComfyUI to apply.",
+      onChange: (value) => pushConfig({ enableRecipeNodes: !!value }),
+    },
+    {
+      id: IDS.enableOffload,
+      name: "Run on Civitai (offload)",
+      category: ["Civitai", "Features", "Run on Civitai (offload)"],
+      type: "boolean",
+      defaultValue: true,
+      tooltip: "Enable the 'Run on Civitai' action and the offload marker nodes. Restart ComfyUI to apply.",
+      onChange: (value) => pushConfig({ enableOffload: !!value }),
+    },
     {
       id: IDS.url,
       name: "Orchestrator URL",
@@ -113,6 +133,8 @@ app.registerExtension({
       app.ui.settings.setSettingValue(IDS.vram, cfg.minVramGb || 0);
       app.ui.settings.setSettingValue(IDS.mature, cfg.allowMatureContent || "auto");
       app.ui.settings.setSettingValue(IDS.sage, !!cfg.useSageAttention);
+      app.ui.settings.setSettingValue(IDS.enableOffload, cfg.enableOffload !== false);
+      app.ui.settings.setSettingValue(IDS.enableRecipeNodes, cfg.enableRecipeNodes !== false);
       if (cfg.gpuGeneration) app.ui.settings.setSettingValue(IDS.gpu, cfg.gpuGeneration);
     } finally {
       setTimeout(() => {

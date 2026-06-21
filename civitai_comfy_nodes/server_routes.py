@@ -647,6 +647,8 @@ def _pack_config_payload() -> dict:
         "allowMatureContent": cfg.stored_mature_content(),
         "useSageAttention": cfg.stored_use_sage_attention(),
         "gpuGeneration": cfg.GPU_GENERATION_LABEL,
+        "enableOffload": cfg.stored_enable_offload(),
+        "enableRecipeNodes": cfg.stored_enable_recipe_nodes(),
     }
 
 
@@ -679,6 +681,10 @@ def _apply_pack_config_update(body: dict) -> None:
         settings["allowMatureContent"] = mode
     if "useSageAttention" in body:
         settings["useSageAttention"] = bool(body.get("useSageAttention"))
+    if "enableOffload" in body:
+        settings["enableOffload"] = bool(body.get("enableOffload"))
+    if "enableRecipeNodes" in body:
+        settings["enableRecipeNodes"] = bool(body.get("enableRecipeNodes"))
     cfg.save_pack_settings(settings)
 
 
