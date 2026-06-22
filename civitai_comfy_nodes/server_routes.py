@@ -449,6 +449,19 @@ def _extract_trace_url(workflow: dict) -> str | None:
     return None
 
 
+def _push_offload_status(sid: str | None, state: str, **fields) -> None:
+    """Push a terminal offload status (`done`/`error`) to the originating tab over the local /ws.
+    Best-effort: a no-op outside ComfyUI or if the socket is gone."""
+    try:
+        from server import PromptServer  # ComfyUI runtime
+    except Exception:
+        return
+    try:
+        PromptServer.instance.send_sync("civitai.offload.status", {"state": state, **fields}, sid)
+    except Exception:
+        _log.debug("Could not push offload status", exc_info=True)
+
+
 class _TraceTailHandle:
     def __init__(self, thread: threading.Thread, stop_event: threading.Event, box: dict):
         self._thread = thread

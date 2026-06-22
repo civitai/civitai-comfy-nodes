@@ -424,3 +424,37 @@ def test_start_trace_tail_keeps_polling_briefly_after_terminal_without_trace(mon
     assert calls == [("wf-1", 5), ("wf-1", 5)]
     assert seen == {"url": "http://trace", "sid": "browser-1"}
     assert handle.summary() == {"bytes_in": 5, "frames": 1, "emitted": 1, "errors": 0}
+
+
+def test_push_offload_status_sends_custom_ws_event(monkeypatch):
+    import sys
+    import types
+
+    class FakeServer:
+        def __init__(self):
+            self.calls = []
+
+        def send_sync(self, event, data, sid=None):
+            self.calls.append((event, data, sid))
+
+    fake_server = FakeServer()
+    monkeypatch.setitem(
+        sys.modules,
+        "server",
+        types.SimpleNamespace(PromptServer=types.SimpleNamespace(instance=fake_server)),
+    )
+
+    sr._push_offload_status("browser-1", "done", workflowId="wf-1", promptId="p-9")
+
+    assert fake_server.calls == [
+        (
+            "civitai.offload.status",
+            {"state": "done", "workflowId": "wf-1", "promptId": "p-9"},
+            "browser-1",
+        )
+    ]
+
+
+def test_push_offload_status_is_noop_without_comfy_server():
+    # No `server` module installed in the test env -> import fails -> silent no-op.
+    sr._push_offload_status("browser-1", "error", message="boom")
