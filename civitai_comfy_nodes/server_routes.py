@@ -557,6 +557,50 @@ def _offload_submit(
     return {"config": config, "build": build, "workflow": submitted}
 
 
+def _offload_finalize(
+    prompt: dict,
+    build,
+    config,
+    workflow: dict,
+    comfy_base_url: str,
+    *,
+    sid: str | None,
+    do_tail: bool,
+) -> None:
+    """Background half of an offload run: tail the trace onto the local /ws, poll to completion,
+    then download the result and queue the local continuation. Runs in a daemon thread, so it
+    reports terminal state via a `civitai.offload.status` ws event instead of an HTTP response."""
+    from .client import OrchestrationClient
+
+    client = OrchestrationClient(config)
+    tail = _start_trace_tail(config, workflow, sid=sid) if do_tail else None
+    try:
+        final = _poll_workflow_to_terminal(client, workflow, config.timeout_minutes)
+    except Exception as exc:
+        if tail is not None:
+            tail.stop()
+        _push_offload_status(sid, "error", message=str(exc))
+        _log.warning("offload finalize: poll failed (%s)", exc, exc_info=True)
+        return
+    if tail is not None:
+        tail.drain()
+
+    offload_result = {"workflow": final, "offload": build.as_dict()}
+    try:
+        local = _run_local_tail(prompt, offload_result, comfy_base_url, client_id=sid)
+    except Exception as exc:
+        _push_offload_status(sid, "error", message=str(exc))
+        _log.warning("offload finalize: local tail failed (%s)", exc, exc_info=True)
+        return
+
+    _push_offload_status(
+        sid,
+        "done",
+        workflowId=final.get("id") or final.get("workflowId"),
+        promptId=((local or {}).get("queue") or {}).get("prompt_id"),
+    )
+
+
 def _offload_run(
     prompt: dict,
     selected_node_ids: list[str] | None,

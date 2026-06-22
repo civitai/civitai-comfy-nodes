@@ -2,6 +2,7 @@ import pytest
 
 from civitai_comfy_nodes import server_routes as sr
 from civitai_comfy_nodes import trace_tail
+from civitai_comfy_nodes.errors import CivitaiNodeError
 
 
 def _wf(steps, **extra):
@@ -538,3 +539,90 @@ def test_offload_submit_omits_trace_when_not_tailing(monkeypatch):
 
     assert captured["trace"] is None
     assert captured["whatif"] is True
+
+
+def _finalize_env(monkeypatch, events, *, poll, local):
+    import types
+
+    from civitai_comfy_nodes import client as client_mod
+
+    monkeypatch.setattr(client_mod, "OrchestrationClient", lambda config: object())
+
+    fake_tail = types.SimpleNamespace(
+        drain=lambda: events.append("drain"),
+        stop=lambda: events.append("stop"),
+        summary=lambda: None,
+    )
+    monkeypatch.setattr(
+        sr, "_start_trace_tail", lambda config, wf, sid=None: (events.append("tail"), fake_tail)[1]
+    )
+    monkeypatch.setattr(sr, "_poll_workflow_to_terminal", poll)
+    monkeypatch.setattr(sr, "_run_local_tail", local)
+    monkeypatch.setattr(sr, "_push_offload_status", lambda sid, state, **f: events.append(("status", state, sid, f)))
+
+
+def test_offload_finalize_pushes_done_on_success(monkeypatch):
+    import types
+
+    events = []
+    _finalize_env(
+        monkeypatch,
+        events,
+        poll=lambda client, wf, timeout: {"id": "wf-1", "status": "succeeded"},
+        local=lambda prompt, result, base, client_id=None: {"queue": {"prompt_id": "p-9"}},
+    )
+    build = types.SimpleNamespace(as_dict=lambda: {"k": "v"})
+    config = types.SimpleNamespace(timeout_minutes=5, token="t")
+
+    sr._offload_finalize({"p": 1}, build, config, {"id": "wf-1"}, "http://localhost:8188", sid="browser-1", do_tail=True)
+
+    assert ("status", "done", "browser-1", {"workflowId": "wf-1", "promptId": "p-9"}) in events
+    assert "drain" in events
+    assert "stop" not in events
+
+
+def test_offload_finalize_pushes_error_and_stops_tail_when_poll_fails(monkeypatch):
+    import types
+
+    events = []
+
+    def boom(client, wf, timeout):
+        raise CivitaiNodeError("poll boom")
+
+    _finalize_env(
+        monkeypatch,
+        events,
+        poll=boom,
+        local=lambda *a, **k: {"queue": {"prompt_id": "p-9"}},
+    )
+    build = types.SimpleNamespace(as_dict=lambda: {})
+    config = types.SimpleNamespace(timeout_minutes=5, token="t")
+
+    sr._offload_finalize({"p": 1}, build, config, {"id": "wf-1"}, "http://x", sid="browser-1", do_tail=True)
+
+    assert ("status", "error", "browser-1", {"message": "poll boom"}) in events
+    assert "stop" in events
+    assert "drain" not in events
+
+
+def test_offload_finalize_pushes_error_when_local_tail_fails(monkeypatch):
+    import types
+
+    events = []
+
+    def boom_local(prompt, result, base, client_id=None):
+        raise CivitaiNodeError("no assets")
+
+    _finalize_env(
+        monkeypatch,
+        events,
+        poll=lambda client, wf, timeout: {"id": "wf-1", "status": "succeeded"},
+        local=boom_local,
+    )
+    build = types.SimpleNamespace(as_dict=lambda: {})
+    config = types.SimpleNamespace(timeout_minutes=5, token="t")
+
+    sr._offload_finalize({"p": 1}, build, config, {"id": "wf-1"}, "http://x", sid="browser-1", do_tail=True)
+
+    assert ("status", "error", "browser-1", {"message": "no assets"}) in events
+    assert "drain" in events  # poll succeeded, tail drained, then local failed
