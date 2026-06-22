@@ -543,6 +543,8 @@ def _offload_submit(
 
     config = resolve_config(interactive=False)
     client = OrchestrationClient(config)
+    started = time.monotonic()
+    _log.info("offload submit: building customComfy payload (whatif=%s)", whatif)
     build = offload.build_custom_comfy_offload(
         prompt,
         selected_node_ids=selected_node_ids,
@@ -553,7 +555,14 @@ def _offload_submit(
         use_sage_attention=stored_use_sage_attention(),
         upload_blob_file=client.upload_blob_file,
     )
+    built = time.monotonic()
     submitted = client.submit_steps(build.steps, wait=0, whatif=whatif)
+    _log.info(
+        "offload submit: workflow=%s build=%.2fs submit=%.2fs",
+        submitted.get("id") or submitted.get("workflowId"),
+        built - started,
+        time.monotonic() - built,
+    )
     return {"config": config, "build": build, "workflow": submitted}
 
 
@@ -572,16 +581,25 @@ def _offload_finalize(
     reports terminal state via a `civitai.offload.status` ws event instead of an HTTP response."""
     from .client import OrchestrationClient
 
+    workflow_id = workflow.get("id") or workflow.get("workflowId")
     client = OrchestrationClient(config)
     tail = _start_trace_tail(config, workflow, sid=sid) if do_tail else None
+    started = time.monotonic()
+    _log.info("offload finalize: polling workflow %s to completion (tail=%s)", workflow_id, tail is not None)
     try:
         final = _poll_workflow_to_terminal(client, workflow, config.timeout_minutes)
     except Exception as exc:
         if tail is not None:
             tail.stop()
         _push_offload_status(sid, "error", message=str(exc))
-        _log.warning("offload finalize: poll failed (%s)", exc, exc_info=True)
+        _log.warning("offload finalize: poll failed for %s (%s)", workflow_id, exc, exc_info=True)
         return
+    _log.info(
+        "offload finalize: workflow %s reached %s in %.2fs",
+        workflow_id,
+        final.get("status"),
+        time.monotonic() - started,
+    )
     if tail is not None:
         tail.drain()
 
@@ -599,6 +617,7 @@ def _offload_finalize(
         workflowId=final.get("id") or final.get("workflowId"),
         promptId=((local or {}).get("queue") or {}).get("prompt_id"),
     )
+    _log.info("offload finalize: workflow %s done in %.2fs total", workflow_id, time.monotonic() - started)
 
 
 def _run_local_tail(

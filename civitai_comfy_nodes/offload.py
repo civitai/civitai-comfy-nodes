@@ -9,11 +9,13 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import logging
 import mimetypes
 import os
 import re
 import subprocess
 import sys
+import time
 import zlib
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -31,6 +33,8 @@ try:  # Python 3.11+
 except ModuleNotFoundError:  # pragma: no cover - only hit on Python 3.10 runtimes
     tomllib = None
 
+
+_log = logging.getLogger("civitai_comfy_nodes.offload")
 
 CIVITAI_BASE_URL = os.environ.get("CIVITAI_BASE_URL") or oauth.OAUTH_BASE
 MODEL_EXTENSIONS = {".safetensors", ".sft", ".ckpt", ".pt", ".pth", ".bin"}
@@ -1323,7 +1327,10 @@ def build_custom_comfy_offload(
     for node in stripped.values():
         _value_contains_air(_node_inputs(node), resources)
 
+    _t = time.monotonic()
     model_records = model_records if model_records is not None else scan_local_model_files()
+    _log.info("offload build: scanned %d local models in %.2fs", len(model_records), time.monotonic() - _t)
+    _t = time.monotonic()
     rewritten, resolved_models, model_warnings = replace_local_models_with_airs(
         stripped,
         model_records=model_records,
@@ -1332,14 +1339,19 @@ def build_custom_comfy_offload(
         session=session,
         civitai_base_url=civitai_base_url,
     )
+    _log.info("offload build: resolved %d model AIRs in %.2fs", len(resolved_models), time.monotonic() - _t)
+    _t = time.monotonic()
     rewritten, input_blobs = replace_local_media_inputs_with_blob_airs(
         rewritten,
         resources=resources,
         upload_blob_file=upload_blob_file,
         path_resolver=input_path_resolver,
     )
+    _log.info("offload build: uploaded %d media blobs in %.2fs", len(input_blobs), time.monotonic() - _t)
 
+    _t = time.monotonic()
     nodepacks = nodepacks if nodepacks is not None else scan_installed_nodepacks()
+    _log.info("offload build: scanned %d nodepacks in %.2fs", len(nodepacks), time.monotonic() - _t)
     used_nodepack_folders = _workflow_nodepack_folders(rewritten)
     nodepack_resources = []
     for nodepack in nodepacks:
