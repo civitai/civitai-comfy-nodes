@@ -601,56 +601,6 @@ def _offload_finalize(
     )
 
 
-def _offload_run(
-    prompt: dict,
-    selected_node_ids: list[str] | None,
-    workflow: dict | None,
-    wait: int,
-    whatif: bool,
-    *,
-    wait_until_complete: bool = False,
-    live_progress: bool = False,
-    client_id: str | None = None,
-) -> dict:
-    from . import offload
-    from .client import OrchestrationClient
-    from .config import resolve_config, stored_min_vram_gb, stored_use_sage_attention
-
-    config = resolve_config(interactive=False)
-    client = OrchestrationClient(config)
-    # Only record + tail a trace when we're actually going to wait out the run; a fire-and-forget
-    # submit has nobody to replay frames to.
-    do_tail = live_progress and wait_until_complete and not whatif
-    build = offload.build_custom_comfy_offload(
-        prompt,
-        selected_node_ids=selected_node_ids,
-        workflow=workflow,
-        token=config.token,
-        trace="binary" if do_tail else None,
-        min_vram_gb=stored_min_vram_gb(),
-        use_sage_attention=stored_use_sage_attention(),
-        upload_blob_file=client.upload_blob_file,
-    )
-    workflow = client.submit_steps(build.steps, wait=wait, whatif=whatif)
-
-    tail = _start_trace_tail(config, workflow, sid=client_id) if do_tail else None
-    try:
-        if wait_until_complete and not whatif:
-            workflow = _poll_workflow_to_terminal(client, workflow, config.timeout_minutes)
-    except Exception:
-        if tail is not None:
-            tail.stop()
-        raise
-    else:
-        if tail is not None:
-            tail.drain()
-
-    result = {"workflow": workflow, "offload": build.as_dict()}
-    if tail is not None:
-        result["trace"] = tail.summary()
-    return result
-
-
 def _run_local_tail(prompt: dict, offload_result: dict, comfy_base_url: str, *, client_id: str | None = None) -> dict | None:
     from . import offload
 
@@ -921,10 +871,6 @@ if _server is not None:
         workflow = body.get("workflow")
         if workflow is not None and not isinstance(workflow, dict):
             return web.json_response({"error": "workflow must be a serialized ComfyUI workflow object"}, status=400)
-        try:
-            wait = max(0, min(int(body.get("wait", 0)), 60))
-        except (TypeError, ValueError):
-            wait = 0
         whatif = bool(body.get("whatif", False))
         run_local_tail = bool(body.get("runLocalTail", False))
         live_progress = bool(body.get("liveProgress", True))
@@ -932,31 +878,33 @@ if _server is not None:
         if not isinstance(client_id, str):
             client_id = None
         comfy_base_url = f"{request.scheme}://{request.host}"
+        selected_ids = [str(node_id) for node_id in selected] if selected else None
+        run_background = run_local_tail and not whatif
+        do_tail = run_background and live_progress
         loop = asyncio.get_event_loop()
         try:
-            selected_ids = [str(node_id) for node_id in selected] if selected else None
-            result = await loop.run_in_executor(
+            submit = await loop.run_in_executor(
                 None,
-                lambda: _offload_run(
-                    prompt,
-                    selected_ids,
-                    workflow,
-                    wait,
-                    whatif,
-                    wait_until_complete=run_local_tail,
-                    live_progress=live_progress,
-                    client_id=client_id,
-                ),
+                lambda: _offload_submit(prompt, selected_ids, workflow, whatif=whatif, do_tail=do_tail),
             )
-            if run_local_tail and not whatif:
-                result["local"] = await loop.run_in_executor(
-                    None,
-                    lambda: _run_local_tail(prompt, result, comfy_base_url, client_id=client_id),
-                )
         except CivitaiAuthError:
             return web.json_response({"error": "auth_required"}, status=401)
         except CivitaiNodeError as e:
             return web.json_response({"error": str(e)}, status=400)
         except Exception as e:
             return web.json_response({"error": str(e)}, status=502)
-        return web.json_response(result)
+
+        submitted_workflow = submit["workflow"]
+        response = {"workflow": submitted_workflow, "offload": submit["build"].as_dict()}
+        trace_url = _extract_trace_url(submitted_workflow)
+        if trace_url:
+            response["traceUrl"] = trace_url
+        if run_background:
+            threading.Thread(
+                target=_offload_finalize,
+                args=(prompt, submit["build"], submit["config"], submitted_workflow, comfy_base_url),
+                kwargs={"sid": client_id, "do_tail": do_tail},
+                name="civitai-offload-finalize",
+                daemon=True,
+            ).start()
+        return web.json_response(response)
