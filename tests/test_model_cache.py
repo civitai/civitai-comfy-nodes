@@ -1,3 +1,5 @@
+import os
+
 from civitai_comfy_nodes import model_cache
 
 
@@ -31,6 +33,18 @@ def test_get_invalidates_when_file_changes(tmp_path, monkeypatch):
     model_cache.put(model, hashes={"SHA256": "ABC"}, air="urn:air:x@1")
 
     model.write_bytes(b"weights-but-larger-now")  # size changes -> identity mismatch
+
+    assert model_cache.get(model) is None
+
+
+def test_get_invalidates_when_mtime_changes(tmp_path, monkeypatch):
+    monkeypatch.setenv("CIVITAI_COMFY_MODEL_CACHE", str(tmp_path / "cache.json"))
+    model = _model(tmp_path, b"weights")
+    model_cache.put(model, hashes={"SHA256": "ABC"}, air="urn:air:x@1")
+    assert model_cache.get(model) is not None
+
+    stat = os.stat(model)
+    os.utime(model, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000_000))  # same size, newer mtime
 
     assert model_cache.get(model) is None
 

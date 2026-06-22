@@ -131,6 +131,30 @@ def test_resolve_model_air_reuses_cached_hashes_without_rehashing(tmp_path, monk
     assert resolved.hash_source == "computed"
 
 
+def test_resolve_model_air_relooks_up_autov3_after_negative_cache(tmp_path, monkeypatch):
+    monkeypatch.setenv("CIVITAI_COMFY_MODEL_CACHE", str(tmp_path / "cache.json"))
+    model = tmp_path / "model.safetensors"
+    _write_safetensors(model, {"__metadata__": {"format": "pt"}}, payload=b"payload")
+
+    # First call: nothing matches -> AutoV3 gets computed and cached (no air).
+    miss = _Session([_Resp(404, {}) for _ in range(6)])
+    assert offload.resolve_model_air(model, session=miss, civitai_base_url="http://civitai.test") is None
+
+    # Second call: the model is now on Civitai, matchable only by AutoV3. Must not re-hash, and must
+    # re-run the AutoV3 lookup even though AutoV3 was cached from the prior miss.
+    def _no_rehash(*args, **kwargs):
+        raise AssertionError("must not re-hash when hashes are cached")
+
+    monkeypatch.setattr(offload, "compute_model_hashes", _no_rehash)
+    monkeypatch.setattr(offload, "_autov3_safetensors_payload", _no_rehash)
+    autov3 = hashlib.sha256(b"payload").hexdigest().upper()
+    second = _Session([_Resp(404, {}), _Resp(200, {"id": 5, "air": "urn:air:x@5"})])
+    resolved = offload.resolve_model_air(model, session=second, civitai_base_url="http://civitai.test")
+
+    assert resolved is not None and resolved.air == "urn:air:x@5"
+    assert any(url.endswith("/" + autov3) for url in second.urls)
+
+
 def test_scan_installed_nodepacks_infers_air_only_with_version(tmp_path):
     rgthree = tmp_path / "rgthree-comfy"
     rgthree.mkdir()
