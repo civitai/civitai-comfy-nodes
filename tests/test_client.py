@@ -79,3 +79,34 @@ def test_submit_steps_posts_workflow_body(monkeypatch):
     assert captured["url"].endswith("/v2/consumer/workflows")
     assert captured["params"] == {"wait": 0, "whatif": "true"}
     assert captured["json"] == {"steps": steps}
+
+
+def _mature_client(monkeypatch, mature_content):
+    client = OrchestrationClient(ClientConfig(base_url="http://x", token="t", mature_content=mature_content))
+    captured = {}
+
+    def fake_request(method, url, **kwargs):
+        captured.update(params=kwargs.get("params"), json=kwargs.get("json"))
+        return _Resp()
+
+    monkeypatch.setattr(client.session, "request", fake_request)
+    return client, captured
+
+
+def test_submit_steps_mature_auto_omits_body_property(monkeypatch):
+    client, captured = _mature_client(monkeypatch, "auto")
+    client.submit_steps([], wait=0)
+    assert "allowMatureContent" not in captured["json"]
+    assert "hideMatureContent" not in captured["params"]
+
+
+def test_submit_steps_mature_true_allows(monkeypatch):
+    client, captured = _mature_client(monkeypatch, "true")
+    client.submit_steps([], wait=0)
+    assert captured["json"]["allowMatureContent"] is True
+
+
+def test_submit_steps_mature_false_blocks(monkeypatch):
+    client, captured = _mature_client(monkeypatch, "false")
+    client.submit_steps([], wait=0)
+    assert captured["json"]["allowMatureContent"] is False

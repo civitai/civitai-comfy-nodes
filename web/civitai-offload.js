@@ -160,7 +160,6 @@ function looksLikeApiPrompt(value) {
 }
 
 async function submitOffload(payload) {
-  payload.wait = 5;
   payload.runLocalTail = true;
   // Replay the remote run's /ws frames (progress + previews) onto this tab's canvas.
   payload.liveProgress = true;
@@ -180,7 +179,6 @@ async function submitOffload(payload) {
 
 function offloadQueueResult(data, number) {
   const id =
-    data?.local?.queue?.prompt_id ||
     data?.workflow?.id ||
     data?.workflow?.workflowId ||
     `civitai-offload-${Date.now()}`;
@@ -271,9 +269,8 @@ async function runInCivitai(button, graph = null, { throwOnError = false } = {})
   try {
     const data = await activeOffloadPromise;
     const id = data.workflow?.id || data.workflow?.workflowId || "submitted";
-    const local = data.local?.queue?.prompt_id ? ` Local continuation ${data.local.queue.prompt_id} queued.` : "";
     const warnings = data.offload?.warnings?.length ? ` ${data.offload.warnings.join(" ")}` : "";
-    toast("success", "Submitted to Civitai", `${id}.${local}${warnings}`);
+    toast("success", "Submitted to Civitai", `${id}.${warnings}`);
     return data;
   } catch (e) {
     toast("error", "Civitai offload failed", String(e.message || e));
@@ -456,11 +453,30 @@ function installDropdownItem() {
   return true;
 }
 
+async function offloadEnabled() {
+  try {
+    const cfg = await (await fetch("/civitai/config")).json();
+    return cfg.enableOffload !== false;
+  } catch (e) {
+    return true; // default on if the config route is unavailable
+  }
+}
+
 app.registerExtension({
   name: "civitai.offload",
   async setup() {
+    if (!(await offloadEnabled())) return;
     injectStyles();
     installQueuePromptOverride();
+    api.addCustomEventListener("civitai.offload.status", (event) => {
+      const detail = event.detail || {};
+      if (detail.state === "error") {
+        toast("error", "Civitai offload failed", String(detail.message || "Unknown error"));
+      } else if (detail.state === "done") {
+        const wf = detail.workflowId ? ` (${detail.workflowId})` : "";
+        toast("success", "Civitai offload complete", `Results downloaded${wf}.`);
+      }
+    });
     const observer = new MutationObserver(() => syncRunModeUi());
     observer.observe(document.body, { childList: true, subtree: true });
     document.addEventListener(

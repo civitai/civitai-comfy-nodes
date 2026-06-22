@@ -51,11 +51,11 @@ class OrchestrationClient:
         params: dict = {"wait": wait}
         if whatif:
             params["whatif"] = "true"
-        if self.config.allow_mature_content:
-            params["hideMatureContent"] = "false"
         body: dict = {"steps": steps}
         if tags:
             body["tags"] = list(tags)
+        if self.config.mature_content in ("true", "false"):
+            body["allowMatureContent"] = self.config.mature_content == "true"
         return self._request("POST", "/v2/consumer/workflows", params=params, json=body).json()
 
     def submit_workflow(

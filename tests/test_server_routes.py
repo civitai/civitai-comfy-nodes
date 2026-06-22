@@ -1,5 +1,8 @@
+import pytest
+
 from civitai_comfy_nodes import server_routes as sr
 from civitai_comfy_nodes import trace_tail
+from civitai_comfy_nodes.errors import CivitaiNodeError
 
 
 def _wf(steps, **extra):
@@ -293,6 +296,63 @@ def test_publish_local_job_history_adds_completed_output_job(monkeypatch):
     }
 
 
+@pytest.fixture()
+def settings_store(tmp_path, monkeypatch):
+    monkeypatch.delenv("CIVITAI_ORCHESTRATION_URL", raising=False)
+    monkeypatch.setenv("CIVITAI_COMFY_SETTINGS_STORE", str(tmp_path / "settings.json"))
+    return tmp_path
+
+
+def test_pack_config_payload_defaults(settings_store):
+    payload = sr._pack_config_payload()
+    assert payload["orchestratorUrl"] == ""
+    assert payload["orchestratorSource"] == "default"
+    assert payload["minVramGb"] is None
+    assert payload["allowMatureContent"] == "auto"
+    assert payload["useSageAttention"] is True  # Sage Attention defaults on
+    assert payload["gpuGeneration"] == "Ada"
+    assert payload["vramTiers"] == [24]
+    assert payload["enableOffload"] is True
+    assert payload["enableRecipeNodes"] is True
+
+
+def test_apply_pack_config_update_feature_toggles(settings_store):
+    sr._apply_pack_config_update({"enableOffload": False, "enableRecipeNodes": False})
+    payload = sr._pack_config_payload()
+    assert payload["enableOffload"] is False
+    assert payload["enableRecipeNodes"] is False
+    sr._apply_pack_config_update({"enableOffload": True})
+    assert sr._pack_config_payload()["enableOffload"] is True
+    assert sr._pack_config_payload()["enableRecipeNodes"] is False  # untouched by the second patch
+
+
+def test_apply_pack_config_update_round_trip(settings_store):
+    sr._apply_pack_config_update(
+        {"orchestratorUrl": "http://dev/", "minVramGb": 24, "allowMatureContent": "true", "useSageAttention": True}
+    )
+    payload = sr._pack_config_payload()
+    assert payload["orchestratorUrl"] == "http://dev"  # trailing slash stripped
+    assert payload["orchestratorSource"] == "stored"
+    assert payload["minVramGb"] == 24
+    assert payload["allowMatureContent"] == "true"
+    assert payload["useSageAttention"] is True
+
+
+def test_apply_pack_config_update_blank_url_clears_override(settings_store):
+    sr._apply_pack_config_update({"orchestratorUrl": "http://dev"})
+    sr._apply_pack_config_update({"orchestratorUrl": "  "})
+    assert sr._pack_config_payload()["orchestratorSource"] == "default"
+
+
+def test_apply_pack_config_update_rejects_bad_input(settings_store):
+    with pytest.raises(ValueError):
+        sr._apply_pack_config_update({"orchestratorUrl": "ftp://nope"})
+    with pytest.raises(ValueError):
+        sr._apply_pack_config_update({"minVramGb": 999})
+    with pytest.raises(ValueError):
+        sr._apply_pack_config_update({"allowMatureContent": "maybe"})
+
+
 def test_start_trace_tail_returns_none_without_trace_target():
     assert sr._start_trace_tail(object(), {"steps": []}, sid=None) is None
 
@@ -477,3 +537,204 @@ def test_buzz_message_running_has_no_transactions():
     wf = {"id": "6-9", "status": "Processing", "steps": [_usage_step({"buzzPerSecond": 1})]}
     msg = sr._buzz_message(wf)
     assert "transactions" not in msg and "cost_total" not in msg
+
+
+def test_push_offload_status_sends_custom_ws_event(monkeypatch):
+    import sys
+    import types
+
+    class FakeServer:
+        def __init__(self):
+            self.calls = []
+
+        def send_sync(self, event, data, sid=None):
+            self.calls.append((event, data, sid))
+
+    fake_server = FakeServer()
+    monkeypatch.setitem(
+        sys.modules,
+        "server",
+        types.SimpleNamespace(PromptServer=types.SimpleNamespace(instance=fake_server)),
+    )
+
+    sr._push_offload_status("browser-1", "done", workflowId="wf-1", promptId="p-9")
+
+    assert fake_server.calls == [
+        (
+            "civitai.offload.status",
+            {"state": "done", "workflowId": "wf-1", "promptId": "p-9"},
+            "browser-1",
+        )
+    ]
+
+
+def test_push_offload_status_is_noop_without_comfy_server():
+    # No `server` module installed in the test env -> import fails -> silent no-op.
+    sr._push_offload_status("browser-1", "error", message="boom")
+
+
+def test_offload_submit_uses_wait_zero_and_requests_trace(monkeypatch):
+    import types
+
+    from civitai_comfy_nodes import client as client_mod
+    from civitai_comfy_nodes import config as config_mod
+    from civitai_comfy_nodes import offload as offload_mod
+
+    captured = {}
+
+    class FakeClient:
+        def __init__(self, config):
+            self.config = config
+            self.upload_blob_file = lambda *a, **k: None
+
+        def submit_steps(self, steps, *, wait, whatif=False):
+            captured["wait"] = wait
+            captured["whatif"] = whatif
+            captured["steps"] = steps
+            return {"id": "wf-1", "status": "queued"}
+
+    fake_build = types.SimpleNamespace(
+        steps=[{"$type": "customComfy", "input": {}}], as_dict=lambda: {"ok": True}
+    )
+
+    def fake_build_offload(prompt, **kwargs):
+        captured["trace"] = kwargs.get("trace")
+        return fake_build
+
+    monkeypatch.setattr(
+        config_mod, "resolve_config", lambda interactive=False: types.SimpleNamespace(token="t", timeout_minutes=5)
+    )
+    monkeypatch.setattr(config_mod, "stored_min_vram_gb", lambda: 24)
+    monkeypatch.setattr(config_mod, "stored_use_sage_attention", lambda: False)
+    monkeypatch.setattr(client_mod, "OrchestrationClient", FakeClient)
+    monkeypatch.setattr(offload_mod, "build_custom_comfy_offload", fake_build_offload)
+
+    result = sr._offload_submit({"3": {}}, None, None, whatif=False, do_tail=True)
+
+    assert captured["wait"] == 0
+    assert captured["trace"] == "binary"
+    assert result["workflow"] == {"id": "wf-1", "status": "queued"}
+    assert result["build"] is fake_build
+    assert result["config"].token == "t"
+
+
+def test_offload_submit_omits_trace_when_not_tailing(monkeypatch):
+    import types
+
+    from civitai_comfy_nodes import client as client_mod
+    from civitai_comfy_nodes import config as config_mod
+    from civitai_comfy_nodes import offload as offload_mod
+
+    captured = {}
+
+    class FakeClient:
+        def __init__(self, config):
+            self.upload_blob_file = lambda *a, **k: None
+
+        def submit_steps(self, steps, *, wait, whatif=False):
+            captured["whatif"] = whatif
+            return {"id": "wf-2"}
+
+    def fake_build_offload(prompt, **kwargs):
+        captured["trace"] = kwargs.get("trace")
+        return types.SimpleNamespace(steps=[], as_dict=lambda: {})
+
+    monkeypatch.setattr(
+        config_mod, "resolve_config", lambda interactive=False: types.SimpleNamespace(token="t", timeout_minutes=5)
+    )
+    monkeypatch.setattr(config_mod, "stored_min_vram_gb", lambda: 24)
+    monkeypatch.setattr(config_mod, "stored_use_sage_attention", lambda: False)
+    monkeypatch.setattr(client_mod, "OrchestrationClient", FakeClient)
+    monkeypatch.setattr(offload_mod, "build_custom_comfy_offload", fake_build_offload)
+
+    sr._offload_submit({"3": {}}, None, None, whatif=True, do_tail=False)
+
+    assert captured["trace"] is None
+    assert captured["whatif"] is True
+
+
+def _finalize_env(monkeypatch, events, *, poll, local):
+    import types
+
+    from civitai_comfy_nodes import client as client_mod
+
+    monkeypatch.setattr(client_mod, "OrchestrationClient", lambda config: object())
+
+    fake_tail = types.SimpleNamespace(
+        drain=lambda: events.append("drain"),
+        stop=lambda: events.append("stop"),
+        summary=lambda: None,
+    )
+    monkeypatch.setattr(
+        sr, "_start_trace_tail", lambda config, wf, sid=None: (events.append("tail"), fake_tail)[1]
+    )
+    monkeypatch.setattr(sr, "_poll_workflow_to_terminal", poll)
+    monkeypatch.setattr(sr, "_run_local_tail", local)
+    monkeypatch.setattr(sr, "_push_offload_status", lambda sid, state, **f: events.append(("status", state, sid, f)))
+
+
+def test_offload_finalize_pushes_done_on_success(monkeypatch):
+    import types
+
+    events = []
+    _finalize_env(
+        monkeypatch,
+        events,
+        poll=lambda client, wf, timeout, on_update=None: {"id": "wf-1", "status": "succeeded"},
+        local=lambda prompt, result, base, client_id=None: {"queue": {"prompt_id": "p-9"}},
+    )
+    build = types.SimpleNamespace(as_dict=lambda: {"k": "v"})
+    config = types.SimpleNamespace(timeout_minutes=5, token="t")
+
+    sr._offload_finalize({"p": 1}, build, config, {"id": "wf-1"}, "http://localhost:8188", sid="browser-1", do_tail=True)
+
+    assert ("status", "done", "browser-1", {"workflowId": "wf-1", "promptId": "p-9"}) in events
+    assert "drain" in events
+    assert "stop" not in events
+
+
+def test_offload_finalize_pushes_error_and_stops_tail_when_poll_fails(monkeypatch):
+    import types
+
+    events = []
+
+    def boom(client, wf, timeout, on_update=None):
+        raise CivitaiNodeError("poll boom")
+
+    _finalize_env(
+        monkeypatch,
+        events,
+        poll=boom,
+        local=lambda *a, **k: {"queue": {"prompt_id": "p-9"}},
+    )
+    build = types.SimpleNamespace(as_dict=lambda: {})
+    config = types.SimpleNamespace(timeout_minutes=5, token="t")
+
+    sr._offload_finalize({"p": 1}, build, config, {"id": "wf-1"}, "http://x", sid="browser-1", do_tail=True)
+
+    assert ("status", "error", "browser-1", {"message": "poll boom"}) in events
+    assert "stop" in events
+    assert "drain" not in events
+
+
+def test_offload_finalize_pushes_error_when_local_tail_fails(monkeypatch):
+    import types
+
+    events = []
+
+    def boom_local(prompt, result, base, client_id=None):
+        raise CivitaiNodeError("no assets")
+
+    _finalize_env(
+        monkeypatch,
+        events,
+        poll=lambda client, wf, timeout, on_update=None: {"id": "wf-1", "status": "succeeded"},
+        local=boom_local,
+    )
+    build = types.SimpleNamespace(as_dict=lambda: {})
+    config = types.SimpleNamespace(timeout_minutes=5, token="t")
+
+    sr._offload_finalize({"p": 1}, build, config, {"id": "wf-1"}, "http://x", sid="browser-1", do_tail=True)
+
+    assert ("status", "error", "browser-1", {"message": "no assets"}) in events
+    assert "drain" in events  # poll succeeded, tail drained, then local failed
