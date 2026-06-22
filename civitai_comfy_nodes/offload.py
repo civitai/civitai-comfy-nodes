@@ -24,7 +24,7 @@ from urllib import parse
 
 import requests
 
-from . import oauth
+from . import model_cache, oauth
 from .errors import CivitaiNodeError
 from .local_models import AIR_TYPE_FOLDERS, USER_AGENT
 
@@ -273,20 +273,23 @@ def _autov3_safetensors_payload(path: str | os.PathLike[str]) -> str | None:
     return sha256.hexdigest().upper()
 
 
-def compute_model_hashes(path: str | os.PathLike[str]) -> dict[str, str]:
+def compute_model_hashes(path: str | os.PathLike[str], *, include_autov3: bool = True) -> dict[str, str]:
     """Compute the Civitai hash subset needed for local model AIR lookup.
 
     Mirrors the scanner behavior for SHA256, AutoV1, AutoV2, AutoV3, and CRC32. Blake3 is omitted
-    because this package intentionally has no native hashing dependency.
+    because this package intentionally has no native hashing dependency. ``include_autov3=False``
+    skips the AutoV3 payload digest, which is a *second* full-file pass — callers that resolve via
+    SHA256 first can defer it until that lookup misses.
     """
     sha256, crc32 = _sha256_file(path)
     hashes = {"SHA256": sha256, "AutoV2": sha256[:10], "CRC32": crc32}
     autov1 = _autov1_file(path)
     if autov1:
         hashes["AutoV1"] = autov1
-    autov3 = _autov3_safetensors_payload(path)
-    if autov3:
-        hashes["AutoV3"] = autov3
+    if include_autov3:
+        autov3 = _autov3_safetensors_payload(path)
+        if autov3:
+            hashes["AutoV3"] = autov3
     return hashes
 
 
@@ -336,37 +339,16 @@ def lookup_model_version_by_hash(
     return data if isinstance(data, dict) and data.get("air") else None
 
 
-def resolve_model_air(
+def _lookup_record(
     path: str | os.PathLike[str],
+    hashes: dict[str, str],
+    source: str,
     *,
-    token: str | None = None,
-    session: requests.Session | None = None,
-    civitai_base_url: str | None = None,
+    token: str | None,
+    session: requests.Session | None,
+    civitai_base_url: str | None,
 ) -> LocalModelRecord | None:
-    """Resolve a local file to AIR using metadata hashes first, then computed hashes as fallback."""
-    metadata_hashes = read_model_hashes_from_metadata(path)
-    for hashes, source in ((metadata_hashes, "metadata"),):
-        if not hashes:
-            continue
-        for hash_type, hash_value in _lookup_candidates(hashes):
-            version = lookup_model_version_by_hash(
-                hash_value, token=token, session=session, civitai_base_url=civitai_base_url
-            )
-            if version:
-                return LocalModelRecord(
-                    folder="",
-                    name=Path(path).name,
-                    path=str(path),
-                    hashes=hashes,
-                    hash_source=source,
-                    air=version.get("air"),
-                    model_version_id=version.get("id"),
-                    lookup_hash_type=hash_type,
-                    lookup_hash=hash_value,
-                )
-
-    computed_hashes = compute_model_hashes(path)
-    for hash_type, hash_value in _lookup_candidates(computed_hashes):
+    for hash_type, hash_value in _lookup_candidates(hashes):
         version = lookup_model_version_by_hash(
             hash_value, token=token, session=session, civitai_base_url=civitai_base_url
         )
@@ -375,14 +357,68 @@ def resolve_model_air(
                 folder="",
                 name=Path(path).name,
                 path=str(path),
-                hashes=computed_hashes,
-                hash_source="computed",
+                hashes=hashes,
+                hash_source=source,
                 air=version.get("air"),
                 model_version_id=version.get("id"),
                 lookup_hash_type=hash_type,
                 lookup_hash=hash_value,
             )
     return None
+
+
+def resolve_model_air(
+    path: str | os.PathLike[str],
+    *,
+    token: str | None = None,
+    session: requests.Session | None = None,
+    civitai_base_url: str | None = None,
+) -> LocalModelRecord | None:
+    """Resolve a local file to AIR: persistent cache, then safetensors metadata hashes, then computed
+    hashes. Computing the SHA256 of a multi-GB file is the expensive step, so a cache keyed on file
+    identity short-circuits repeat resolutions, and the AutoV3 payload hash (a second full-file pass)
+    is only computed when SHA256 and friends miss."""
+    cached = model_cache.get(path)
+    if cached and cached.get("air"):
+        return LocalModelRecord(
+            folder="",
+            name=Path(path).name,
+            path=str(path),
+            hashes=cached.get("hashes") or {},
+            hash_source="cache",
+            air=cached["air"],
+            model_version_id=cached.get("model_version_id"),
+        )
+
+    metadata_hashes = read_model_hashes_from_metadata(path)
+    if metadata_hashes:
+        record = _lookup_record(
+            path, metadata_hashes, "metadata", token=token, session=session, civitai_base_url=civitai_base_url
+        )
+        if record:
+            model_cache.put(path, hashes=record.hashes, air=record.air, model_version_id=record.model_version_id)
+            return record
+
+    computed_hashes = dict((cached or {}).get("hashes") or {})
+    if not computed_hashes:
+        computed_hashes = compute_model_hashes(path, include_autov3=False)
+    record = _lookup_record(
+        path, computed_hashes, "computed", token=token, session=session, civitai_base_url=civitai_base_url
+    )
+    if not record and "AutoV3" not in computed_hashes:
+        autov3 = _autov3_safetensors_payload(path)
+        if autov3:
+            computed_hashes["AutoV3"] = autov3
+            record = _lookup_record(
+                path, {"AutoV3": autov3}, "computed", token=token, session=session, civitai_base_url=civitai_base_url
+            )
+    model_cache.put(
+        path,
+        hashes=computed_hashes,
+        air=record.air if record else None,
+        model_version_id=record.model_version_id if record else None,
+    )
+    return record
 
 
 def _folder_paths_for(folder: str) -> list[str]:

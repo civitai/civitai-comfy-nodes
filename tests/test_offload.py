@@ -83,6 +83,54 @@ def test_resolve_model_air_uses_metadata_then_computed_fallback(tmp_path):
     assert session.urls[1].endswith("/" + hashlib.sha256(model.read_bytes()).hexdigest().upper())
 
 
+def test_resolve_model_air_caches_and_skips_network_on_second_call(tmp_path, monkeypatch):
+    monkeypatch.setenv("CIVITAI_COMFY_MODEL_CACHE", str(tmp_path / "cache.json"))
+    model = tmp_path / "model.safetensors"
+    _write_safetensors(model, {"__metadata__": {"format": "pt"}}, payload=b"payload")
+    first = _Session([_Resp(200, {"id": 9, "air": "urn:air:sdxl:checkpoint:civitai:5@9"})])
+
+    resolved = offload.resolve_model_air(model, session=first, civitai_base_url="http://civitai.test")
+    assert resolved.air == "urn:air:sdxl:checkpoint:civitai:5@9"
+    assert len(first.urls) == 1  # SHA256 lookup hit on the first candidate
+
+    second = _Session([])  # no responses queued -> any network call would IndexError
+    cached = offload.resolve_model_air(model, session=second, civitai_base_url="http://civitai.test")
+    assert cached.air == "urn:air:sdxl:checkpoint:civitai:5@9"
+    assert cached.hash_source == "cache"
+    assert second.urls == []  # served from cache, no network
+
+
+def test_resolve_model_air_skips_autov3_when_sha256_matches(tmp_path, monkeypatch):
+    monkeypatch.setenv("CIVITAI_COMFY_MODEL_CACHE", str(tmp_path / "cache.json"))
+    model = tmp_path / "model.safetensors"
+    _write_safetensors(model, {"__metadata__": {"format": "pt"}}, payload=b"payload")
+    session = _Session([_Resp(200, {"id": 9, "air": "urn:air:x@9"})])
+
+    resolved = offload.resolve_model_air(model, session=session, civitai_base_url="http://civitai.test")
+
+    assert resolved.air == "urn:air:x@9"
+    assert "AutoV3" not in resolved.hashes  # the second full-file pass is skipped when SHA256 hits
+
+
+def test_resolve_model_air_reuses_cached_hashes_without_rehashing(tmp_path, monkeypatch):
+    monkeypatch.setenv("CIVITAI_COMFY_MODEL_CACHE", str(tmp_path / "cache.json"))
+    model = tmp_path / "model.safetensors"
+    _write_safetensors(model, {"__metadata__": {"format": "pt"}}, payload=b"payload")
+
+    miss = _Session([_Resp(404, {}) for _ in range(6)])  # not found -> hashes cached, no air
+    assert offload.resolve_model_air(model, session=miss, civitai_base_url="http://civitai.test") is None
+
+    def _boom(*args, **kwargs):
+        raise AssertionError("compute_model_hashes must not run when hashes are cached")
+
+    monkeypatch.setattr(offload, "compute_model_hashes", _boom)
+    hit = _Session([_Resp(200, {"id": 3, "air": "urn:air:x@3"})])
+    resolved = offload.resolve_model_air(model, session=hit, civitai_base_url="http://civitai.test")
+
+    assert resolved.air == "urn:air:x@3"
+    assert resolved.hash_source == "computed"
+
+
 def test_scan_installed_nodepacks_infers_air_only_with_version(tmp_path):
     rgthree = tmp_path / "rgthree-comfy"
     rgthree.mkdir()

@@ -8,3 +8,8 @@ os.environ.setdefault(
     "CIVITAI_COMFY_SETTINGS_STORE",
     os.path.join(tempfile.gettempdir(), "civitai-comfy-nodes-tests", "nonexistent-settings.json"),
 )
+# Keep the model-AIR resolution cache out of the developer's real ~/.civitai during tests.
+os.environ.setdefault(
+    "CIVITAI_COMFY_MODEL_CACHE",
+    os.path.join(tempfile.gettempdir(), "civitai-comfy-nodes-tests", "model-air-cache.json"),
+)
