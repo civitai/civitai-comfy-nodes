@@ -59,32 +59,38 @@ function txnText(entry) {
   return entry?.total != null ? `${entry.total} Buzz` : null;
 }
 
-// ComfyUI's Job Details flyout is a static panel; when one is open, find its Job ID, match the
-// cached transactions, and append a styled "Transactions" row.
+function addRow(jobIdLabel, text, promptId) {
+  const container = jobIdLabel.closest(".flex.flex-col");
+  if (!container) return;
+  const grid = document.createElement("div");
+  grid.className = "grid grid-cols-2 items-center gap-2 cvz-buzz-txn";
+  grid.dataset.promptId = promptId;
+  const label = document.createElement("div");
+  label.className = jobIdLabel.className;
+  label.textContent = "Transactions";
+  const value = jobIdLabel.nextElementSibling.cloneNode(false);
+  const span = document.createElement("span");
+  span.className = "block min-w-0 truncate";
+  span.textContent = text;
+  span.title = text;
+  value.replaceChildren(span);
+  grid.append(label, value);
+  container.appendChild(grid);
+}
+
+// ComfyUI reuses one Job Details panel and swaps its content as you hover different jobs, so the row
+// must track the CURRENT Job ID — refresh it whenever the panel's job changes, not once.
 function injectJobDetails() {
   for (const panel of document.querySelectorAll(".bg-interface-panel-surface")) {
-    if (panel.querySelector(".cvz-buzz-txn")) continue;
-    const container = panel.querySelector(".flex.flex-col");
-    if (!container) continue;
-    const jobIdLabel = [...container.querySelectorAll(".grid > div")]
+    const jobIdLabel = [...panel.querySelectorAll(".grid > div")]
       .find((d) => /^\s*Job ID\s*$/.test(d.textContent || ""));
     const promptId = jobIdLabel?.nextElementSibling?.querySelector("span")?.textContent?.trim();
-    const text = promptId && txnText(txnCache.get(promptId));
-    if (!text) continue;
-
-    const grid = document.createElement("div");
-    grid.className = "grid grid-cols-2 items-center gap-2 cvz-buzz-txn";
-    const label = document.createElement("div");
-    label.className = jobIdLabel.className;
-    label.textContent = "Transactions";
-    const value = jobIdLabel.nextElementSibling.cloneNode(false);
-    const span = document.createElement("span");
-    span.className = "block min-w-0 truncate";
-    span.textContent = text;
-    span.title = text;
-    value.replaceChildren(span);
-    grid.append(label, value);
-    container.appendChild(grid);
+    if (!promptId) continue;
+    const existing = panel.querySelector(".cvz-buzz-txn");
+    if (existing && existing.dataset.promptId === promptId) continue; // already correct for this job
+    if (existing) existing.remove(); // panel reused for a different job — drop the stale row
+    const text = txnText(txnCache.get(promptId));
+    if (text) addRow(jobIdLabel, text, promptId);
   }
 }
 
