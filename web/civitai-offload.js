@@ -160,7 +160,6 @@ function looksLikeApiPrompt(value) {
 }
 
 async function submitOffload(payload) {
-  payload.wait = 5;
   payload.runLocalTail = true;
   // Replay the remote run's /ws frames (progress + previews) onto this tab's canvas.
   payload.liveProgress = true;
@@ -471,6 +470,15 @@ app.registerExtension({
     if (!(await offloadEnabled())) return;
     injectStyles();
     installQueuePromptOverride();
+    api.addCustomEventListener("civitai.offload.status", (event) => {
+      const detail = event.detail || {};
+      if (detail.state === "error") {
+        toast("error", "Civitai offload failed", String(detail.message || "Unknown error"));
+      } else if (detail.state === "done") {
+        const wf = detail.workflowId ? ` (${detail.workflowId})` : "";
+        toast("success", "Civitai offload complete", `Results downloaded${wf}.`);
+      }
+    });
     const observer = new MutationObserver(() => syncRunModeUi());
     observer.observe(document.body, { childList: true, subtree: true });
     document.addEventListener(
