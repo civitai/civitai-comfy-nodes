@@ -179,7 +179,6 @@ async function submitOffload(payload) {
 
 function offloadQueueResult(data, number) {
   const id =
-    data?.local?.queue?.prompt_id ||
     data?.workflow?.id ||
     data?.workflow?.workflowId ||
     `civitai-offload-${Date.now()}`;
@@ -270,9 +269,8 @@ async function runInCivitai(button, graph = null, { throwOnError = false } = {})
   try {
     const data = await activeOffloadPromise;
     const id = data.workflow?.id || data.workflow?.workflowId || "submitted";
-    const local = data.local?.queue?.prompt_id ? ` Local continuation ${data.local.queue.prompt_id} queued.` : "";
     const warnings = data.offload?.warnings?.length ? ` ${data.offload.warnings.join(" ")}` : "";
-    toast("success", "Submitted to Civitai", `${id}.${local}${warnings}`);
+    toast("success", "Submitted to Civitai", `${id}.${warnings}`);
     return data;
   } catch (e) {
     toast("error", "Civitai offload failed", String(e.message || e));

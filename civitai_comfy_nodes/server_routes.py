@@ -601,7 +601,9 @@ def _offload_finalize(
     )
 
 
-def _run_local_tail(prompt: dict, offload_result: dict, comfy_base_url: str, *, client_id: str | None = None) -> dict | None:
+def _run_local_tail(
+    prompt: dict, offload_result: dict, comfy_base_url: str, *, client_id: str | None = None
+) -> dict | None:
     from . import offload
 
     assets = _workflow_asset_items(offload_result["workflow"])
