@@ -1339,7 +1339,12 @@ def build_custom_comfy_offload(
         session=session,
         civitai_base_url=civitai_base_url,
     )
-    _log.info("offload build: resolved %d model AIRs in %.2fs", len(resolved_models), time.monotonic() - _t)
+    _log.info(
+        "offload build: resolved %d model AIRs in %.2fs (hash sources: %s)",
+        len(resolved_models),
+        time.monotonic() - _t,
+        ", ".join(sorted({(m.get("hash_source") or "?") for m in resolved_models})) or "-",
+    )
     _t = time.monotonic()
     rewritten, input_blobs = replace_local_media_inputs_with_blob_airs(
         rewritten,
