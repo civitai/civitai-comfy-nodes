@@ -527,6 +527,36 @@ def _start_trace_tail(config, workflow: dict, *, sid: str | None) -> _TraceTailH
     return _TraceTailHandle(thread, stop_event, box)
 
 
+def _offload_submit(
+    prompt: dict,
+    selected_node_ids: list[str] | None,
+    workflow: dict | None,
+    *,
+    whatif: bool,
+    do_tail: bool,
+) -> dict:
+    """Build the customComfy offload and submit it with wait=0 so the caller gets the workflow id
+    back immediately. The long-running poll + local replay happen later in `_offload_finalize`."""
+    from . import offload
+    from .client import OrchestrationClient
+    from .config import resolve_config, stored_min_vram_gb, stored_use_sage_attention
+
+    config = resolve_config(interactive=False)
+    client = OrchestrationClient(config)
+    build = offload.build_custom_comfy_offload(
+        prompt,
+        selected_node_ids=selected_node_ids,
+        workflow=workflow,
+        token=config.token,
+        trace="binary" if do_tail else None,
+        min_vram_gb=stored_min_vram_gb(),
+        use_sage_attention=stored_use_sage_attention(),
+        upload_blob_file=client.upload_blob_file,
+    )
+    submitted = client.submit_steps(build.steps, wait=0, whatif=whatif)
+    return {"config": config, "build": build, "workflow": submitted}
+
+
 def _offload_run(
     prompt: dict,
     selected_node_ids: list[str] | None,

@@ -458,3 +458,83 @@ def test_push_offload_status_sends_custom_ws_event(monkeypatch):
 def test_push_offload_status_is_noop_without_comfy_server():
     # No `server` module installed in the test env -> import fails -> silent no-op.
     sr._push_offload_status("browser-1", "error", message="boom")
+
+
+def test_offload_submit_uses_wait_zero_and_requests_trace(monkeypatch):
+    import types
+
+    from civitai_comfy_nodes import client as client_mod
+    from civitai_comfy_nodes import config as config_mod
+    from civitai_comfy_nodes import offload as offload_mod
+
+    captured = {}
+
+    class FakeClient:
+        def __init__(self, config):
+            self.config = config
+            self.upload_blob_file = lambda *a, **k: None
+
+        def submit_steps(self, steps, *, wait, whatif=False):
+            captured["wait"] = wait
+            captured["whatif"] = whatif
+            captured["steps"] = steps
+            return {"id": "wf-1", "status": "queued"}
+
+    fake_build = types.SimpleNamespace(
+        steps=[{"$type": "customComfy", "input": {}}], as_dict=lambda: {"ok": True}
+    )
+
+    def fake_build_offload(prompt, **kwargs):
+        captured["trace"] = kwargs.get("trace")
+        return fake_build
+
+    monkeypatch.setattr(
+        config_mod, "resolve_config", lambda interactive=False: types.SimpleNamespace(token="t", timeout_minutes=5)
+    )
+    monkeypatch.setattr(config_mod, "stored_min_vram_gb", lambda: 24)
+    monkeypatch.setattr(config_mod, "stored_use_sage_attention", lambda: False)
+    monkeypatch.setattr(client_mod, "OrchestrationClient", FakeClient)
+    monkeypatch.setattr(offload_mod, "build_custom_comfy_offload", fake_build_offload)
+
+    result = sr._offload_submit({"3": {}}, None, None, whatif=False, do_tail=True)
+
+    assert captured["wait"] == 0
+    assert captured["trace"] == "binary"
+    assert result["workflow"] == {"id": "wf-1", "status": "queued"}
+    assert result["build"] is fake_build
+    assert result["config"].token == "t"
+
+
+def test_offload_submit_omits_trace_when_not_tailing(monkeypatch):
+    import types
+
+    from civitai_comfy_nodes import client as client_mod
+    from civitai_comfy_nodes import config as config_mod
+    from civitai_comfy_nodes import offload as offload_mod
+
+    captured = {}
+
+    class FakeClient:
+        def __init__(self, config):
+            self.upload_blob_file = lambda *a, **k: None
+
+        def submit_steps(self, steps, *, wait, whatif=False):
+            captured["whatif"] = whatif
+            return {"id": "wf-2"}
+
+    def fake_build_offload(prompt, **kwargs):
+        captured["trace"] = kwargs.get("trace")
+        return types.SimpleNamespace(steps=[], as_dict=lambda: {})
+
+    monkeypatch.setattr(
+        config_mod, "resolve_config", lambda interactive=False: types.SimpleNamespace(token="t", timeout_minutes=5)
+    )
+    monkeypatch.setattr(config_mod, "stored_min_vram_gb", lambda: 24)
+    monkeypatch.setattr(config_mod, "stored_use_sage_attention", lambda: False)
+    monkeypatch.setattr(client_mod, "OrchestrationClient", FakeClient)
+    monkeypatch.setattr(offload_mod, "build_custom_comfy_offload", fake_build_offload)
+
+    sr._offload_submit({"3": {}}, None, None, whatif=True, do_tail=False)
+
+    assert captured["trace"] is None
+    assert captured["whatif"] is True
