@@ -408,17 +408,112 @@ def _publish_local_job_history(
         _log.debug("Could not notify Comfy queue update for offload history", exc_info=True)
 
 
-def _poll_workflow_to_terminal(client, workflow: dict, timeout_minutes: float) -> dict:
+def _poll_workflow_to_terminal(client, workflow: dict, timeout_minutes: float, on_update=None) -> dict:
     workflow_id = workflow.get("id") or workflow.get("workflowId")
     if not workflow_id:
         return workflow
     deadline = time.monotonic() + max(1.0, timeout_minutes) * 60
     current = workflow
+    if on_update is not None:
+        on_update(current)
     while str(current.get("status") or "").lower() not in {"succeeded", "failed", "expired", "canceled"}:
         if time.monotonic() > deadline:
             raise CivitaiNodeError(f"Civitai workflow {workflow_id} timed out")
         current = client.get_workflow(workflow_id, wait=10)
+        if on_update is not None:
+            on_update(current)
     return current
+
+
+_TERMINAL_STATUSES = {"succeeded", "failed", "expired", "canceled"}
+
+
+def _epoch_ms_from_iso(value) -> int | None:
+    if not value:
+        return None
+    text = str(value).strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        from datetime import datetime
+
+        return int(datetime.fromisoformat(text).timestamp() * 1000)
+    except ValueError:
+        return None
+
+
+def _extract_usage(workflow: dict) -> dict | None:
+    for step in workflow.get("steps") or []:
+        usage = (step.get("output") or {}).get("usage")
+        if isinstance(usage, dict):
+            return usage
+    return None
+
+
+# Buzz wallet (accountType) -> display name; the colour IS the currency (mirrors base._BUZZ_WALLETS).
+_BUZZ_WALLETS = {"yellow": "Yellow", "blue": "Blue", "green": "Green", "fakeRed": "Red"}
+
+
+def _transactions(workflow: dict) -> list[dict]:
+    """Settled per-wallet charges as [{amount, currency, refund}] (credit = refund), for the
+    editor's job-details popup."""
+    result = []
+    for t in ((workflow.get("transactions") or {}).get("list")) or []:
+        amount = t.get("amount")
+        if amount is None:
+            continue
+        account = t.get("accountType")
+        result.append(
+            {"amount": amount, "currency": _BUZZ_WALLETS.get(account, account), "refund": t.get("type") == "credit"}
+        )
+    return result
+
+
+def _buzz_message(workflow: dict) -> dict | None:
+    """The `civitai.buzz` ws payload for a workflow snapshot — the pinned rate while running and the
+    final ceiled charge at terminal — or None when there's no usage/cost to show yet. Snake_case keys
+    + epoch-ms dates mirror the comfy-cloud meter so both consumers share one frontend shape."""
+    status = str(workflow.get("status") or "").lower()
+    terminal = status in _TERMINAL_STATUSES
+    usage = _extract_usage(workflow) or {}
+    rate = usage.get("buzzPerSecond")
+    estimated = usage.get("estimatedCost")
+    total = (workflow.get("cost") or {}).get("total")
+    if terminal and total is not None:
+        # Prefer the authoritative settled charge so the meter snaps to the real bill.
+        estimated = total
+    if rate is None and estimated is None:
+        return None
+    message = {
+        "prompt_id": workflow.get("id") or workflow.get("workflowId"),
+        "status": status,
+        "terminal": terminal,
+        "buzz_per_second": rate or 0,
+        "runtime_seconds": usage.get("runtimeSeconds") or 0,
+        "estimated_cost": estimated if estimated is not None else 0,
+        "started_at": _epoch_ms_from_iso(usage.get("startedAt")),
+        "computed_at": _epoch_ms_from_iso(usage.get("computedAt")),
+    }
+    # The settled per-wallet charge rides the terminal frame for the job-details popup.
+    if terminal:
+        message["transactions"] = _transactions(workflow)
+        if total is not None:
+            message["cost_total"] = total
+    return message
+
+
+def _send_buzz(sid: str | None, workflow: dict) -> None:
+    if not sid:
+        return
+    message = _buzz_message(workflow)
+    if message is None:
+        return
+    try:
+        from server import PromptServer  # ComfyUI runtime
+
+        PromptServer.instance.send_sync("civitai.buzz", message, sid)
+    except Exception:
+        _log.debug("Could not push civitai.buzz frame", exc_info=True)
 
 
 def _queue_local_prompt(comfy_base_url: str, prompt: dict) -> dict:
@@ -545,9 +640,12 @@ def _offload_run(
     workflow = client.submit_steps(build.steps, wait=wait, whatif=whatif)
 
     tail = _start_trace_tail(config, workflow, sid=client_id) if do_tail else None
+    # Push the live Buzz meter each poll (rate while running, final charge at terminal); the editor
+    # extrapolates the per-second tick between these from the rate, so coarse polling is fine.
+    on_update = (lambda wf: _send_buzz(client_id, wf)) if client_id else None
     try:
         if wait_until_complete and not whatif:
-            workflow = _poll_workflow_to_terminal(client, workflow, config.timeout_minutes)
+            workflow = _poll_workflow_to_terminal(client, workflow, config.timeout_minutes, on_update=on_update)
     except Exception:
         if tail is not None:
             tail.stop()

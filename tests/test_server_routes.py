@@ -365,3 +365,115 @@ def test_start_trace_tail_keeps_polling_briefly_after_terminal_without_trace(mon
     assert calls == [("wf-1", 5), ("wf-1", 5)]
     assert seen == {"url": "http://trace", "sid": "browser-1"}
     assert handle.summary() == {"bytes_in": 5, "frames": 1, "emitted": 1, "errors": 0}
+
+
+def _usage_step(usage):
+    return {"$type": "customComfy", "output": {"usage": usage}}
+
+
+def test_extract_usage_reads_first_step_usage():
+    wf = _wf([{"$type": "customComfy", "output": {}}, _usage_step({"buzzPerSecond": 1})])
+    assert sr._extract_usage(wf) == {"buzzPerSecond": 1}
+    assert sr._extract_usage(_wf([{"$type": "x", "output": {}}])) is None
+
+
+def test_buzz_message_running_carries_rate_and_anchor():
+    wf = {
+        "id": "6-9",
+        "status": "Processing",
+        "steps": [
+            _usage_step(
+                {
+                    "buzzPerSecond": 1,
+                    "runtimeSeconds": 3.48,
+                    "estimatedCost": 4,
+                    "startedAt": "2026-06-22T02:14:00Z",
+                    "computedAt": "2026-06-22T02:14:03Z",
+                }
+            )
+        ],
+    }
+    msg = sr._buzz_message(wf)
+    assert msg["prompt_id"] == "6-9"
+    assert msg["status"] == "processing"
+    assert msg["terminal"] is False
+    assert msg["buzz_per_second"] == 1
+    assert msg["runtime_seconds"] == 3.48
+    assert msg["estimated_cost"] == 4
+    assert msg["started_at"] == 1782094440000
+    assert msg["computed_at"] == 1782094443000
+
+
+def test_buzz_message_terminal_prefers_settled_cost_total():
+    wf = {
+        "id": "6-9",
+        "status": "Succeeded",
+        "cost": {"total": 12},
+        "steps": [_usage_step({"buzzPerSecond": 1, "estimatedCost": 11})],
+    }
+    msg = sr._buzz_message(wf)
+    assert msg["terminal"] is True
+    assert msg["estimated_cost"] == 12  # settled charge wins over the last live estimate
+
+
+def test_buzz_message_none_without_usage_or_cost():
+    assert sr._buzz_message({"status": "processing", "steps": [{"output": {}}]}) is None
+
+
+def test_send_buzz_pushes_frame_to_sid(monkeypatch):
+    import sys
+    import types
+
+    class FakeServer:
+        def __init__(self):
+            self.calls = []
+
+        def send_sync(self, event, data, sid=None):
+            self.calls.append((event, data, sid))
+
+    fake_server = FakeServer()
+    monkeypatch.setitem(
+        sys.modules,
+        "server",
+        types.SimpleNamespace(PromptServer=types.SimpleNamespace(instance=fake_server)),
+    )
+
+    wf = {"id": "6-9", "status": "Processing", "steps": [_usage_step({"buzzPerSecond": 1})]}
+    sr._send_buzz("browser-1", wf)
+    assert len(fake_server.calls) == 1
+    event, data, sid = fake_server.calls[0]
+    assert event == "civitai.buzz" and sid == "browser-1" and data["buzz_per_second"] == 1
+
+    # No sid, or no usage/cost → no push.
+    sr._send_buzz(None, wf)
+    sr._send_buzz("browser-1", {"status": "processing", "steps": [{"output": {}}]})
+    assert len(fake_server.calls) == 1
+
+
+def test_buzz_message_terminal_includes_per_wallet_transactions():
+    wf = {
+        "id": "6-9",
+        "status": "Succeeded",
+        "cost": {"total": 8},
+        "steps": [_usage_step({"buzzPerSecond": 1})],
+        "transactions": {
+            "list": [
+                {"amount": 11, "accountType": "blue", "type": "debit"},
+                {"amount": 5, "accountType": "green", "type": "credit"},
+                {"amount": 2, "accountType": "weird"},
+            ]
+        },
+    }
+    msg = sr._buzz_message(wf)
+    assert msg["cost_total"] == 8
+    assert msg["transactions"] == [
+        {"amount": 11, "currency": "Blue", "refund": False},
+        {"amount": 5, "currency": "Green", "refund": True},
+        {"amount": 2, "currency": "weird", "refund": False},
+    ]
+
+
+def test_buzz_message_running_has_no_transactions():
+    wf = {"id": "6-9", "status": "Processing", "steps": [_usage_step({"buzzPerSecond": 1})]}
+    msg = sr._buzz_message(wf)
+    assert "transactions" not in msg and "cost_total" not in msg
