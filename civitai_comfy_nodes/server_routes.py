@@ -516,6 +516,235 @@ def _send_buzz(sid: str | None, workflow: dict) -> None:
         _log.debug("Could not push civitai.buzz frame", exc_info=True)
 
 
+_RUNNING_ENTRY_TTL_SECONDS = 60 * 60
+_running_lock = threading.Lock()
+_running_seq = 0
+_running_injected_at: dict[int, float] = {}
+_active_offloads: dict[str, dict] = {}  # workflow_id -> {"task_id": int|None, "sid": str|None}
+
+
+def _prompt_queue():
+    try:
+        from server import PromptServer  # ComfyUI runtime
+    except Exception:
+        return None
+    return getattr(PromptServer.instance, "prompt_queue", None)
+
+
+def _notify_queue_updated() -> None:
+    try:
+        from server import PromptServer  # ComfyUI runtime
+
+        PromptServer.instance.queue_updated()
+    except Exception:
+        _log.debug("Could not notify Comfy queue update", exc_info=True)
+
+
+def _reap_stale_running_entries() -> None:
+    """Backstop for a finalize thread that died before its `finally` could remove its running entry."""
+    now = time.monotonic()
+    with _running_lock:
+        stale = [tid for tid, at in _running_injected_at.items() if now - at >= _RUNNING_ENTRY_TTL_SECONDS]
+        for tid in stale:
+            _running_injected_at.pop(tid, None)
+    if not stale:
+        return
+    pq = _prompt_queue()
+    if pq is None or not hasattr(pq, "currently_running"):
+        return
+    with pq.mutex:
+        for tid in stale:
+            pq.currently_running.pop(tid, None)
+    _notify_queue_updated()
+
+
+def _inject_running_queue(
+    prompt: dict, output_nodes: list[str], *, prompt_id: str, workflow_id: str | None
+) -> int | None:
+    """Make the offloaded job show as running: the queue sidebar lists prompt_queue.currently_running,
+    so insert an entry there (negative key — never collides with ComfyUI's counter, no executor touches
+    it). Returns the key to remove at terminal."""
+    if not prompt_id:
+        return None
+    pq = _prompt_queue()
+    if pq is None or not hasattr(pq, "currently_running"):
+        return None
+    extra_data = {
+        "create_time": int(time.time() * 1000),
+        "extra_pnginfo": {"workflow": {"id": workflow_id or prompt_id, "source": "civitai_offload"}},
+    }
+    item = (0, prompt_id, prompt, extra_data, list(output_nodes or []))
+    try:
+        global _running_seq
+        with _running_lock:
+            _running_seq -= 1
+            task_id = _running_seq
+            _running_injected_at[task_id] = time.monotonic()
+        with pq.mutex:
+            pq.currently_running[task_id] = item
+    except Exception:
+        _log.debug("Could not inject offload running entry", exc_info=True)
+        return None
+    _notify_queue_updated()
+    return task_id
+
+
+def _remove_running_queue(task_id: int | None) -> None:
+    if task_id is None:
+        return
+    with _running_lock:
+        _running_injected_at.pop(task_id, None)
+    pq = _prompt_queue()
+    if pq is None or not hasattr(pq, "currently_running"):
+        return
+    try:
+        with pq.mutex:
+            existed = pq.currently_running.pop(task_id, None) is not None
+    except Exception:
+        _log.debug("Could not remove offload running entry", exc_info=True)
+        return
+    if existed:
+        _notify_queue_updated()
+
+
+def _emit_event(sid: str | None, event: str, data: dict) -> None:
+    if not sid:
+        return
+    try:
+        from server import PromptServer  # ComfyUI runtime
+
+        PromptServer.instance.send_sync(event, data, sid)
+    except Exception:
+        _log.debug("Could not emit %s frame", event, exc_info=True)
+
+
+def _execution_error_data(prompt_id: str, status: str, *, message: str | None = None) -> dict:
+    return {
+        "prompt_id": prompt_id,
+        "node_id": "",
+        "node_type": "",
+        "executed": [],
+        "exception_message": message or f"The workflow {status.lower()} on Civitai.",
+        "exception_type": "CivitaiOrchestration",
+        "traceback": [],
+        "timestamp": int(time.time() * 1000),
+    }
+
+
+def _emit_lifecycle_transition(
+    sid: str | None, prompt_id: str, old_status: str, new_status: str, *, error: dict | None = None
+) -> None:
+    """Drive the queued row's progress bar: the frontend binds it to execution_start's prompt_id, so
+    emit the native lifecycle frames on each status edge."""
+    if not sid or not prompt_id:
+        return
+    old = (old_status or "").lower()
+    new = (new_status or "").lower()
+    if old == new:
+        return
+    now = int(time.time() * 1000)
+    was_terminal = old in _TERMINAL_STATUSES
+    if new == "processing" and old != "processing" and not was_terminal:
+        _emit_event(sid, "execution_start", {"prompt_id": prompt_id, "timestamp": now})
+        _emit_event(sid, "executing", {"node": None, "prompt_id": prompt_id})
+        return
+    if new in _TERMINAL_STATUSES and not was_terminal:
+        if new == "succeeded":
+            _emit_event(sid, "executing", {"node": None, "prompt_id": prompt_id})
+            _emit_event(sid, "execution_success", {"prompt_id": prompt_id, "timestamp": now})
+        elif new in {"canceled", "cancelled"}:
+            _emit_event(
+                sid,
+                "execution_interrupted",
+                {"prompt_id": prompt_id, "node_id": "", "node_type": "", "executed": [], "timestamp": now},
+            )
+        else:  # failed / expired
+            _emit_event(sid, "execution_error", error or _execution_error_data(prompt_id, new))
+
+
+def _max_progress_rate(workflow: dict) -> float | None:
+    best = None
+    for step in workflow.get("steps") or []:
+        for job in step.get("jobs") or []:
+            rate = job.get("estimatedProgressRate")
+            if isinstance(rate, (int, float)) and not isinstance(rate, bool):
+                best = rate if best is None else max(best, rate)
+    return best
+
+
+def _emit_progress(sid: str | None, prompt_id: str, workflow: dict) -> None:
+    """A coarse baseline `progress` frame from estimatedProgressRate; rewritten trace frames refine it."""
+    if not sid:
+        return
+    rate = _max_progress_rate(workflow)
+    if rate is None:
+        return
+    rate = max(0.0, min(1.0, rate))
+    _emit_event(sid, "progress", {"value": int(round(rate * 1000)), "max": 1000, "prompt_id": prompt_id, "node": None})
+
+
+def _publish_failed_job_history(
+    prompt: dict, output_nodes: list[str], *, prompt_id: str, workflow_id: str | None, message: str
+) -> None:
+    """Land a failed offload in history so it shows in the Failed tab instead of vanishing from the queue."""
+    if not prompt_id:
+        return
+    pq = _prompt_queue()
+    if pq is None or not hasattr(pq, "history"):
+        return
+    now_ms = int(time.time() * 1000)
+    extra_data = {
+        "create_time": now_ms,
+        "extra_pnginfo": {"workflow": {"id": workflow_id or prompt_id, "source": "civitai_offload"}},
+    }
+    history_item = {
+        "prompt": (0, prompt_id, prompt, extra_data, list(output_nodes or [])),
+        "outputs": {},
+        "status": {
+            "status_str": "error",
+            "completed": False,
+            "messages": [
+                ("execution_start", {"prompt_id": prompt_id, "timestamp": now_ms}),
+                ("execution_error", {"prompt_id": prompt_id, "exception_message": message, "timestamp": now_ms}),
+            ],
+        },
+    }
+    try:
+        with pq.mutex:
+            pq.history[prompt_id] = history_item
+    except Exception:
+        _log.debug("Could not publish failed offload history", exc_info=True)
+        return
+    _notify_queue_updated()
+
+
+def _cancel_offload(workflow_id: str) -> None:
+    """Cancel the orchestrator workflow and drop its running row now; the poll loop would also converge
+    on `canceled`, but this is snappier."""
+    from .client import OrchestrationClient
+    from .config import resolve_config
+
+    with _running_lock:
+        info = dict(_active_offloads.get(workflow_id) or {})
+    try:
+        OrchestrationClient(resolve_config(interactive=False)).cancel_workflow(workflow_id)
+    except Exception:
+        _log.warning("offload cancel: upstream cancel failed for %s", workflow_id, exc_info=True)
+    if info:
+        _emit_event(
+            info.get("sid"),
+            "execution_interrupted",
+            {
+                "prompt_id": workflow_id,
+                "node_id": "",
+                "node_type": "",
+                "executed": [],
+                "timestamp": int(time.time() * 1000),
+            },
+        )
+        _remove_running_queue(info.get("task_id"))
+
+
 def _queue_local_prompt(comfy_base_url: str, prompt: dict) -> dict:
     response = requests.post(
         f"{comfy_base_url.rstrip('/')}/prompt",
@@ -577,12 +806,16 @@ class _TraceTailHandle:
         return stats.as_dict() if stats is not None else None
 
 
-def _start_trace_tail(config, workflow: dict, *, sid: str | None) -> _TraceTailHandle | None:
-    """Spawn a daemon thread that waits for the customComfy traceUrl and replays it locally."""
+def _start_trace_tail(
+    config, workflow: dict, *, sid: str | None, prompt_id: str | None = None
+) -> _TraceTailHandle | None:
+    """Spawn a daemon thread that waits for the customComfy traceUrl and replays it locally. `prompt_id`
+    (the synthetic id) is stamped onto each frame in place of the worker's so the bar binds to our row."""
     from . import trace_tail
     from .client import OrchestrationClient
 
     workflow_id = workflow.get("id") or workflow.get("workflowId")
+    prompt_id = prompt_id or workflow_id
     trace_url = _extract_trace_url(workflow)
     if not trace_url and not workflow_id:
         return None
@@ -615,7 +848,9 @@ def _start_trace_tail(config, workflow: dict, *, sid: str | None) -> _TraceTailH
             else:
                 terminal_seen_at = None
         if resolved_url and not stop_event.is_set():
-            box["stats"] = trace_tail.tail_trace_to_websocket(resolved_url, stop_event=stop_event, sid=sid)
+            box["stats"] = trace_tail.tail_trace_to_websocket(
+                resolved_url, stop_event=stop_event, sid=sid, prompt_id=prompt_id
+            )
 
     thread = threading.Thread(target=_run, name="civitai-trace-tail", daemon=True)
     thread.start()
@@ -678,48 +913,93 @@ def _offload_finalize(
 
     workflow_id = workflow.get("id") or workflow.get("workflowId")
     client = OrchestrationClient(config)
-    tail = _start_trace_tail(config, workflow, sid=sid) if do_tail else None
+    _reap_stale_running_entries()
+    running_output_nodes = _offload_output_node_ids({"offload": build.as_dict()})
+    running_task_id = _inject_running_queue(
+        prompt, running_output_nodes, prompt_id=workflow_id, workflow_id=workflow_id
+    )
+    if workflow_id:
+        with _running_lock:
+            _active_offloads[workflow_id] = {"task_id": running_task_id, "sid": sid}
+    tail = _start_trace_tail(config, workflow, sid=sid, prompt_id=workflow_id) if do_tail else None
     started = time.monotonic()
     _log.info("offload finalize: polling workflow %s to completion (tail=%s)", workflow_id, tail is not None)
-    # Push the live Buzz meter each poll (rate while running, final charge at terminal); the editor
-    # extrapolates the per-second tick between these from the rate, so coarse polling is fine.
-    on_update = (lambda wf: _send_buzz(sid, wf)) if sid else None
+    # The editor extrapolates the per-second Buzz tick from the rate between polls, so coarse polling
+    # is fine.
+    last_status = {"value": str(workflow.get("status") or "")}
+
+    def on_update(wf):
+        new_status = str(wf.get("status") or "")
+        if sid:
+            _send_buzz(sid, wf)
+            _emit_lifecycle_transition(sid, workflow_id, last_status["value"], new_status)
+            _emit_progress(sid, workflow_id, wf)
+        last_status["value"] = new_status
+
     try:
-        final = _poll_workflow_to_terminal(client, workflow, config.timeout_minutes, on_update=on_update)
-    except Exception as exc:
+        try:
+            final = _poll_workflow_to_terminal(client, workflow, config.timeout_minutes, on_update=on_update)
+        except Exception as exc:
+            if tail is not None:
+                tail.stop()
+            _emit_lifecycle_transition(
+                sid,
+                workflow_id,
+                last_status["value"],
+                "failed",
+                error=_execution_error_data(workflow_id, "failed", message=str(exc)),
+            )
+            _remove_running_queue(running_task_id)
+            _publish_failed_job_history(
+                prompt, running_output_nodes, prompt_id=workflow_id, workflow_id=workflow_id, message=str(exc)
+            )
+            _push_offload_status(sid, "error", message=str(exc))
+            _log.warning("offload finalize: poll failed for %s (%s)", workflow_id, exc, exc_info=True)
+            return
+        _log.info(
+            "offload finalize: workflow %s reached %s in %.2fs",
+            workflow_id,
+            final.get("status"),
+            time.monotonic() - started,
+        )
         if tail is not None:
-            tail.stop()
-        _push_offload_status(sid, "error", message=str(exc))
-        _log.warning("offload finalize: poll failed for %s (%s)", workflow_id, exc, exc_info=True)
-        return
-    _log.info(
-        "offload finalize: workflow %s reached %s in %.2fs",
-        workflow_id,
-        final.get("status"),
-        time.monotonic() - started,
-    )
-    if tail is not None:
-        tail.drain()
+            tail.drain()
 
-    offload_result = {"workflow": final, "offload": build.as_dict()}
-    try:
-        local = _run_local_tail(prompt, offload_result, comfy_base_url, client_id=sid)
-    except Exception as exc:
-        _push_offload_status(sid, "error", message=str(exc))
-        _log.warning("offload finalize: local tail failed (%s)", exc, exc_info=True)
-        return
+        offload_result = {"workflow": final, "offload": build.as_dict()}
+        try:
+            local = _run_local_tail(
+                prompt, offload_result, comfy_base_url, client_id=sid, running_task_id=running_task_id
+            )
+        except Exception as exc:
+            _remove_running_queue(running_task_id)
+            _publish_failed_job_history(
+                prompt, running_output_nodes, prompt_id=workflow_id, workflow_id=workflow_id, message=str(exc)
+            )
+            _push_offload_status(sid, "error", message=str(exc))
+            _log.warning("offload finalize: local tail failed (%s)", exc, exc_info=True)
+            return
 
-    _push_offload_status(
-        sid,
-        "done",
-        workflowId=final.get("id") or final.get("workflowId"),
-        promptId=((local or {}).get("queue") or {}).get("prompt_id"),
-    )
-    _log.info("offload finalize: workflow %s done in %.2fs total", workflow_id, time.monotonic() - started)
+        _push_offload_status(
+            sid,
+            "done",
+            workflowId=final.get("id") or final.get("workflowId"),
+            promptId=((local or {}).get("queue") or {}).get("prompt_id"),
+        )
+        _log.info("offload finalize: workflow %s done in %.2fs total", workflow_id, time.monotonic() - started)
+    finally:
+        _remove_running_queue(running_task_id)
+        if workflow_id:
+            with _running_lock:
+                _active_offloads.pop(workflow_id, None)
 
 
 def _run_local_tail(
-    prompt: dict, offload_result: dict, comfy_base_url: str, *, client_id: str | None = None
+    prompt: dict,
+    offload_result: dict,
+    comfy_base_url: str,
+    *,
+    client_id: str | None = None,
+    running_task_id: int | None = None,
 ) -> dict | None:
     from . import offload
 
@@ -731,10 +1011,8 @@ def _run_local_tail(
     data = _download_url_bytes(asset["url"])
     local_output = _write_bytes_to_output(data, kind=kind)
     output_nodes = _offload_output_node_ids(offload_result)
-    workflow_id = (
-        (offload_result.get("workflow") or {}).get("id")
-        or (offload_result.get("workflow") or {}).get("workflowId")
-        or f"civitai-offload-{uuid.uuid4()}"
+    workflow_id = (offload_result.get("workflow") or {}).get("id") or (offload_result.get("workflow") or {}).get(
+        "workflowId"
     )
     _publish_local_output_preview(
         output_nodes,
@@ -742,6 +1020,8 @@ def _run_local_tail(
         prompt_id=workflow_id,
         sid=client_id,
     )
+    # Remove the running row right before writing history so the job never falls into neither list.
+    _remove_running_queue(running_task_id)
     _publish_local_job_history(
         prompt,
         output_nodes,
@@ -1027,3 +1307,16 @@ if _server is not None:
                 daemon=True,
             ).start()
         return web.json_response(response)
+
+    @_server.routes.post("/civitai/offload/cancel")
+    async def _civitai_offload_cancel(request):
+        body = await request.json()
+        workflow_id = body.get("workflowId") or body.get("promptId")
+        if not isinstance(workflow_id, str) or not workflow_id:
+            return web.json_response({"error": "workflowId is required"}, status=400)
+        loop = asyncio.get_event_loop()
+        try:
+            await loop.run_in_executor(None, lambda: _cancel_offload(workflow_id))
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=502)
+        return web.json_response({"ok": True})

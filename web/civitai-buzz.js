@@ -29,7 +29,10 @@ function injectStyles() {
     .cvz-buzz-q { position:absolute; right:4px; top:50%; transform:translateY(-50%); z-index:2;
       padding:1px 6px; border-radius:9px; font:600 11px/1.4 system-ui,sans-serif; white-space:nowrap;
       color:#ffd43b; background:rgba(255,212,59,.18); border:1px solid rgba(255,212,59,.45); }
-    .cvz-buzz-q[data-final="1"] { color:#69db7c; background:rgba(105,219,124,.18); border-color:rgba(105,219,124,.5); }`;
+    .cvz-buzz-q[data-final="1"] { color:#69db7c; background:rgba(105,219,124,.18); border-color:rgba(105,219,124,.5); }
+    .cvz-buzz-item { position:absolute; top:3px; right:5px; z-index:2; pointer-events:none; white-space:nowrap;
+      padding:0 5px; border-radius:8px; font:600 10px/1.4 system-ui,sans-serif;
+      color:#ffd43b; background:rgba(255,212,59,.16); border:1px solid rgba(255,212,59,.4); }`;
   document.head.appendChild(style);
 }
 
@@ -57,6 +60,35 @@ function txnText(entry) {
     .map((t) => `${t.amount} ${t.currency ? t.currency + " " : ""}Buzz${t.refund ? " refunded" : ""}`);
   if (parts.length) return parts.join(", ");
   return entry?.total != null ? `${entry.total} Buzz` : null;
+}
+
+function txnTotal(entry) {
+  if (!entry) return null;
+  if (entry.total != null) return entry.total;
+  const txns = entry.transactions || [];
+  if (!txns.length) return null;
+  return txns.reduce((sum, t) => sum + (t.refund ? -t.amount : t.amount), 0);
+}
+
+// Inline ⚡cost on completed queue rows: the sidebar tags every row with `data-job-id`, so map each
+// to its cached terminal civitai.buzz frame. In-session only (txnCache isn't re-seeded on reload).
+function decorateQueueItems() {
+  for (const row of document.querySelectorAll("[data-job-id]")) {
+    const id = row.getAttribute("data-job-id");
+    const host = row.firstElementChild || row; // AssetsListItem root (relative + overflow-hidden)
+    const existing = host.querySelector(":scope > .cvz-buzz-item");
+    const total = txnTotal(txnCache.get(id));
+    if (total == null) { if (existing) existing.remove(); continue; }
+    if (existing && existing.dataset.promptId === id) continue; // already correct for this row
+    if (existing) existing.remove(); // virtualized row reused for a different job
+    const value = Math.ceil(Math.max(0, total));
+    const badge = document.createElement("span");
+    badge.className = "cvz-buzz-item";
+    badge.dataset.promptId = id;
+    badge.textContent = `⚡${value}`;
+    badge.title = `${value} Buzz`;
+    host.appendChild(badge);
+  }
 }
 
 function addRow(jobIdLabel, text, promptId) {
@@ -148,12 +180,16 @@ function onBuzz(d) {
   if (computedAt != null) run.clockOffset = computedAt - Date.now();
 
   if (d.terminal) {
-    run.finalCost = num(d.estimated_cost);
-    if (d.prompt_id) txnCache.set(String(d.prompt_id), {
-      transactions: Array.isArray(d.transactions) ? d.transactions : [],
-      total: num(d.cost_total),
-    });
-    freeze();
+    if (d.prompt_id) {
+      txnCache.set(String(d.prompt_id), {
+        transactions: Array.isArray(d.transactions) ? d.transactions : [],
+        total: num(d.cost_total),
+      });
+      injectJobDetails();
+      decorateQueueItems();
+    }
+    // A seed frame (reconnect replay of a past job) only warms the cache; don't settle the live meter.
+    if (!d.seed) { run.finalCost = num(d.estimated_cost); freeze(); }
     return;
   }
 
@@ -169,6 +205,7 @@ function nodeOf(detail) {
 }
 
 function attachListeners() {
+  api.addEventListener("execution_start", () => beginPreparing());
   api.addEventListener("progress", () => anchorCompute());
   api.addEventListener("executing", (e) => { if (nodeOf(e.detail) != null) anchorCompute(); });
   api.addEventListener("execution_success", onLifecycleEnd);
@@ -200,12 +237,13 @@ app.registerExtension({
     // Keep the badge alive through the overlay's Vue re-renders and after the tick stops.
     setInterval(() => { if (run.phase !== PHASE.IDLE) render(); }, 300);
 
-    // Inject the Transactions row whenever a Job Details popup appears (debounced; idempotent).
+    // Re-stamp the popup row and inline badges on DOM changes — the queue rows are virtualized and
+    // get re-rendered. Debounced; idempotent.
     let injectPending = false;
     new MutationObserver(() => {
       if (injectPending) return;
       injectPending = true;
-      setTimeout(() => { injectPending = false; injectJobDetails(); }, 100);
+      setTimeout(() => { injectPending = false; injectJobDetails(); decorateQueueItems(); }, 100);
     }).observe(document.body, { childList: true, subtree: true });
   },
 });

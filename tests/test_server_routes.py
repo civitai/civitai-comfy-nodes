@@ -206,9 +206,7 @@ def test_publish_local_output_preview_sends_local_executed_event(monkeypatch):
             {
                 "node": "46",
                 "display_node": "46",
-                "output": {
-                    "images": [{"filename": "civitai_offload_abc.png", "subfolder": "", "type": "output"}]
-                },
+                "output": {"images": [{"filename": "civitai_offload_abc.png", "subfolder": "", "type": "output"}]},
                 "prompt_id": "wf-1",
             },
             "browser-1",
@@ -374,9 +372,10 @@ def test_start_trace_tail_waits_for_delayed_trace_url(monkeypatch):
 
     seen = {}
 
-    def fake_tail_trace_to_websocket(url, *, stop_event, sid=None, session=None):
+    def fake_tail_trace_to_websocket(url, *, stop_event, sid=None, session=None, prompt_id=None):
         seen["url"] = url
         seen["sid"] = sid
+        seen["prompt_id"] = prompt_id
         seen["stopped"] = stop_event.is_set()
         return trace_tail.TraceTailStats(bytes_in=10, frames=2, emitted=2)
 
@@ -388,7 +387,7 @@ def test_start_trace_tail_waits_for_delayed_trace_url(monkeypatch):
     handle.drain()
 
     assert calls == [("wf-1", 5), ("wf-1", 5)]
-    assert seen == {"url": "http://trace", "sid": "browser-1", "stopped": False}
+    assert seen == {"url": "http://trace", "sid": "browser-1", "prompt_id": "wf-1", "stopped": False}
     assert handle.summary() == {"bytes_in": 10, "frames": 2, "emitted": 2, "errors": 0}
 
 
@@ -409,7 +408,7 @@ def test_start_trace_tail_keeps_polling_briefly_after_terminal_without_trace(mon
 
     seen = {}
 
-    def fake_tail_trace_to_websocket(url, *, stop_event, sid=None, session=None):
+    def fake_tail_trace_to_websocket(url, *, stop_event, sid=None, session=None, prompt_id=None):
         seen["url"] = url
         seen["sid"] = sid
         return trace_tail.TraceTailStats(bytes_in=5, frames=1, emitted=1)
@@ -593,9 +592,7 @@ def test_offload_submit_uses_wait_zero_and_requests_trace(monkeypatch):
             captured["steps"] = steps
             return {"id": "wf-1", "status": "queued"}
 
-    fake_build = types.SimpleNamespace(
-        steps=[{"$type": "customComfy", "input": {}}], as_dict=lambda: {"ok": True}
-    )
+    fake_build = types.SimpleNamespace(steps=[{"$type": "customComfy", "input": {}}], as_dict=lambda: {"ok": True})
 
     def fake_build_offload(prompt, **kwargs):
         captured["trace"] = kwargs.get("trace")
@@ -666,7 +663,7 @@ def _finalize_env(monkeypatch, events, *, poll, local):
         summary=lambda: None,
     )
     monkeypatch.setattr(
-        sr, "_start_trace_tail", lambda config, wf, sid=None: (events.append("tail"), fake_tail)[1]
+        sr, "_start_trace_tail", lambda config, wf, sid=None, prompt_id=None: (events.append("tail"), fake_tail)[1]
     )
     monkeypatch.setattr(sr, "_poll_workflow_to_terminal", poll)
     monkeypatch.setattr(sr, "_run_local_tail", local)
@@ -681,12 +678,14 @@ def test_offload_finalize_pushes_done_on_success(monkeypatch):
         monkeypatch,
         events,
         poll=lambda client, wf, timeout, on_update=None: {"id": "wf-1", "status": "succeeded"},
-        local=lambda prompt, result, base, client_id=None: {"queue": {"prompt_id": "p-9"}},
+        local=lambda prompt, result, base, client_id=None, running_task_id=None: {"queue": {"prompt_id": "p-9"}},
     )
     build = types.SimpleNamespace(as_dict=lambda: {"k": "v"})
     config = types.SimpleNamespace(timeout_minutes=5, token="t")
 
-    sr._offload_finalize({"p": 1}, build, config, {"id": "wf-1"}, "http://localhost:8188", sid="browser-1", do_tail=True)
+    sr._offload_finalize(
+        {"p": 1}, build, config, {"id": "wf-1"}, "http://localhost:8188", sid="browser-1", do_tail=True
+    )
 
     assert ("status", "done", "browser-1", {"workflowId": "wf-1", "promptId": "p-9"}) in events
     assert "drain" in events
@@ -707,6 +706,7 @@ def test_offload_finalize_pushes_error_and_stops_tail_when_poll_fails(monkeypatc
         poll=boom,
         local=lambda *a, **k: {"queue": {"prompt_id": "p-9"}},
     )
+    # (local isn't reached on a poll failure)
     build = types.SimpleNamespace(as_dict=lambda: {})
     config = types.SimpleNamespace(timeout_minutes=5, token="t")
 
@@ -722,7 +722,7 @@ def test_offload_finalize_pushes_error_when_local_tail_fails(monkeypatch):
 
     events = []
 
-    def boom_local(prompt, result, base, client_id=None):
+    def boom_local(prompt, result, base, client_id=None, running_task_id=None):
         raise CivitaiNodeError("no assets")
 
     _finalize_env(
@@ -738,3 +738,162 @@ def test_offload_finalize_pushes_error_when_local_tail_fails(monkeypatch):
 
     assert ("status", "error", "browser-1", {"message": "no assets"}) in events
     assert "drain" in events  # poll succeeded, tail drained, then local failed
+
+
+# ── Native queue / lifecycle bridge ──────────────────────────────────────────────────────────────
+
+
+def _install_fake_server(monkeypatch, *, with_queue=False):
+    import sys
+    import threading
+    import types
+
+    class FakeQueue:
+        def __init__(self):
+            self.mutex = threading.RLock()
+            self.history = {}
+            self.currently_running = {}
+
+    class FakeServer:
+        def __init__(self):
+            self.calls = []
+            self.queue_updates = 0
+            if with_queue:
+                self.prompt_queue = FakeQueue()
+
+        def send_sync(self, event, data, sid=None):
+            self.calls.append((event, data, sid))
+
+        def queue_updated(self):
+            self.queue_updates += 1
+
+    fake = FakeServer()
+    monkeypatch.setitem(sys.modules, "server", types.SimpleNamespace(PromptServer=types.SimpleNamespace(instance=fake)))
+    return fake
+
+
+def test_inject_running_queue_adds_entry_then_removes_it(monkeypatch):
+    fake = _install_fake_server(monkeypatch, with_queue=True)
+
+    task_id = sr._inject_running_queue(
+        {"46": {"class_type": "SaveImage", "inputs": {}}}, ["46"], prompt_id="wf-1", workflow_id="wf-1"
+    )
+    assert task_id is not None
+    item = fake.prompt_queue.currently_running[task_id]
+    assert item[1] == "wf-1"  # prompt_id, what /api/jobs reports as the running job id
+    assert item[4] == ["46"]  # output node ids
+    assert item[3]["extra_pnginfo"]["workflow"] == {"id": "wf-1", "source": "civitai_offload"}
+    assert fake.queue_updates == 1
+
+    sr._remove_running_queue(task_id)
+    assert task_id not in fake.prompt_queue.currently_running
+    assert fake.queue_updates == 2
+
+
+def test_inject_running_queue_noop_without_prompt_id(monkeypatch):
+    fake = _install_fake_server(monkeypatch, with_queue=True)
+    assert sr._inject_running_queue({}, [], prompt_id="", workflow_id=None) is None
+    assert fake.prompt_queue.currently_running == {}
+
+
+def test_emit_lifecycle_transition_emits_native_start_and_success(monkeypatch):
+    fake = _install_fake_server(monkeypatch)
+    sr._emit_lifecycle_transition("sid", "wf-1", "scheduled", "processing")
+    sr._emit_lifecycle_transition("sid", "wf-1", "processing", "succeeded")
+    assert [c[0] for c in fake.calls] == ["execution_start", "executing", "executing", "execution_success"]
+    assert all(c[1]["prompt_id"] == "wf-1" and c[2] == "sid" for c in fake.calls)
+
+
+def test_emit_lifecycle_transition_failed_and_canceled(monkeypatch):
+    fake = _install_fake_server(monkeypatch)
+    sr._emit_lifecycle_transition("sid", "wf-1", "processing", "failed")
+    sr._emit_lifecycle_transition("sid", "wf-2", "processing", "canceled")
+    assert fake.calls[0][0] == "execution_error" and fake.calls[0][1]["prompt_id"] == "wf-1"
+    assert fake.calls[1][0] == "execution_interrupted" and fake.calls[1][1]["prompt_id"] == "wf-2"
+
+
+def test_emit_lifecycle_transition_noop_on_same_status_or_no_sid(monkeypatch):
+    fake = _install_fake_server(monkeypatch)
+    sr._emit_lifecycle_transition("sid", "wf-1", "processing", "processing")
+    sr._emit_lifecycle_transition(None, "wf-1", "scheduled", "processing")
+    assert fake.calls == []
+
+
+def test_emit_progress_maps_max_estimated_rate(monkeypatch):
+    fake = _install_fake_server(monkeypatch)
+    wf = {"steps": [{"jobs": [{"estimatedProgressRate": 0.25}, {"estimatedProgressRate": 0.6}]}]}
+    sr._emit_progress("sid", "wf-1", wf)
+    assert fake.calls == [("progress", {"value": 600, "max": 1000, "prompt_id": "wf-1", "node": None}, "sid")]
+    fake.calls.clear()
+    sr._emit_progress("sid", "wf-1", {"steps": [{"jobs": []}]})  # no rate -> no frame
+    assert fake.calls == []
+
+
+def test_publish_failed_job_history_writes_error_entry(monkeypatch):
+    fake = _install_fake_server(monkeypatch, with_queue=True)
+    sr._publish_failed_job_history({"46": {}}, ["46"], prompt_id="wf-1", workflow_id="wf-1", message="boom")
+    entry = fake.prompt_queue.history["wf-1"]
+    assert entry["status"]["status_str"] == "error"
+    assert entry["status"]["completed"] is False
+    assert entry["outputs"] == {}
+    assert entry["prompt"][1] == "wf-1"
+    assert fake.queue_updates == 1
+
+
+def test_cancel_offload_cancels_workflow_and_removes_running_row(monkeypatch):
+    from civitai_comfy_nodes import client as client_mod
+    from civitai_comfy_nodes import config as config_mod
+
+    fake = _install_fake_server(monkeypatch, with_queue=True)
+    canceled = []
+
+    class FakeClient:
+        def __init__(self, config):
+            pass
+
+        def cancel_workflow(self, workflow_id):
+            canceled.append(workflow_id)
+
+    monkeypatch.setattr(client_mod, "OrchestrationClient", FakeClient)
+    monkeypatch.setattr(config_mod, "resolve_config", lambda interactive=False: object())
+
+    task_id = sr._inject_running_queue({"3": {}}, [], prompt_id="wf-9", workflow_id="wf-9")
+    with sr._running_lock:
+        sr._active_offloads["wf-9"] = {"task_id": task_id, "sid": "browser-1"}
+    try:
+        sr._cancel_offload("wf-9")
+    finally:
+        sr._active_offloads.pop("wf-9", None)
+
+    assert canceled == ["wf-9"]
+    assert task_id not in fake.prompt_queue.currently_running
+    interrupts = [c for c in fake.calls if c[0] == "execution_interrupted"]
+    assert interrupts and interrupts[0][1]["prompt_id"] == "wf-9" and interrupts[0][2] == "browser-1"
+
+
+def test_offload_finalize_shows_running_row_then_clears_it(monkeypatch):
+    import types
+
+    fake = _install_fake_server(monkeypatch, with_queue=True)
+    events = []
+
+    def local(prompt, result, base, client_id=None, running_task_id=None):
+        # The row is live while the offload runs, and the local tail swaps it for completed history.
+        assert running_task_id in fake.prompt_queue.currently_running
+        sr._remove_running_queue(running_task_id)
+        return {"queue": {"prompt_id": "p-9"}}
+
+    _finalize_env(
+        monkeypatch,
+        events,
+        poll=lambda client, wf, timeout, on_update=None: {"id": "wf-1", "status": "succeeded"},
+        local=local,
+    )
+    build = types.SimpleNamespace(as_dict=lambda: {"k": "v"})
+    config = types.SimpleNamespace(timeout_minutes=5, token="t")
+
+    sr._offload_finalize({"p": 1}, build, config, {"id": "wf-1"}, "http://x", sid="browser-1", do_tail=True)
+
+    assert fake.prompt_queue.currently_running == {}  # cleaned up, no phantom running job
+    assert ("status", "done", "browser-1", {"workflowId": "wf-1", "promptId": "p-9"}) in events
+    assert "wf-1" not in sr._active_offloads

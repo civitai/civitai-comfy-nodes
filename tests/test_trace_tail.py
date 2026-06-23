@@ -8,12 +8,7 @@ from civitai_comfy_nodes import trace_tail
 # Mirror spine-controller's TraceFraming so the parser is tested against the real wire format:
 # [timestamp:8 BE][direction:1][opcode:1][payload_length:4 BE][payload].
 def _encode(timestamp, direction, opcode, payload):
-    return (
-        timestamp.to_bytes(8, "big")
-        + bytes([direction, opcode])
-        + len(payload).to_bytes(4, "big")
-        + bytes(payload)
-    )
+    return timestamp.to_bytes(8, "big") + bytes([direction, opcode]) + len(payload).to_bytes(4, "big") + bytes(payload)
 
 
 def _text_frame(obj):
@@ -83,12 +78,18 @@ def test_parse_frames_reassembles_payload_split_across_chunks():
 def test_emit_frame_forwards_only_allowlisted_text_events():
     server = _RecordingServer()
     sent = trace_tail.emit_frame(
-        server, 1, trace_tail.OPCODE_TEXT,
-        json.dumps({"type": "progress", "data": {"value": 3, "max": 10}}).encode("utf-8"), "sid1",
+        server,
+        1,
+        trace_tail.OPCODE_TEXT,
+        json.dumps({"type": "progress", "data": {"value": 3, "max": 10}}).encode("utf-8"),
+        "sid1",
     )
     skipped = trace_tail.emit_frame(
-        server, 1, trace_tail.OPCODE_TEXT,
-        json.dumps({"type": "status", "data": {"exec_info": {}}}).encode("utf-8"), "sid1",
+        server,
+        1,
+        trace_tail.OPCODE_TEXT,
+        json.dumps({"type": "status", "data": {"exec_info": {}}}).encode("utf-8"),
+        "sid1",
     )
 
     assert sent is True
@@ -111,13 +112,16 @@ def test_emit_frame_strips_remote_file_refs_from_executed_events():
         },
     }
 
-    assert trace_tail.emit_frame(
-        server,
-        1,
-        trace_tail.OPCODE_TEXT,
-        json.dumps(payload).encode("utf-8"),
-        "sid1",
-    ) is True
+    assert (
+        trace_tail.emit_frame(
+            server,
+            1,
+            trace_tail.OPCODE_TEXT,
+            json.dumps(payload).encode("utf-8"),
+            "sid1",
+        )
+        is True
+    )
 
     assert server.calls == [
         (
@@ -126,6 +130,29 @@ def test_emit_frame_strips_remote_file_refs_from_executed_events():
             "sid1",
         )
     ]
+
+
+def test_emit_frame_rewrites_top_level_prompt_id_to_synthetic_id():
+    # Worker frames carry the worker's own prompt_id; rewriting it to the offload's synthetic id is
+    # what binds the local progress bar to the queued row.
+    server = _RecordingServer()
+    payload = {"type": "executing", "data": {"node": "5", "prompt_id": "worker-local-7"}}
+
+    assert (
+        trace_tail.emit_frame(server, 1, trace_tail.OPCODE_TEXT, json.dumps(payload).encode("utf-8"), "sid1", "wf-9")
+        is True
+    )
+
+    assert server.calls == [("executing", {"node": "5", "prompt_id": "wf-9"}, "sid1")]
+
+
+def test_emit_frame_leaves_prompt_id_untouched_without_synthetic_id():
+    server = _RecordingServer()
+    payload = {"type": "progress", "data": {"value": 1, "max": 4, "prompt_id": "worker-7"}}
+
+    assert trace_tail.emit_frame(server, 1, trace_tail.OPCODE_TEXT, json.dumps(payload).encode("utf-8"), "sid1") is True
+
+    assert server.calls == [("progress", {"value": 1, "max": 4, "prompt_id": "worker-7"}, "sid1")]
 
 
 def test_emit_frame_binary_prepends_png_format_header():

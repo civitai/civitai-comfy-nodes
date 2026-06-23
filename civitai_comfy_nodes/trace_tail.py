@@ -154,8 +154,14 @@ def sanitize_text_message(message: dict) -> dict:
     return sanitized
 
 
-def emit_frame(server, preview_event: int, opcode: int, payload: bytes, sid: str | None) -> bool:
-    """Replay one trace frame onto the local websocket. Returns True if a message was sent."""
+def emit_frame(
+    server, preview_event: int, opcode: int, payload: bytes, sid: str | None, prompt_id: str | None = None
+) -> bool:
+    """Replay one trace frame onto the local websocket. Returns True if a message was sent.
+
+    Rewrites the top-level ``data.prompt_id`` (the worker's own) to ``prompt_id`` (our synthetic id) so
+    the frontend binds the frame to the queued row. Top-level only, like comfy-cloud's
+    SessionFrameProcessor — the per-node ``progress_state`` ids are inert."""
     if opcode == OPCODE_TEXT:
         try:
             message = json.loads(payload.decode("utf-8"))
@@ -167,7 +173,10 @@ def emit_frame(server, preview_event: int, opcode: int, payload: bytes, sid: str
         if event not in FORWARDED_EVENTS:
             return False
         message = sanitize_text_message(message)
-        server.send_sync(event, message.get("data"), sid)
+        data = message.get("data")
+        if prompt_id and isinstance(data, dict) and "prompt_id" in data:
+            data = {**data, "prompt_id": prompt_id}
+        server.send_sync(event, data, sid)
         return True
     if opcode == OPCODE_BINARY:
         if not payload:
@@ -186,6 +195,7 @@ def tail_trace_to_websocket(
     stop_event: threading.Event,
     sid: str | None = None,
     session: requests.Session | None = None,
+    prompt_id: str | None = None,
 ) -> TraceTailStats:
     """Tail ``trace_url`` and replay its frames onto the local ComfyUI websocket until the stream
     ends (the provider finished the upload) or ``stop_event`` is set. Best-effort; never raises."""
@@ -231,7 +241,7 @@ def tail_trace_to_websocket(
                     for _ts, _direction, opcode, payload in frames:
                         stats.frames += 1
                         try:
-                            if emit_frame(server, preview_event, opcode, payload, sid):
+                            if emit_frame(server, preview_event, opcode, payload, sid, prompt_id):
                                 stats.emitted += 1
                         except Exception as exc:
                             stats.errors += 1

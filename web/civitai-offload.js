@@ -7,12 +7,14 @@ let stylesInjected = false;
 let civitaiRunMode = false;
 let civitaiRunInProgress = false;
 let activeOffloadPromise = null;
+let activeOffloadWorkflowId = null;
 
 const NATIVE_RUN_LABELS = new Set(["Run", "Run (On Change)", "Run (Instant)"]);
 const CIVITAI_MENU_LABEL = "Run on Civitai";
 const CIVITAI_BUTTON_LABEL = "Run on Civitai";
 const SUBMITTING_LABEL = "Submitting...";
 const QUEUE_PROMPT_PATCH = "__civitaiOffloadQueuePrompt";
+const INTERRUPT_PATCH = "__civitaiOffloadInterrupt";
 const MAX_SAFE_SEED = Number.MAX_SAFE_INTEGER;
 const TERMS_STORAGE_KEY = "civitai.offload.billingTermsAccepted.v1";
 
@@ -178,10 +180,10 @@ async function submitOffload(payload) {
 }
 
 function offloadQueueResult(data, number) {
-  const id =
-    data?.workflow?.id ||
-    data?.workflow?.workflowId ||
-    `civitai-offload-${Date.now()}`;
+  // The workflow id is the prompt_id the server keys the running row, events and history on, so don't
+  // fabricate a fallback that would desync them.
+  const id = data?.workflow?.id || data?.workflow?.workflowId;
+  if (!id) return { prompt_id: null, number: number || 0, node_errors: {} };
   return { prompt_id: String(id), number: number || 0, node_errors: {} };
 }
 
@@ -269,6 +271,8 @@ async function runInCivitai(button, graph = null, { throwOnError = false } = {})
   try {
     const data = await activeOffloadPromise;
     const id = data.workflow?.id || data.workflow?.workflowId || "submitted";
+    // Remember the running workflow so a queue cancel/interrupt can stop it on Civitai (and the bill).
+    activeOffloadWorkflowId = data.workflow?.id || data.workflow?.workflowId || null;
     const warnings = data.offload?.warnings?.length ? ` ${data.offload.warnings.join(" ")}` : "";
     toast("success", "Submitted to Civitai", `${id}.${warnings}`);
     return data;
@@ -387,6 +391,28 @@ function installQueuePromptOverride() {
   };
 }
 
+function cancelActiveOffload() {
+  const id = activeOffloadWorkflowId;
+  if (!id) return Promise.resolve();
+  return fetch("/civitai/offload/cancel", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ workflowId: id }),
+  }).catch(() => {});
+}
+
+// The offload isn't in the local executor, so api.interrupt() (the cancel button) can't stop it —
+// route it to the orchestrator cancel too, then run the native interrupt for any local prompt.
+function installInterruptOverride() {
+  if (api[INTERRUPT_PATCH] || typeof api.interrupt !== "function") return;
+  const originalInterrupt = api.interrupt.bind(api);
+  api[INTERRUPT_PATCH] = originalInterrupt;
+  api.interrupt = async function civitaiAwareInterrupt(...args) {
+    if (activeOffloadWorkflowId) await cancelActiveOffload();
+    return originalInterrupt(...args);
+  };
+}
+
 function isQueueButtonClick(button) {
   if (!button) return false;
   if (button.dataset.civitaiRunMode === "true") return true;
@@ -468,8 +494,10 @@ app.registerExtension({
     if (!(await offloadEnabled())) return;
     injectStyles();
     installQueuePromptOverride();
+    installInterruptOverride();
     api.addCustomEventListener("civitai.offload.status", (event) => {
       const detail = event.detail || {};
+      activeOffloadWorkflowId = null; // offload reached a terminal state; cancel no longer applies
       if (detail.state === "error") {
         toast("error", "Civitai offload failed", String(detail.message || "Unknown error"));
       } else if (detail.state === "done") {
