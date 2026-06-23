@@ -202,12 +202,22 @@ def test_build_custom_comfy_offload_rewrites_local_models_and_adds_nodepacks(tmp
 
     built = offload.build_custom_comfy_offload(prompt, model_records=[model], nodepacks=[nodepack])
 
-    custom_input = built.steps[0]["input"]
-    assert built.steps[0]["$type"] == "customComfy"
+    # A comfyNodepackSnapshot step captures the pack (comfy image omitted → orchestration resolves
+    # the workers' default), then customComfy declares the layer via $ref into the snapshot output.
+    assert [step["$type"] for step in built.steps] == ["comfyNodepackSnapshot", "customComfy"]
+    snapshot = built.steps[0]
+    assert snapshot["name"] == "snapshot"
+    assert "comfyImage" not in snapshot["input"]
+    assert snapshot["input"]["nodepacks"] == [
+        "urn:air:comfy:nodepack:comfyregistry:rgthree/rgthree-comfy@1.0.0"
+    ]
+
+    custom_input = built.steps[1]["input"]
+    assert "comfyImage" not in custom_input
     assert custom_input["workflow"]["1"]["inputs"]["ckpt_name"] == "urn:air:sdxl:checkpoint:civitai:11@22"
     assert custom_input["resources"] == [
-        "urn:air:comfy:nodepack:comfyregistry:rgthree/rgthree-comfy@1.0.0",
         "urn:air:sdxl:checkpoint:civitai:11@22",
+        {"$ref": "snapshot", "path": "output.results[0].layerAir"},
     ]
 
 
@@ -462,10 +472,91 @@ def test_build_custom_comfy_offload_only_adds_used_nodepacks(monkeypatch):
 
     built = offload.build_custom_comfy_offload(prompt, model_records=[], nodepacks=nodepacks)
 
-    assert built.steps[0]["input"]["resources"] == [
+    assert [step["$type"] for step in built.steps] == ["comfyNodepackSnapshot", "customComfy"]
+    assert built.steps[0]["input"]["nodepacks"] == [
         "urn:air:comfy:nodepack:comfyregistry:rgthree/rgthree-comfy@1.0.0"
     ]
+    assert built.steps[1]["input"]["resources"] == [
+        {"$ref": "snapshot", "path": "output.results[0].layerAir"}
+    ]
     assert [nodepack["folder"] for nodepack in built.nodepack_resources] == ["rgthree-comfy"]
+
+
+def test_build_custom_comfy_offload_snapshots_used_packs_in_air_order(monkeypatch):
+    # Two used packs → one snapshot step listing both (sorted by AIR for stable $ref indexing),
+    # and customComfy referencing results[i] in that same order.
+    class ZetaNode:
+        RELATIVE_PYTHON_MODULE = "custom_nodes.zeta-pack.nodes"
+
+    class AlphaNode:
+        RELATIVE_PYTHON_MODULE = "custom_nodes.alpha-pack.nodes"
+
+    monkeypatch.setitem(
+        sys.modules,
+        "nodes",
+        types.SimpleNamespace(
+            NODE_CLASS_MAPPINGS={"ZetaNode": ZetaNode, "AlphaNode": AlphaNode}
+        ),
+    )
+    prompt = {
+        "1": {"class_type": "ZetaNode", "inputs": {}},
+        "2": {"class_type": "AlphaNode", "inputs": {"x": ["1", 0]}},
+    }
+    nodepacks = [
+        offload.InstalledNodepack(
+            folder="zeta-pack",
+            registry_id="zeta/zeta-pack",
+            version="1.0.0",
+            air="urn:air:comfy:nodepack:comfyregistry:zeta/zeta-pack@1.0.0",
+        ),
+        offload.InstalledNodepack(
+            folder="alpha-pack",
+            registry_id="alpha/alpha-pack",
+            version="1.0.0",
+            air="urn:air:comfy:nodepack:comfyregistry:alpha/alpha-pack@1.0.0",
+        ),
+    ]
+
+    built = offload.build_custom_comfy_offload(prompt, model_records=[], nodepacks=nodepacks)
+
+    assert built.steps[0]["input"]["nodepacks"] == [
+        "urn:air:comfy:nodepack:comfyregistry:alpha/alpha-pack@1.0.0",
+        "urn:air:comfy:nodepack:comfyregistry:zeta/zeta-pack@1.0.0",
+    ]
+    assert built.steps[1]["input"]["resources"] == [
+        {"$ref": "snapshot", "path": "output.results[0].layerAir"},
+        {"$ref": "snapshot", "path": "output.results[1].layerAir"},
+    ]
+
+
+def test_build_custom_comfy_offload_no_snapshot_step_without_packs():
+    prompt = {"1": {"class_type": "SaveImage", "inputs": {}}}
+    built = offload.build_custom_comfy_offload(prompt, model_records=[], nodepacks=[])
+    assert [step["$type"] for step in built.steps] == ["customComfy"]
+    assert built.steps[0]["input"]["resources"] == []
+
+
+def test_build_custom_comfy_offload_warns_on_unresolvable_used_pack(monkeypatch):
+    # A used custom node whose pack has no registry AIR can't be snapshotted; it's left out of the
+    # snapshot and the user is warned rather than the submit silently dropping it.
+    class LocalOnlyNode:
+        RELATIVE_PYTHON_MODULE = "custom_nodes.local-only.nodes"
+
+    monkeypatch.setitem(
+        sys.modules,
+        "nodes",
+        types.SimpleNamespace(NODE_CLASS_MAPPINGS={"LocalOnlyNode": LocalOnlyNode}),
+    )
+    prompt = {"1": {"class_type": "LocalOnlyNode", "inputs": {}}}
+    nodepacks = [
+        offload.InstalledNodepack(folder="local-only", registry_id=None, version=None, air=None)
+    ]
+
+    built = offload.build_custom_comfy_offload(prompt, model_records=[], nodepacks=nodepacks)
+
+    assert [step["$type"] for step in built.steps] == ["customComfy"]
+    assert built.nodepack_resources == []
+    assert any("local-only" in warning for warning in built.warnings)
 
 
 def test_offload_markers_select_region_and_are_stripped():

@@ -1395,29 +1395,60 @@ def build_custom_comfy_offload(
     _log.info("offload build: scanned %d nodepacks in %.2fs", len(nodepacks), time.monotonic() - _t)
     used_nodepack_folders = _workflow_nodepack_folders(rewritten)
     nodepack_resources = []
+    used_packs: list[InstalledNodepack] = []
+    unresolved_pack_folders: list[str] = []
     for nodepack in nodepacks:
-        if not nodepack.air or nodepack.loaded is False:
+        if nodepack.loaded is False:
             continue
         if used_nodepack_folders is not None and nodepack.folder not in used_nodepack_folders:
             continue
-        resources.add(nodepack.air)
+        if not nodepack.air:
+            unresolved_pack_folders.append(nodepack.folder)
+            continue
+        used_packs.append(nodepack)
         nodepack_resources.append(nodepack.as_dict())
+    # Stable order so the snapshot's results[] align with the $ref indices below.
+    used_packs.sort(key=lambda p: p.air or "")
 
     warnings = list(dict.fromkeys(model_warnings))
     if selected != included:
         warnings.append("Included upstream dependencies required to make the offloaded Comfy graph runnable")
     if (visual_region_selection or region_selection) and not explicit_selection:
         warnings.append("Using Civitai Offload Start/End markers to select the submitted graph")
+    if unresolved_pack_folders:
+        warnings.append(
+            "Custom nodes used by this workflow aren't published as a Civitai registry pack, so they "
+            "can't be installed on the worker: " + ", ".join(sorted(set(unresolved_pack_folders)))
+        )
 
-    custom_input: dict[str, Any] = {"resources": sorted(resources), "workflow": rewritten}
+    # Declare each used custom nodepack as its complete install-layer AIR (the (pack, comfy image)
+    # pair), produced by a comfyNodepackSnapshot step that runs first and dedupes server-side. The
+    # comfy image is omitted — a local install has none of its own, so orchestration captures the
+    # layer against the workers' current image and pins the run to it. customComfy references each
+    # layer via $ref into the snapshot output; results[] order matches the nodepacks[] order.
+    custom_resources: list[Any] = sorted(resources)
+    steps: list[dict[str, Any]] = []
+    if used_packs:
+        steps.append(
+            {
+                "$type": "comfyNodepackSnapshot",
+                "name": "snapshot",
+                "input": {"nodepacks": [pack.air for pack in used_packs]},
+            }
+        )
+        for index in range(len(used_packs)):
+            custom_resources.append({"$ref": "snapshot", "path": f"output.results[{index}].layerAir"})
+
+    custom_input: dict[str, Any] = {"resources": custom_resources, "workflow": rewritten}
     if trace:
         custom_input["trace"] = trace
     if min_vram_gb is not None:
         custom_input["minVramGb"] = min_vram_gb
     if use_sage_attention:
         custom_input["useSageAttention"] = True
+    steps.append({"$type": "customComfy", "input": custom_input})
     return OffloadBuildResult(
-        steps=[{"$type": "customComfy", "input": custom_input}],
+        steps=steps,
         workflow=rewritten,
         resources=sorted(resources),
         warnings=warnings,
