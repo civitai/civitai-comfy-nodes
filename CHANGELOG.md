@@ -9,6 +9,28 @@ The section matching the `pyproject.toml` version is published to the Comfy Regi
 [`.github/workflows/publish.yml`](.github/workflows/publish.yml). Add a new `## [x.y.z]`
 section at the top before bumping the version.
 
+## [0.3.0] - 2026-06-26
+
+### Added
+- **Model Selector** exposes a version's VAE and CLIP files as extra outputs (`vae`, `clip`,
+  `clip 2`, `clip 3`); the picker adapts outputs to the selected model. Covers multi-component
+  models like Z-Image-Turbo and WAN.
+- **Hosted credentials** read per-prompt from `extra_data.civitai` (no cross-user leakage in
+  pooled containers, no browser-login fallback).
+- New generated nodes: **Qwen Image Bench**, **boogu**/**krea2** image variants, **HappyHorse
+  v1.1** video, **AI-Toolkit Anima** training.
+
+### Changed
+- Files download into the folder for each file's Civitai type (e.g. a Checkpoint whose primary
+  is a Diffusion Model lands in `diffusion_models/`).
+- Component outputs block obviously-wrong connections by target name (`vae` won't wire to a
+  clip/unet input).
+
+### Fixed
+- Model Selector declares the primary under the plain version AIR, so workers reuse a held
+  checkpoint instead of re-downloading a file-pinned copy.
+- `resources_json` is now optional, fixing "Required input is missing" on local/older graphs.
+
 ## [0.2.0] - 2026-06-17
 
 ### Added
