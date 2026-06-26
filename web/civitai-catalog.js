@@ -87,13 +87,14 @@ function injectStyles() {
     .cvc-close:hover { background: #27272a; color: #e4e4e7; }
     .cvc-status { padding: 6px 16px; color: #a1a1aa; font-size: 12px; min-height: 18px; }
     .cvc-grid { flex: 1; overflow-y: auto; padding: 4px 16px 16px; display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); grid-auto-rows: 300px; gap: 14px; align-content: start; }
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); grid-auto-rows: 310px; gap: 14px; align-content: start; }
     .cvc-card { height: 100%; background: #1f1f23; border: 1px solid #27272a; border-radius: 10px;
       overflow: hidden; cursor: pointer; display: flex; flex-direction: column; text-align: left; padding: 0;
       font: inherit; color: inherit; }
     .cvc-card:hover { border-color: #2563eb; }
+    .cvc-card:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
     .cvc-thumb { position: relative; flex: 1; min-height: 0; background: #111113; }
-    .cvc-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .cvc-thumb img, .cvc-thumb video { width: 100%; height: 100%; object-fit: contain; display: block; }
     .cvc-badges { position: absolute; left: 8px; bottom: 8px; display: flex; gap: 4px; }
     .cvc-badge { background: rgba(24,24,27,.85); color: #d4d4d8; border-radius: 5px; padding: 2px 7px;
       font-size: 11px; font-weight: 600; }
@@ -103,8 +104,19 @@ function injectStyles() {
     .cvc-meta { padding: 10px 10px 12px; min-width: 0; }
     .cvc-name { font-weight: 600; font-size: 13px; overflow: hidden; display: -webkit-box;
       -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-    .cvc-sub { color: #a1a1aa; font-size: 11px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .cvc-empty { grid-column: 1 / -1; color: #a1a1aa; text-align: center; padding: 48px 0; }
+    .cvc-comp { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .cvc-comp[hidden] { display: none; }
+    .cvc-chip { background: #27272a; color: #a1a1aa; border: 1px solid #3f3f46; border-radius: 5px;
+      padding: 1px 6px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+    .cvc-chip.req { color: #d4d4d8; border-color: #2563eb; }
+    .cvc-foot { display: flex; gap: 6px; margin-top: 8px; align-items: center; }
+    .cvc-ver { flex: 1; min-width: 0; background: #27272a; color: #e4e4e7; border: 1px solid #3f3f46;
+      border-radius: 6px; padding: 5px 6px; font: inherit; font-size: 11px; outline: none; cursor: pointer; }
+    .cvc-ver:focus { border-color: #2563eb; }
+    .cvc-btn { flex: none; background: #2563eb; color: #fff; border: none; border-radius: 6px;
+      padding: 5px 12px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .cvc-btn:hover { background: #1d4ed8; }
+    .cvc-empty { grid-column: 1 / -1; color: #a1a1aa; text-align: center; padding: 48px 0; line-height: 1.5; }
     .cvc-np { display: flex; gap: 9px; align-items: center; box-sizing: border-box; width: 100%; height: 100%;
       padding: 3px 4px; overflow: hidden; cursor: pointer; font: 12px system-ui, sans-serif; }
     .cvc-np-thumb { width: 54px; height: 54px; flex: 0 0 auto; border-radius: 7px; overflow: hidden;
@@ -149,6 +161,25 @@ function injectStyles() {
 
 function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// Civitai serves some model-version previews as videos; an <img> for those just errors out, so
+// pick the element by extension.
+function thumbHtml(url) {
+  if (!url) return "";
+  const safe = esc(url);
+  if (/\.(mp4|webm)(\?|$)/i.test(url)) {
+    return `<video muted loop autoplay playsinline preload="metadata" src="${safe}" onerror="this.style.visibility='hidden'"></video>`;
+  }
+  return `<img loading="lazy" src="${safe}" onerror="this.style.visibility='hidden'" />`;
+}
+
+// The version's CLIP/VAE component groups, for the card chips. Empty when the version ships none.
+function componentSummary(components) {
+  const out = [];
+  if (components?.clip?.length) out.push({ kind: "CLIP", files: components.clip });
+  if (components?.vae?.length) out.push({ kind: "VAE", files: components.vae });
+  return out;
 }
 
 // openCatalog({ type, ecosystem, onPick }) — onPick(entry) receives the chosen catalogue entry.
@@ -212,39 +243,119 @@ function openCatalog({ type: defaultType, ecosystem: defaultEcosystem, onPick })
 
   function render(entries) {
     status.textContent = entries.length ? `${entries.length} result${entries.length === 1 ? "" : "s"}` : "";
-    if (!entries.length) { grid.innerHTML = `<div class="cvc-empty">No matching resources.</div>`; return; }
     grid.innerHTML = "";
-    for (const e of entries) {
-      const card = document.createElement("div");
-      card.className = "cvc-card";
-      card.setAttribute("role", "button");
-      card.tabIndex = 0;
-      const thumb = e.thumbnailUrl ? `<img src="${esc(e.thumbnailUrl)}" loading="lazy" />` : "";
-      const link = e.modelUrl
-        ? `<a class="cvc-link" href="${esc(e.modelUrl)}" target="_blank" rel="noopener" title="Open on Civitai">↗</a>`
-        : "";
-      card.innerHTML = `
-        <div class="cvc-thumb">${thumb}
-          <div class="cvc-badges"><span class="cvc-badge">${esc(e.baseModel || e.ecosystem)}</span></div>
-          ${link}
-        </div>
-        <div class="cvc-meta">
-          <div class="cvc-name">${esc(e.name)}</div>
-          <div class="cvc-sub">${esc(e.versionName)} · ⬇ ${e.downloadCount ?? 0}</div>
-        </div>`;
-      // The ↗ link opens the model page; don't let that click also pick the card.
-      card.querySelector(".cvc-link")?.addEventListener("click", (ev) => ev.stopPropagation());
-      const pick = () => {
-        onPick?.(e);
-        app.graph?.setDirtyCanvas?.(true, true);
-        close();
-      };
-      card.addEventListener("click", pick);
-      card.addEventListener("keydown", (ev) => {
-        if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); pick(); }
-      });
-      grid.appendChild(card);
+    if (!entries.length) {
+      // CLIP/VAE/text-encoder files live as components of a checkpoint, not standalone models, so
+      // these types are almost always empty — point the user at the checkpoint that fills them in.
+      const t = select.value;
+      const hint = (t === "VAE" || t === "TextEncoder" || t === "CLIPVision")
+        ? "No standalone results — CLIP/VAE files usually ship with a checkpoint. Pick the checkpoint and its components fill in automatically."
+        : "No matching resources.";
+      grid.innerHTML = `<div class="cvc-empty">${hint}</div>`;
+      return;
     }
+    for (const entry of entries) renderCard(entry);
+  }
+
+  function renderCard(entry) {
+    // A model carries its other versions in `versions`; fall back to the representative version for
+    // older responses / lookup-shaped entries.
+    const versions = entry.versions?.length ? entry.versions : [{
+      air: entry.air, versionName: entry.versionName, ecosystem: entry.ecosystem,
+      baseModel: entry.baseModel, thumbnailUrl: entry.thumbnailUrl, modelUrl: entry.modelUrl,
+      trainedWords: entry.trainedWords, components: entry.components,
+    }];
+    let sel = versions[0];
+
+    const card = document.createElement("div");
+    card.className = "cvc-card";
+    card.setAttribute("role", "button");
+    card.tabIndex = 0;
+    card.title = `${entry.name} — ${sel.versionName}`;
+    card.innerHTML = `
+      <div class="cvc-thumb">
+        ${thumbHtml(sel.thumbnailUrl)}
+        <div class="cvc-badges"><span class="cvc-badge">${esc(sel.baseModel || sel.ecosystem || "")}</span></div>
+        <a class="cvc-link" target="_blank" rel="noopener" title="Open on Civitai">↗</a>
+      </div>
+      <div class="cvc-meta">
+        <div class="cvc-name">${esc(entry.name)}</div>
+        <div class="cvc-comp" hidden></div>
+        <div class="cvc-foot">
+          <select class="cvc-ver" title="Version">${versions
+            .map((v, i) => `<option value="${i}">${esc(v.versionName)}</option>`).join("")}</select>
+          <button type="button" class="cvc-btn">Select</button>
+        </div>
+      </div>`;
+
+    const thumbEl = card.querySelector(".cvc-thumb");
+    const badgeEl = card.querySelector(".cvc-badge");
+    const linkEl = card.querySelector(".cvc-link");
+    const verEl = card.querySelector(".cvc-ver");
+    const btnEl = card.querySelector(".cvc-btn");
+    const compEl = card.querySelector(".cvc-comp");
+
+    if (sel.modelUrl) linkEl.href = sel.modelUrl; else linkEl.hidden = true;
+
+    // Chips for the version's required components (CLIP/VAE files that ship with the model), so the
+    // user can see what a pick will pull into the node's component outputs.
+    function renderComps() {
+      const groups = componentSummary(sel.components);
+      if (!groups.length) { compEl.hidden = true; compEl.innerHTML = ""; return; }
+      compEl.hidden = false;
+      compEl.innerHTML = groups.map((g) => {
+        const req = g.files.some((f) => f.isRequired);
+        const names = g.files.map((f) => f.name).join(", ");
+        return `<span class="cvc-chip${req ? " req" : ""}" title="${esc(names)}">🧩 ${esc(g.kind)}</span>`;
+      }).join("");
+    }
+    renderComps();
+
+    function applyVersion() {
+      card.title = `${entry.name} — ${sel.versionName}`;
+      badgeEl.textContent = sel.baseModel || sel.ecosystem || "";
+      thumbEl.querySelectorAll("img, video").forEach((el) => el.remove());
+      if (sel.thumbnailUrl) thumbEl.insertAdjacentHTML("afterbegin", thumbHtml(sel.thumbnailUrl));
+      if (sel.modelUrl) { linkEl.href = sel.modelUrl; linkEl.hidden = false; }
+      else { linkEl.removeAttribute("href"); linkEl.hidden = true; }
+      renderComps();
+    }
+
+    // The ↗ link opens the model page and the version <select> changes the pick target; neither
+    // click should also pick the card.
+    linkEl.addEventListener("click", (ev) => ev.stopPropagation());
+    ["mousedown", "click"].forEach((evt) => verEl.addEventListener(evt, (ev) => ev.stopPropagation()));
+    verEl.addEventListener("change", (ev) => {
+      ev.stopPropagation();
+      sel = versions[verEl.value] ?? sel;
+      applyVersion();
+    });
+
+    const pick = () => {
+      // Resolve the selected version into the flat entry shape the callers (Browse button / LoRA
+      // rows) already expect, so onPick stays unchanged.
+      onPick?.({
+        air: sel.air,
+        name: entry.name,
+        versionName: sel.versionName,
+        ecosystem: sel.ecosystem,
+        baseModel: sel.baseModel,
+        thumbnailUrl: sel.thumbnailUrl,
+        modelUrl: sel.modelUrl,
+        trainedWords: sel.trainedWords || entry.trainedWords || [],
+        components: sel.components,
+        type: entry.type,
+        downloadCount: entry.downloadCount,
+      });
+      app.graph?.setDirtyCanvas?.(true, true);
+      close();
+    };
+    btnEl.addEventListener("click", (ev) => { ev.stopPropagation(); pick(); });
+    card.addEventListener("click", pick);
+    card.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); pick(); }
+    });
+    grid.appendChild(card);
   }
 
   let debounce;

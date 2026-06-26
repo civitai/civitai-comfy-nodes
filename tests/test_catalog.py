@@ -17,11 +17,15 @@ def test_flatten_builds_airs_and_skips_unknown_ecosystems():
         }
     ]
     entries = catalog.flatten_models(items)
-    airs = [e["air"] for e in entries]
-    assert airs == [
+    # One entry per model; its versions ride along (the unknown-ecosystem one skipped).
+    assert len(entries) == 1
+    version_airs = [v["air"] for v in entries[0]["versions"]]
+    assert version_airs == [
         "urn:air:sdxl:lora:civitai:100@200",
         "urn:air:sdxl:lora:civitai:100@202",  # Pony -> sdxl
     ]
+    # Top-level fields mirror the representative (first) version.
+    assert entries[0]["air"] == "urn:air:sdxl:lora:civitai:100@200"
     assert entries[0]["thumbnailUrl"] == "http://img/1.png"
     assert entries[0]["downloadCount"] == 42
     assert entries[0]["name"] == "Cool LoRA"
@@ -29,7 +33,9 @@ def test_flatten_builds_airs_and_skips_unknown_ecosystems():
     assert entries[0]["versionId"] == 200
     assert entries[0]["modelUrl"] == "https://civitai.com/models/100?modelVersionId=200"
     assert entries[0]["trainedWords"] == ["brush stroke", "traditional media"]
-    assert entries[1]["trainedWords"] == []  # absent -> empty list
+    assert entries[0]["versions"][1]["trainedWords"] == []  # absent -> empty list
+    # Components are attached per version (no files here -> empty buckets).
+    assert entries[0]["versions"][0]["components"] == {"primary": None, "vae": [], "clip": []}
 
 
 def test_air_type_uses_civitai_type_map_not_lowercase():
@@ -54,8 +60,10 @@ def test_flatten_caps_versions_and_filters_type():
         {"id": 2, "type": "LORA", "modelVersions": [{"id": 99, "baseModel": "SD 1.5"}]},
     ]
     checkpoints = catalog.flatten_models(items, max_versions=3, type_filter="Checkpoint")
-    assert len(checkpoints) == 3
-    assert all(e["type"] == "Checkpoint" for e in checkpoints)
+    # max_versions caps versions within a model; the LORA model is filtered out by type.
+    assert len(checkpoints) == 1
+    assert checkpoints[0]["type"] == "Checkpoint"
+    assert len(checkpoints[0]["versions"]) == 3
 
 
 def test_ecosystem_map():

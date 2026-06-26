@@ -159,7 +159,10 @@ def node_ecosystem(discriminator: dict | None, model_air: str | None = None) -> 
 
 
 def flatten_models(items: list, max_versions: int = 6, type_filter: str | None = None) -> list[dict]:
-    """One entry per model version, skipping versions with no registered ecosystem."""
+    """One entry per model, carrying its versions in a `versions` array for the picker's per-card
+    version dropdown. The first eligible version is the representative — its fields are copied to
+    the top level so callers that read a single version (lookup/preview) keep working. Versions
+    with no registered ecosystem are skipped; a model with none left is dropped entirely."""
     entries = []
     for model in items or []:
         model_type = model.get("type") or ""
@@ -168,31 +171,51 @@ def flatten_models(items: list, max_versions: int = 6, type_filter: str | None =
         air_type = TYPE_URN_MAP.get(model_type)
         if not air_type:  # skip non-resource types (Poses, Wildcards, Workflows, …)
             continue
-        emitted = 0
+        versions = []
         for version in model.get("modelVersions") or []:
-            if emitted >= max_versions:
+            if len(versions) >= max_versions:
                 break
             ecosystem = ecosystem_for(version.get("baseModel"))
             if not ecosystem:
                 continue
+            version_air = f"urn:air:{ecosystem}:{air_type}:civitai:{model['id']}@{version['id']}"
             images = version.get("images") or []
-            entries.append(
+            versions.append(
                 {
-                    "air": f"urn:air:{ecosystem}:{air_type}:civitai:{model['id']}@{version['id']}",
-                    "name": model.get("name") or f"model {model['id']}",
+                    "air": version_air,
                     "versionName": version.get("name") or f"v{version['id']}",
                     "ecosystem": ecosystem,
                     "baseModel": version.get("baseModel") or "",
-                    "type": model_type,
-                    "downloadCount": (model.get("stats") or {}).get("downloadCount") or 0,
                     "thumbnailUrl": images[0].get("url") if images else None,
-                    "trainedWords": version.get("trainedWords") or [],
-                    "modelId": model["id"],
-                    "versionId": version["id"],
                     "modelUrl": CIVITAI_MODEL_URL.format(model_id=model["id"], version_id=version["id"]),
+                    "trainedWords": version.get("trainedWords") or [],
+                    "versionId": version["id"],
+                    # The /models list endpoint returns each version's files, so components (CLIP/VAE
+                    # chips) come for free here without a per-card lookup round-trip.
+                    "components": _parse_components(version.get("files"), version_air),
                 }
             )
-            emitted += 1
+        if not versions:
+            continue
+        rep = versions[0]
+        entries.append(
+            {
+                "air": rep["air"],
+                "name": model.get("name") or f"model {model['id']}",
+                "versionName": rep["versionName"],
+                "ecosystem": rep["ecosystem"],
+                "baseModel": rep["baseModel"],
+                "type": model_type,
+                "downloadCount": (model.get("stats") or {}).get("downloadCount") or 0,
+                "thumbnailUrl": rep["thumbnailUrl"],
+                "trainedWords": rep["trainedWords"],
+                "modelId": model["id"],
+                "versionId": rep["versionId"],
+                "modelUrl": rep["modelUrl"],
+                "components": rep["components"],
+                "versions": versions,
+            }
+        )
     return entries
 
 
