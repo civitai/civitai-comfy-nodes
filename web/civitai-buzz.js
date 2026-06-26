@@ -1,15 +1,20 @@
-// Live Buzz cost meter for "Run on Civitai" offload runs. The backend
-// (server_routes._send_buzz) pushes `civitai.buzz` ws frames during the offload
-// poll — the pinned rate while running and the final charge at terminal. This
-// extension shows a ⚡ cost line on the running job's progress row (ComfyUI's
-// QueueProgressOverlay), ticking the per-second cost between frames (anchored on
-// the worker's first compute frame, replayed via the trace tail) and snapping to
-// the final value. Nothing is shown when idle.
+// Live Buzz cost meter for "Run on Civitai" offload runs, shown ON the offload marker node(s) via a
+// read-only node WIDGET — NOT by scraping ComfyUI's Vue queue / job-details DOM, and NOT by drawing
+// on the litegraph canvas (recent ComfyUI renders nodes as DOM, so canvas drawing is occluded). The
+// widget API is ComfyUI's own cross-version/skin surface for on-node content (same path as
+// civitai-status.js), so this survives frontend and theme changes. The backend
+// (server_routes._send_buzz) pushes `civitai.buzz` ws frames during the offload poll: the pinned
+// rate while running and the final charge at terminal. We tick the per-second cost between frames
+// (anchored on the worker's first compute frame, replayed via the trace tail) and snap to the final
+// value. The anchor node ids (the Civitai Offload Start/End markers) are published by
+// civitai-offload.js; runs without markers report their cost via the completion toast instead.
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
+import { ComfyWidgets } from "../../scripts/widgets.js";
 
 const PHASE = { IDLE: "idle", PREPARING: "preparing", RUNNING: "running", FINAL: "final" };
 const TICK_MS = 250;
+const WIDGET_NAME = "civitai_buzz";
 
 const run = {
   phase: PHASE.IDLE,
@@ -20,116 +25,102 @@ const run = {
   display: null,
 };
 let timer = null;
-let badge = null;
-const txnCache = new Map(); // prompt_id -> { transactions: [{amount,currency,refund}], total }
-
-function injectStyles() {
-  const style = document.createElement("style");
-  style.textContent = `
-    .cvz-buzz-q { position:absolute; right:4px; top:50%; transform:translateY(-50%); z-index:2;
-      padding:1px 6px; border-radius:9px; font:600 11px/1.4 system-ui,sans-serif; white-space:nowrap;
-      color:#ffd43b; background:rgba(255,212,59,.18); border:1px solid rgba(255,212,59,.45); }
-    .cvz-buzz-q[data-final="1"] { color:#69db7c; background:rgba(105,219,124,.18); border-color:rgba(105,219,124,.5); }
-    .cvz-buzz-item { position:absolute; top:3px; right:5px; z-index:2; pointer-events:none; white-space:nowrap;
-      padding:0 5px; border-radius:8px; font:600 10px/1.4 system-ui,sans-serif;
-      color:#ffd43b; background:rgba(255,212,59,.16); border:1px solid rgba(255,212,59,.4); }`;
-  document.head.appendChild(style);
-}
-
-const fmtRate = (r) => (Number.isInteger(r) ? String(r) : r.toFixed(2).replace(/\.?0+$/, ""));
-
-// Overlay the live value at the right of ComfyUI's running-progress panel (the "Total: …%" row).
-// We attach to the text COLUMN (which is position:relative and — unlike the row — Vue doesn't
-// reconcile our node away) and absolutely-position it, so it shows through the run without adding
-// a line to the fixed-height row. Re-attached if Vue re-renders; gone when the panel is.
-function render() {
-  const totalSpan = document.querySelector('span[title^="Total:"]');
-  const col = totalSpan && (totalSpan.closest(".flex-col") || totalSpan.parentElement?.parentElement);
-  if (!col || run.phase === PHASE.IDLE) { if (badge) badge.remove(); return; }
-  if (!badge) { badge = document.createElement("span"); badge.className = "cvz-buzz-q"; }
-  if (badge.parentElement !== col) col.appendChild(badge);
-  badge.textContent = `⚡ ${run.display == null ? 0 : run.display}`;
-  badge.dataset.final = run.phase === PHASE.FINAL ? "1" : "0";
-  badge.title = run.rate > 0 ? `${fmtRate(run.rate)} Buzz/sec` : "";
-}
-
-// --- job-details popup: a "Transactions" row from the cached terminal frame -----
-
-function txnText(entry) {
-  const parts = (entry?.transactions || [])
-    .map((t) => `${t.amount} ${t.currency ? t.currency + " " : ""}Buzz${t.refund ? " refunded" : ""}`);
-  if (parts.length) return parts.join(", ");
-  return entry?.total != null ? `${entry.total} Buzz` : null;
-}
-
-function txnTotal(entry) {
-  if (!entry) return null;
-  if (entry.total != null) return entry.total;
-  const txns = entry.transactions || [];
-  if (!txns.length) return null;
-  return txns.reduce((sum, t) => sum + (t.refund ? -t.amount : t.amount), 0);
-}
-
-// Inline ⚡cost on completed queue rows: the sidebar tags every row with `data-job-id`, so map each
-// to its cached terminal civitai.buzz frame. In-session only (txnCache isn't re-seeded on reload).
-function decorateQueueItems() {
-  for (const row of document.querySelectorAll("[data-job-id]")) {
-    const id = row.getAttribute("data-job-id");
-    const host = row.firstElementChild || row; // AssetsListItem root (relative + overflow-hidden)
-    const existing = host.querySelector(":scope > .cvz-buzz-item");
-    const total = txnTotal(txnCache.get(id));
-    if (total == null) { if (existing) existing.remove(); continue; }
-    if (existing && existing.dataset.promptId === id) continue; // already correct for this row
-    if (existing) existing.remove(); // virtualized row reused for a different job
-    const value = Math.ceil(Math.max(0, total));
-    const badge = document.createElement("span");
-    badge.className = "cvz-buzz-item";
-    badge.dataset.promptId = id;
-    badge.textContent = `⚡${value}`;
-    badge.title = `${value} Buzz`;
-    host.appendChild(badge);
-  }
-}
-
-function addRow(jobIdLabel, text, promptId) {
-  const container = jobIdLabel.closest(".flex.flex-col");
-  if (!container) return;
-  const grid = document.createElement("div");
-  grid.className = "grid grid-cols-2 items-center gap-2 cvz-buzz-txn";
-  grid.dataset.promptId = promptId;
-  const label = document.createElement("div");
-  label.className = jobIdLabel.className;
-  label.textContent = "Transactions";
-  const value = jobIdLabel.nextElementSibling.cloneNode(false);
-  const span = document.createElement("span");
-  span.className = "block min-w-0 truncate";
-  span.textContent = text;
-  span.title = text;
-  value.replaceChildren(span);
-  grid.append(label, value);
-  container.appendChild(grid);
-}
-
-// ComfyUI reuses one Job Details panel and swaps its content as you hover different jobs, so the row
-// must track the CURRENT Job ID — refresh it whenever the panel's job changes, not once.
-function injectJobDetails() {
-  for (const panel of document.querySelectorAll(".bg-interface-panel-surface")) {
-    const jobIdLabel = [...panel.querySelectorAll(".grid > div")]
-      .find((d) => /^\s*Job ID\s*$/.test(d.textContent || ""));
-    const promptId = jobIdLabel?.nextElementSibling?.querySelector("span")?.textContent?.trim();
-    if (!promptId) continue;
-    const existing = panel.querySelector(".cvz-buzz-txn");
-    if (existing && existing.dataset.promptId === promptId) continue; // already correct for this job
-    if (existing) existing.remove(); // panel reused for a different job — drop the stale row
-    const text = txnText(txnCache.get(promptId));
-    if (text) addRow(jobIdLabel, text, promptId);
-  }
-}
 
 const nowAligned = () => Date.now() + run.clockOffset;
 const num = (v) => (typeof v === "number" && isFinite(v) ? v : null);
 
-function stopTick() { if (timer) { clearInterval(timer); timer = null; } }
+// --- shared state from civitai-offload.js -------------------------------------------------------
+// The offload id scopes the meter to the offloaded run (native lifecycle events fire for local runs
+// too). The anchor ids are the offload marker nodes the cost shows on.
+function activeOffloadId() {
+  try {
+    return window.__civitaiActiveOffloadWorkflowId ?? null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function isOffloadRun(promptId) {
+  const id = activeOffloadId();
+  return id != null && promptId != null && String(promptId) === String(id);
+}
+
+function anchorNodes() {
+  let ids = null;
+  try {
+    ids = window.__civitaiActiveOffloadAnchors;
+  } catch (e) {
+    ids = null;
+  }
+  if (!Array.isArray(ids) || !ids.length) return [];
+  const graph = app.graph;
+  if (!graph?.getNodeById) return [];
+  const nodes = [];
+  for (const id of ids) {
+    const node = graph.getNodeById(id) ?? graph.getNodeById(Number(id));
+    if (node) nodes.push(node);
+  }
+  return nodes;
+}
+
+// --- on-node widget rendering -------------------------------------------------------------------
+
+function buzzWidget(node) {
+  let widget = node.widgets?.find((w) => w.name === WIDGET_NAME);
+  if (widget) return widget;
+  // multiline gives a textarea inputEl that renders the value in both canvas- and DOM-node ComfyUI
+  // (a single-line STRING widget exposes no inputEl in DOM-node mode); mirrors civitai-status.js.
+  widget = ComfyWidgets["STRING"](node, WIDGET_NAME, ["STRING", { multiline: true }], app).widget;
+  if (widget.inputEl) {
+    widget.inputEl.readOnly = true;
+    widget.inputEl.style.opacity = "0.9";
+    widget.inputEl.style.fontWeight = "600";
+    widget.inputEl.style.fontSize = "11px";
+    widget.inputEl.style.border = "none";
+    widget.inputEl.style.background = "transparent";
+  }
+  // The cost is a run result, not a graph input — keep it out of the saved workflow.
+  widget.serializeValue = () => undefined;
+  return widget;
+}
+
+function label() {
+  return `⚡ ${run.display == null ? 0 : run.display} Buzz`;
+}
+
+// Update both the widget model and (in DOM-node ComfyUI) its input element, so the value shows live
+// in either render mode. Best-effort: a missing ComfyWidgets / failed create must never break a run.
+function render() {
+  const idle = run.phase === PHASE.IDLE;
+  const text = idle ? "" : label();
+  const color = run.phase === PHASE.FINAL ? "#69db7c" : "#ffd43b";
+  for (const node of anchorNodes()) {
+    try {
+      const widget = buzzWidget(node);
+      widget.value = text;
+      if (widget.inputEl) {
+        widget.inputEl.value = text;
+        widget.inputEl.style.color = color;
+      }
+    } catch (e) {
+      /* widget API unavailable — fall back to the completion toast */
+    }
+  }
+  try {
+    app.graph?.setDirtyCanvas(true, true);
+  } catch (e) {
+    /* canvas not ready */
+  }
+}
+
+// --- meter state machine ------------------------------------------------------------------------
+
+function stopTick() {
+  if (timer) {
+    clearInterval(timer);
+    timer = null;
+  }
+}
 
 function startTick() {
   stopTick();
@@ -180,23 +171,22 @@ function onBuzz(d) {
   if (computedAt != null) run.clockOffset = computedAt - Date.now();
 
   if (d.terminal) {
-    if (d.prompt_id) {
-      txnCache.set(String(d.prompt_id), {
-        transactions: Array.isArray(d.transactions) ? d.transactions : [],
-        total: num(d.cost_total),
-      });
-      injectJobDetails();
-      decorateQueueItems();
+    // A seed frame (reconnect replay of a past job) only warms state; don't settle the live meter.
+    if (!d.seed) {
+      run.finalCost = num(d.estimated_cost);
+      freeze();
     }
-    // A seed frame (reconnect replay of a past job) only warms the cache; don't settle the live meter.
-    if (!d.seed) { run.finalCost = num(d.estimated_cost); freeze(); }
     return;
   }
 
   if (run.phase === PHASE.IDLE || run.phase === PHASE.FINAL) beginPreparing();
   const startedAt = num(d.started_at);
-  if (startedAt != null) { run.anchorMs = startedAt; anchorCompute(); }
-  else render();
+  if (startedAt != null) {
+    run.anchorMs = startedAt;
+    anchorCompute();
+  } else {
+    render();
+  }
 }
 
 function nodeOf(detail) {
@@ -205,14 +195,31 @@ function nodeOf(detail) {
 }
 
 function attachListeners() {
-  api.addEventListener("execution_start", () => beginPreparing());
-  api.addEventListener("progress", () => anchorCompute());
-  api.addEventListener("executing", (e) => { if (nodeOf(e.detail) != null) anchorCompute(); });
-  api.addEventListener("execution_success", onLifecycleEnd);
-  api.addEventListener("execution_error", onLifecycleEnd);
-  api.addEventListener("execution_interrupted", onLifecycleEnd);
+  // Native lifecycle events fire for LOCAL runs too — scope them to the offloaded prompt_id (carried,
+  // rewritten, on every forwarded trace frame). The custom civitai.buzz frames are already
+  // offload-only, so onBuzz needs no such guard.
+  api.addEventListener("execution_start", (e) => {
+    if (isOffloadRun(e.detail?.prompt_id)) beginPreparing();
+  });
+  api.addEventListener("progress", (e) => {
+    if (isOffloadRun(e.detail?.prompt_id)) anchorCompute();
+  });
+  api.addEventListener("executing", (e) => {
+    if (isOffloadRun(e.detail?.prompt_id) && nodeOf(e.detail) != null) anchorCompute();
+  });
+  api.addEventListener("execution_success", (e) => {
+    if (isOffloadRun(e.detail?.prompt_id)) onLifecycleEnd();
+  });
+  api.addEventListener("execution_error", (e) => {
+    if (isOffloadRun(e.detail?.prompt_id)) onLifecycleEnd();
+  });
+  api.addEventListener("execution_interrupted", (e) => {
+    if (isOffloadRun(e.detail?.prompt_id)) onLifecycleEnd();
+  });
   api.addEventListener("civitai.buzz", (e) => onBuzz(e.detail));
-  api.addEventListener("unhandled", (e) => { if (e.detail && e.detail.type === "civitai.buzz") onBuzz(e.detail.detail); });
+  api.addEventListener("unhandled", (e) => {
+    if (e.detail && e.detail.type === "civitai.buzz") onBuzz(e.detail.detail);
+  });
 
   let sock = null;
   const sniff = () => {
@@ -221,7 +228,12 @@ function attachListeners() {
     sock = s;
     s.addEventListener("message", (ev) => {
       if (typeof ev.data !== "string" || ev.data.indexOf("civitai.buzz") === -1) return;
-      try { const m = JSON.parse(ev.data); if (m && m.type === "civitai.buzz") onBuzz(m.data); } catch { /* not ours */ }
+      try {
+        const m = JSON.parse(ev.data);
+        if (m && m.type === "civitai.buzz") onBuzz(m.data);
+      } catch {
+        /* not ours */
+      }
     });
   };
   sniff();
@@ -232,18 +244,6 @@ function attachListeners() {
 app.registerExtension({
   name: "civitai.buzz",
   async setup() {
-    injectStyles();
     attachListeners();
-    // Keep the badge alive through the overlay's Vue re-renders and after the tick stops.
-    setInterval(() => { if (run.phase !== PHASE.IDLE) render(); }, 300);
-
-    // Re-stamp the popup row and inline badges on DOM changes — the queue rows are virtualized and
-    // get re-rendered. Debounced; idempotent.
-    let injectPending = false;
-    new MutationObserver(() => {
-      if (injectPending) return;
-      injectPending = true;
-      setTimeout(() => { injectPending = false; injectJobDetails(); decorateQueueItems(); }, 100);
-    }).observe(document.body, { childList: true, subtree: true });
   },
 });

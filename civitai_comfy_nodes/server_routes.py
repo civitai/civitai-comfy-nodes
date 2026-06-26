@@ -979,12 +979,16 @@ def _offload_finalize(
             _log.warning("offload finalize: local tail failed (%s)", exc, exc_info=True)
             return
 
-        _push_offload_status(
-            sid,
-            "done",
-            workflowId=final.get("id") or final.get("workflowId"),
-            promptId=((local or {}).get("queue") or {}).get("prompt_id"),
-        )
+        done_fields = {
+            "workflowId": final.get("id") or final.get("workflowId"),
+            "promptId": ((local or {}).get("queue") or {}).get("prompt_id"),
+        }
+        cost_total = (final.get("cost") or {}).get("total")
+        if cost_total is not None:
+            # Ride the settled charge on the completion status so the editor can toast the cost.
+            done_fields["costTotal"] = cost_total
+            done_fields["transactions"] = _transactions(final)
+        _push_offload_status(sid, "done", **done_fields)
         _log.info("offload finalize: workflow %s done in %.2fs total", workflow_id, time.monotonic() - started)
     finally:
         _remove_running_queue(running_task_id)

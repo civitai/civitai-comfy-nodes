@@ -692,6 +692,32 @@ def test_offload_finalize_pushes_done_on_success(monkeypatch):
     assert "stop" not in events
 
 
+def test_offload_finalize_done_includes_cost_when_present(monkeypatch):
+    import types
+
+    events = []
+    final = {
+        "id": "wf-1",
+        "status": "succeeded",
+        "cost": {"total": 1234},
+        "transactions": {"list": [{"amount": 1234, "accountType": "yellow", "type": "debit"}]},
+    }
+    _finalize_env(
+        monkeypatch,
+        events,
+        poll=lambda client, wf, timeout, on_update=None: final,
+        local=lambda prompt, result, base, client_id=None, running_task_id=None: {"queue": {"prompt_id": "p-9"}},
+    )
+    build = types.SimpleNamespace(as_dict=lambda: {"k": "v"})
+    config = types.SimpleNamespace(timeout_minutes=5, token="t")
+
+    sr._offload_finalize({"p": 1}, build, config, {"id": "wf-1"}, "http://x", sid="browser-1", do_tail=True)
+
+    done = next(e[3] for e in events if isinstance(e, tuple) and e[0] == "status" and e[1] == "done")
+    assert done["costTotal"] == 1234
+    assert done["transactions"] == [{"amount": 1234, "currency": "Yellow", "refund": False}]
+
+
 def test_offload_finalize_pushes_error_and_stops_tail_when_poll_fails(monkeypatch):
     import types
 

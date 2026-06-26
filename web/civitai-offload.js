@@ -9,6 +9,51 @@ let civitaiRunInProgress = false;
 let activeOffloadPromise = null;
 let activeOffloadWorkflowId = null;
 
+// Publish the active offload id so the Buzz meter (civitai-buzz.js) can scope its live badge to the
+// offloaded run only — native lifecycle events fire for local runs too, which must not show a meter.
+function setActiveOffloadWorkflowId(id) {
+  activeOffloadWorkflowId = id || null;
+  try {
+    window.__civitaiActiveOffloadWorkflowId = activeOffloadWorkflowId;
+  } catch (e) {
+    // window unavailable (non-browser host) — the meter just won't anchor; harmless.
+  }
+}
+
+// Publish the canvas nodes the live Buzz cost paints on (civitai-buzz.js reads these). Kept until the
+// next run so the final cost lingers on the nodes; runs with no anchor fall back to the toast.
+function setActiveOffloadAnchors(ids) {
+  try {
+    window.__civitaiActiveOffloadAnchors = Array.isArray(ids) ? ids.map(String) : [];
+  } catch (e) {
+    // window unavailable — no on-node badge; harmless.
+  }
+}
+
+function findOffloadMarkerNodeIds() {
+  const nodes = app.graph?._nodes || app.graph?.nodes || [];
+  return nodes
+    .filter((node) => node?.comfyClass === "CivitaiOffloadStart" || node?.comfyClass === "CivitaiOffloadEnd")
+    .map((node) => String(node.id));
+}
+
+// Anchor the on-node cost widget to the offload region's Start/End markers. A marker-less run
+// (explicit selection or whole-graph) has no clean single-node home — its cost is reported via the
+// completion toast instead.
+function offloadAnchorNodeIds() {
+  return findOffloadMarkerNodeIds();
+}
+
+function formatBuzzCost(transactions, costTotal) {
+  if (Array.isArray(transactions) && transactions.length) {
+    return transactions
+      .map((t) => `${t.amount} ${t.currency ? t.currency + " " : ""}Buzz${t.refund ? " refunded" : ""}`)
+      .join(", ");
+  }
+  if (typeof costTotal === "number") return `${Math.ceil(Math.max(0, costTotal))} Buzz`;
+  return "";
+}
+
 const NATIVE_RUN_LABELS = new Set(["Run", "Run (On Change)", "Run (Instant)"]);
 const CIVITAI_MENU_LABEL = "Run on Civitai";
 const CIVITAI_BUTTON_LABEL = "Run on Civitai";
@@ -263,16 +308,18 @@ async function runInCivitai(button, graph = null, { throwOnError = false } = {})
     queueButton.disabled = true;
     setButtonLabel(queueButton, SUBMITTING_LABEL);
   }
+  const explicitSelection = selectedNodeIds();
   activeOffloadPromise = (async () => {
     const payload = graph ? promptPayloadFromGraph(graph) : await currentPrompt();
-    payload.selectedNodeIds = selectedNodeIds();
+    payload.selectedNodeIds = explicitSelection;
     return submitOffload(applySeedControls(payload));
   })();
   try {
     const data = await activeOffloadPromise;
     const id = data.workflow?.id || data.workflow?.workflowId || "submitted";
     // Remember the running workflow so a queue cancel/interrupt can stop it on Civitai (and the bill).
-    activeOffloadWorkflowId = data.workflow?.id || data.workflow?.workflowId || null;
+    setActiveOffloadWorkflowId(data.workflow?.id || data.workflow?.workflowId || null);
+    setActiveOffloadAnchors(offloadAnchorNodeIds());
     const warnings = data.offload?.warnings?.length ? ` ${data.offload.warnings.join(" ")}` : "";
     toast("success", "Submitted to Civitai", `${id}.${warnings}`);
     return data;
@@ -497,12 +544,14 @@ app.registerExtension({
     installInterruptOverride();
     api.addCustomEventListener("civitai.offload.status", (event) => {
       const detail = event.detail || {};
-      activeOffloadWorkflowId = null; // offload reached a terminal state; cancel no longer applies
+      setActiveOffloadWorkflowId(null); // offload reached a terminal state; cancel no longer applies
       if (detail.state === "error") {
         toast("error", "Civitai offload failed", String(detail.message || "Unknown error"));
       } else if (detail.state === "done") {
+        const cost = formatBuzzCost(detail.transactions, detail.costTotal);
         const wf = detail.workflowId ? ` (${detail.workflowId})` : "";
-        toast("success", "Civitai offload complete", `Results downloaded${wf}.`);
+        const lead = cost ? `${cost} — ` : "";
+        toast("success", "Civitai offload complete", `${lead}Results downloaded${wf}.`);
       }
     });
     const observer = new MutationObserver(() => syncRunModeUi());
