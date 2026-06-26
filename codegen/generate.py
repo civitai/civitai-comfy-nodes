@@ -40,6 +40,7 @@ MODULES = {
     "mediaRating": ("analysis", "Civitai/Analysis"),
     "wdTagging": ("analysis", "Civitai/Analysis"),
     "xGuardModeration": ("analysis", "Civitai/Analysis"),
+    "qwenImageBench": ("analysis", "Civitai/Analysis"),
     "training": ("training", "Civitai/Training"),
     "imageResourceTraining": ("training", "Civitai/Training"),
     "polyGen": ("misc", "Civitai/Misc"),
