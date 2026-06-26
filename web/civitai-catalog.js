@@ -512,11 +512,17 @@ function refreshPreview(node, airWidget) {
 function setupPreview(node, airWidget) {
   previewState(node); // create up-front so the preview sits above the Browse button
   const resWidget = node.widgets?.find((w) => w.name === "resources_json");
-  if (resWidget) {
+  if (resWidget && node.widgets) {
     // Serialized data for the customComfy submitter; hide its raw text widget.
     resWidget.hidden = true;
     resWidget.type = "hidden";
-    resWidget.computeSize = () => [0, -4];
+
+    const ri = node.widgets.indexOf(resWidget);
+    const pi = node.widgets.findIndex((x) => x.name === "civitai_model_preview");
+    if (ri > -1 && pi > -1 && ri < pi) {
+      node.widgets.splice(ri, 1);
+      node.widgets.push(resWidget);
+    }
   }
   const origCb = airWidget.callback;
   airWidget.callback = function (...a) {
@@ -699,9 +705,16 @@ function setupLoraRows(node) {
     // The JSON string is the serialized source of truth; hide its raw widget, show the rows UI.
     w.hidden = true;
     w.type = "hidden";
-    w.computeSize = () => [0, -4];
   }
   loraState(node);
+  if (w && node.widgets) {
+    const ci = node.widgets.indexOf(w);
+    const di = node.widgets.findIndex((x) => x.name === "civitai_loras");
+    if (ci > -1 && di > -1 && ci < di) {
+      node.widgets.splice(ci, 1);
+      node.widgets.push(w);
+    }
+  }
   // Default to a sane width (and recover from any stale over-wide size) before the first measure.
   const currentWidth = node.size?.[0] || 0;
   if (currentWidth < 360 || currentWidth > 720) node.setSize?.([380, node.size?.[1] || 140]);
