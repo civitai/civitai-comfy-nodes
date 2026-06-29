@@ -1,6 +1,6 @@
 [project]
 name = "civitai-comfy-nodes"
-version = "0.3.0"
+version = "0.3.1"
 description = "ComfyUI custom nodes for the Civitai Orchestration API — run Civitai recipes (image/video/audio generation, training, analysis) from inside ComfyUI"
 readme = "README.md"
 license = { text = "MIT" }

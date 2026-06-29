@@ -9,6 +9,12 @@ The section matching the `pyproject.toml` version is published to the Comfy Regi
 [`.github/workflows/publish.yml`](.github/workflows/publish.yml). Add a new `## [x.y.z]`
 section at the top before bumping the version.
 
+## [0.3.1] - 2026-06-29
+
+### Fixed
+- Browse Civitai picker now lists all models, not only those flagged for onsite generation.
+  The `supportsGeneration` filter was excluding eligible resources.
+
 ## [0.3.0] - 2026-06-26
 
 ### Added
