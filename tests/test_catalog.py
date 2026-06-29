@@ -238,7 +238,7 @@ def test_lookup_returns_none_on_404(monkeypatch):
     assert catalog.lookup("urn:air:sd1:checkpoint:civitai:4384@999") is None
 
 
-def test_search_always_filters_to_generation_models(monkeypatch):
+def test_search_does_not_filter_to_generation_models(monkeypatch):
     captured = {}
 
     class _Resp:
@@ -254,4 +254,4 @@ def test_search_always_filters_to_generation_models(monkeypatch):
 
     monkeypatch.setattr(catalog.requests, "get", fake_get)
     catalog.search(query="dreamshaper", type_="Checkpoint", ecosystem="sdxl")
-    assert ("supportsGeneration", "true") in captured["params"]
+    assert not any(k == "supportsGeneration" for k, _ in captured["params"])
