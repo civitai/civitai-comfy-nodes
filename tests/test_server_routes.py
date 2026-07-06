@@ -174,7 +174,8 @@ def test_import_model_downloads_primary_and_required_components(monkeypatch):
     monkeypatch.setattr(config, "auth_state", lambda: (None, None))
     calls = []
 
-    def fake_download(a, folder="checkpoints", token=None, *, download_url=None, file_id=None):
+    def fake_download(a, folder="checkpoints", token=None, *, download_url=None, file_id=None, in_execution=True):
+        assert in_execution is False  # route path must not touch execution-scoped progress/interrupts
         calls.append({"folder": folder, "download_url": download_url, "file_id": file_id})
         return f"/models/{folder}/file{len(calls)}.safetensors"
 

@@ -74,6 +74,33 @@ def test_download_specific_file_keyed_by_file_id(monkeypatch, tmp_path):
     assert out == str(tmp_path / "civitai_999_f4_clip_l.safetensors")  # cache name scoped by file id
 
 
+def test_download_outside_execution_skips_progress_and_interrupts(monkeypatch, tmp_path):
+    # In a live ComfyUI, progress_bar/check_interrupted are execution-scoped: the ProgressBar hook
+    # dereferences PromptServer.last_prompt_id (AttributeError before any prompt has run) and the
+    # interrupt flag belongs to the executing prompt. in_execution=False must not touch either.
+    monkeypatch.setattr(local_models, "_model_dir", lambda folder: str(tmp_path))
+
+    def boom(*a, **k):
+        raise AssertionError("execution-scoped facility used outside a prompt")
+
+    monkeypatch.setattr(local_models.comfy_compat, "progress_bar", boom)
+    monkeypatch.setattr(local_models.comfy_compat, "check_interrupted", boom)
+
+    class _Resp:
+        status_code = 200
+        headers = {"content-disposition": 'filename="model.safetensors"', "content-length": "5"}
+
+        def iter_content(self, chunk_size=0):
+            yield b"abcde"
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(local_models.requests, "get", lambda *a, **k: _Resp())
+    out = local_models.download_model("urn:air:x:checkpoint:civitai:1@42", in_execution=False)
+    assert out == str(tmp_path / "civitai_42_model.safetensors")
+
+
 def test_download_specific_file_uses_its_own_cache(monkeypatch, tmp_path):
     monkeypatch.setattr(local_models, "_model_dir", lambda folder: str(tmp_path))
     (tmp_path / "civitai_999_f4_clip_l.safetensors").write_text("weights")

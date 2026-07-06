@@ -198,7 +198,7 @@ def _import_model(air: str) -> dict:
     files = catalog.components(air, token=token)
     primary = files.get("primary") or {}
     folder = local_models.folder_for_file_type(primary.get("type"), local_models.folder_for_air(air))
-    path = local_models.download_model(air, folder=folder, token=token)
+    path = local_models.download_model(air, folder=folder, token=token, in_execution=False)
     downloaded = [{"folder": folder, "name": os.path.basename(path)}]
     for bucket, fallback in (("clip", "text_encoders"), ("vae", "vae")):
         for f in files.get(bucket) or []:
@@ -206,7 +206,12 @@ def _import_model(air: str) -> dict:
                 continue
             comp_folder = local_models.folder_for_file_type(f.get("type"), fallback)
             path = local_models.download_model(
-                air, folder=comp_folder, token=token, download_url=f["downloadUrl"], file_id=f["id"]
+                air,
+                folder=comp_folder,
+                token=token,
+                download_url=f["downloadUrl"],
+                file_id=f["id"],
+                in_execution=False,
             )
             downloaded.append({"folder": comp_folder, "name": os.path.basename(path)})
     return {"files": downloaded}
