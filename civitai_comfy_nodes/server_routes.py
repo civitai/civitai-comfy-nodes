@@ -187,6 +187,31 @@ def _import_blob(blob_id: str | None, url: str | None, kind: str) -> dict:
     return {"name": name, "subfolder": "", "type": "input"}
 
 
+def _import_model(air: str) -> dict:
+    """Model Library import: download a version's primary file — plus its *required* CLIP/VAE
+    component files — into the matching ComfyUI model folders (same folder rules as the Model
+    Selector node). Returns {"files": [{"folder", "name"}, …]} in download order, primary first."""
+    from . import local_models
+    from .config import auth_state
+
+    token = auth_state()[0]
+    files = catalog.components(air, token=token)
+    primary = files.get("primary") or {}
+    folder = local_models.folder_for_file_type(primary.get("type"), local_models.folder_for_air(air))
+    path = local_models.download_model(air, folder=folder, token=token)
+    downloaded = [{"folder": folder, "name": os.path.basename(path)}]
+    for bucket, fallback in (("clip", "text_encoders"), ("vae", "vae")):
+        for f in files.get(bucket) or []:
+            if not f.get("isRequired"):
+                continue
+            comp_folder = local_models.folder_for_file_type(f.get("type"), fallback)
+            path = local_models.download_model(
+                air, folder=comp_folder, token=token, download_url=f["downloadUrl"], file_id=f["id"]
+            )
+            downloaded.append({"folder": comp_folder, "name": os.path.basename(path)})
+    return {"files": downloaded}
+
+
 def node_ecosystem_map() -> dict:
     """Map each recipe node class -> its expected AIR ecosystem (for the picker's default filter)."""
     from . import NODE_CLASS_MAPPINGS  # noqa: PLC0415 - deferred to call time to avoid an import cycle
@@ -308,5 +333,18 @@ if _server is not None:
         except CivitaiAuthError:
             return web.json_response({"error": "auth_required"}, status=401)
         except Exception as e:
+            return web.json_response({"error": str(e)}, status=502)
+        return web.json_response(result)
+
+    @_server.routes.post("/civitai/models/import")
+    async def _civitai_models_import(request):
+        body = await request.json()
+        air = (body.get("air") or "").strip()
+        if not air:
+            return web.json_response({"error": "air is required"}, status=400)
+        loop = asyncio.get_event_loop()
+        try:
+            result = await loop.run_in_executor(None, lambda: _import_model(air))
+        except Exception as e:  # metadata/download failures -> picker toast
             return web.json_response({"error": str(e)}, status=502)
         return web.json_response(result)

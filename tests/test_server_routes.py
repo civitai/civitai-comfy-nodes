@@ -151,6 +151,45 @@ def test_flatten_kind_inference_and_filter():
     assert [m["kind"] for m in only_video[0]["media"]] == ["video"]
 
 
+def test_import_model_downloads_primary_and_required_components(monkeypatch):
+    # The Model Library import mirrors the Model Selector's folder rules: the primary file's folder
+    # follows the *file's* type (Diffusion Model -> diffusion_models, not the AIR's checkpoints),
+    # and only isRequired components ride along, keyed by their own downloadUrl + file id.
+    air = "urn:air:sdxl:checkpoint:civitai:101@202"
+    monkeypatch.setattr(
+        sr.catalog,
+        "components",
+        lambda a, token=None: {
+            "primary": {"id": 1, "name": "model.safetensors", "type": "Diffusion Model", "downloadUrl": "du1"},
+            "clip": [
+                {"id": 2, "name": "te.safetensors", "type": "Text Encoder", "downloadUrl": "du2", "isRequired": True},
+            ],
+            "vae": [
+                {"id": 3, "name": "opt.safetensors", "type": "VAE", "downloadUrl": "du3", "isRequired": False},
+            ],
+        },
+    )
+    from civitai_comfy_nodes import config, local_models
+
+    monkeypatch.setattr(config, "auth_state", lambda: (None, None))
+    calls = []
+
+    def fake_download(a, folder="checkpoints", token=None, *, download_url=None, file_id=None):
+        calls.append({"folder": folder, "download_url": download_url, "file_id": file_id})
+        return f"/models/{folder}/file{len(calls)}.safetensors"
+
+    monkeypatch.setattr(local_models, "download_model", fake_download)
+    result = sr._import_model(air)
+    assert result == {
+        "files": [
+            {"folder": "diffusion_models", "name": "file1.safetensors"},
+            {"folder": "text_encoders", "name": "file2.safetensors"},
+        ]
+    }
+    assert calls[0] == {"folder": "diffusion_models", "download_url": None, "file_id": None}
+    assert calls[1] == {"folder": "text_encoders", "download_url": "du2", "file_id": 2}
+
+
 def test_guess_ext_sniffs_magic_bytes():
     assert sr._guess_ext("image", b"\x89PNG\r\n\x1a\n\x00\x00\x00\x00") == ".png"
     assert sr._guess_ext("image", b"\xff\xd8\xff\xe0\x00\x10JFIF") == ".jpg"

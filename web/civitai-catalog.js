@@ -65,11 +65,20 @@ function resolveModelType(node) {
   return null;
 }
 
+// Civitai hexagon logo as a currentColor mask (same asset as the gallery tab icon).
+const LOGO = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNzggMTc4Ij48cGF0aCBkPSJNODkuMywyOS4ybDUyLDMwdjYwbC01MiwzMGwtNTItMzB2LTYwTDg5LjMsMjkuMiBNODkuMywxLjVsLTc2LDQzLjl2ODcuOGw3Niw0My45bDc2LTQzLjlWNDUuNEw4OS4zLDEuNUw4OS4zLDEuNXoiLz48cG9seWdvbiBwb2ludHM9IjEwNC4xLDk3LjIgODkuMiwxMDUuNyA3NC4zLDk3LjIgNzQuMyw4MC4yIDg5LjIsNzEuNyAxMDQuMSw4MC4yIDEyMi4zLDgwLjIgMTIyLjMsNjkuNyA4OS4zLDUwLjcgNTYuMyw2OS43IDU2LjMsMTA3LjggODkuMywxMjYuOCAxMjIuMywxMDcuOCAxMjIuMyw5Ny4yICIvPjwvc3ZnPg==";
+
 let stylesInjected = false;
 function injectStyles() {
   if (stylesInjected) return;
   stylesInjected = true;
   const css = `
+    .cvc-ml-import { background: #2563eb; color: #fff; border: none; border-radius: 6px;
+      padding: 5px 10px; font: 600 12px system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
+    .cvc-ml-import:hover { background: #1d4ed8; }
+    .cvc-ml-import::before { content: ""; display: inline-block; width: 1.2em; height: 1.2em;
+      vertical-align: -0.25em; margin-right: 5px; background-color: currentColor;
+      -webkit-mask: url("${LOGO}") center/contain no-repeat; mask: url("${LOGO}") center/contain no-repeat; }
     .cvc-backdrop { position: fixed; inset: 0; z-index: 2147483647; background: rgba(0,0,0,.6);
       display: flex; align-items: center; justify-content: center; font: 14px system-ui, sans-serif; }
     .cvc-modal { width: min(1100px, calc(100vw - 64px)); height: min(760px, calc(100vh - 64px));
@@ -182,8 +191,8 @@ function componentSummary(components) {
   return out;
 }
 
-// openCatalog({ type, ecosystem, onPick }) — onPick(entry) receives the chosen catalogue entry.
-function openCatalog({ type: defaultType, ecosystem: defaultEcosystem, onPick }) {
+// openCatalog({ type, ecosystem, query, onPick }) — onPick(entry) receives the chosen catalogue entry.
+function openCatalog({ type: defaultType, ecosystem: defaultEcosystem, query: initialQuery, onPick }) {
   injectStyles();
   const types = META.types && META.types.length ? META.types : TYPES;
   const ecoOptions =
@@ -362,6 +371,7 @@ function openCatalog({ type: defaultType, ecosystem: defaultEcosystem, onPick })
   input.addEventListener("input", () => { clearTimeout(debounce); debounce = setTimeout(run, 300); });
   select.addEventListener("change", run);
   ecoSelect.addEventListener("change", run);
+  if (initialQuery) input.value = initialQuery;
   input.focus();
   run();
 }
@@ -727,6 +737,90 @@ function setupLoraRows(node) {
   };
 }
 
+// ── "Import from Civitai" button in the Model Library sidebar header ───────────────────────────────
+// Opens the catalogue picker; a pick downloads the version's primary file (plus required CLIP/VAE
+// components) into the local model folders via /civitai/models/import, then refreshes the library.
+// Skipped in hosted comfy-cloud sessions: models there resolve via session pins (the shared origin
+// is read-only), and comfy-cloud's injected overlay provides its own pin-based header button.
+const SESSION_PROXY_RE = /^\/sessions\/[^/]+\/proxy\//;
+
+function toast(severity, summary, detail) {
+  try {
+    app.extensionManager.toast.add({ severity, summary, detail, life: 5000 });
+  } catch (e) {
+    console[severity === "error" ? "error" : "log"](`[civitai-catalog] ${summary}: ${detail ?? ""}`);
+  }
+}
+
+// The library header has no stable test id across frontend versions; walk up from the (already
+// matched) search input to the nearest ancestor containing a refresh-ish button. Icon classes vary
+// by version — pi-refresh/pi-sync (PrimeVue) vs icon-[lucide--refresh-cw] — [class*='refresh']
+// spans both, with the aria-label/title text as a last resort.
+function libraryRefreshButton(input) {
+  for (let scope = input?.parentElement; scope && scope !== document.body; scope = scope.parentElement) {
+    const btn = [...scope.querySelectorAll("button")].find(
+      (b) =>
+        b.querySelector(".pi-sync, [class*='refresh']") ||
+        /refresh/i.test(b.getAttribute("aria-label") || b.title || "")
+    );
+    if (btn) return btn;
+  }
+  return null;
+}
+
+function currentLibraryInput() {
+  return [...document.querySelectorAll("input[placeholder]")].find(
+    (i) => !i.closest(".cvc-backdrop") && /search.*model|model.*search/i.test(i.placeholder)
+  );
+}
+
+async function importModel(entry) {
+  toast("info", "Downloading from Civitai", `${entry.name} — large models can take a while.`);
+  try {
+    const res = await fetch("/civitai/models/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ air: entry.air }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || `import failed (${res.status})`);
+    const names = (data.files || []).map((f) => `${f.folder}/${f.name}`).join(", ");
+    toast("success", "Model imported", names || entry.name);
+    // Re-resolve the refresh button from the live DOM — the one from attach time may have been
+    // unmounted (tab closed / re-rendered) during a long download.
+    libraryRefreshButton(currentLibraryInput())?.click();
+  } catch (e) {
+    toast("error", "Import failed", String(e.message || e));
+  }
+}
+
+function attachLibraryButton(input) {
+  const refresh = libraryRefreshButton(input);
+  if (!refresh || refresh.parentElement.querySelector(".cvc-ml-import")) return;
+  injectStyles();
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "cvc-ml-import";
+  btn.textContent = "Civitai";
+  btn.title = "Import a model from Civitai into your local model folders";
+  btn.addEventListener("click", () =>
+    openCatalog({ type: "Checkpoint", query: input.value.trim(), onPick: importModel })
+  );
+  refresh.parentElement.insertBefore(btn, refresh);
+}
+
+function installLibraryImport() {
+  if (SESSION_PROXY_RE.test(location.pathname)) return;
+  const obs = new MutationObserver(() => {
+    document.querySelectorAll("input[placeholder]").forEach((i) => {
+      // Our own picker's input also matches the placeholder probe — skip it.
+      if (i.closest(".cvc-backdrop")) return;
+      if (/search.*model|model.*search/i.test(i.placeholder)) attachLibraryButton(i);
+    });
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
+}
+
 function targetFor(node) {
   // Only the dedicated Civitai selector nodes get a Browse button. Recipe nodes take their models
   // via CIVITAI_AIR sockets (wire a Model Selector), so there's no model widget to attach to.
@@ -741,6 +835,7 @@ function targetFor(node) {
 app.registerExtension({
   name: "civitai.catalog",
   async setup() {
+    installLibraryImport();
     try {
       META = await (await fetch("/civitai/catalog/meta")).json();
     } catch (e) {
