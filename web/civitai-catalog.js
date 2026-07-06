@@ -83,7 +83,27 @@ function injectStyles() {
       display: flex; align-items: center; justify-content: center; font: 14px system-ui, sans-serif; }
     .cvc-modal { width: min(1100px, calc(100vw - 64px)); height: min(760px, calc(100vh - 64px));
       background: #18181b; color: #e4e4e7; border: 1px solid #3f3f46; border-radius: 14px;
-      box-shadow: 0 24px 64px rgba(0,0,0,.5); display: flex; flex-direction: column; overflow: hidden; }
+      box-shadow: 0 24px 64px rgba(0,0,0,.5); display: flex; flex-direction: column; overflow: hidden;
+      position: relative; }
+    .cvc-import-open { flex: none; background: #27272a; color: #e4e4e7; border: 1px solid #3f3f46;
+      border-radius: 8px; padding: 9px 12px; font: inherit; cursor: pointer; white-space: nowrap; }
+    .cvc-import-open:hover { border-color: #2563eb; color: #fff; }
+    .cvc-import { position: absolute; inset: 0; z-index: 5; padding: 24px; background: rgba(9,9,11,.72);
+      display: none; align-items: center; justify-content: center; }
+    .cvc-import.open { display: flex; }
+    .cvc-import-card { width: min(520px, 100%); background: #18181b; border: 1px solid #3f3f46;
+      border-radius: 12px; padding: 20px; box-shadow: 0 24px 64px rgba(0,0,0,.5); display: flex;
+      flex-direction: column; gap: 12px; }
+    .cvc-import-title { font-size: 15px; font-weight: 700; }
+    .cvc-import-err { color: #a1a1aa; font-size: 12px; min-height: 16px; }
+    .cvc-import-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+    .cvc-import-actions button { border-radius: 8px; padding: 9px 14px; font: inherit; font-weight: 600;
+      cursor: pointer; border: 1px solid #3f3f46; }
+    .cvc-import-cancel { background: transparent; color: #a1a1aa; }
+    .cvc-import-cancel:hover { background: #27272a; color: #e4e4e7; }
+    .cvc-import-go { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .cvc-import-go:hover { background: #1d4ed8; }
+    .cvc-import-go[disabled] { opacity: .6; cursor: default; }
     .cvc-head { display: flex; gap: 10px; align-items: center; padding: 14px 16px; border-bottom: 1px solid #27272a; }
     .cvc-title { font-size: 16px; font-weight: 700; white-space: nowrap; }
     .cvc-input { flex: 1; box-sizing: border-box; background: #27272a; color: #e4e4e7;
@@ -209,10 +229,22 @@ function openCatalog({ type: defaultType, ecosystem: defaultEcosystem, query: in
         <input class="cvc-input" placeholder="Search Civitai models…" />
         <select class="cvc-select cvc-type">${types.map((t) => `<option value="${t}"${t === defaultType ? " selected" : ""}>${esc(t)}</option>`).join("")}</select>
         <select class="cvc-select cvc-eco" title="Filter by base-model ecosystem">${ecoOptions}</select>
+        <button class="cvc-import-open" title="Import by pasting a Civitai URL or AIR">Import from URL</button>
         <button class="cvc-close" title="Close">✕</button>
       </div>
       <div class="cvc-status"></div>
       <div class="cvc-grid"></div>
+      <div class="cvc-import">
+        <div class="cvc-import-card" role="dialog" aria-label="Import a model from a URL or AIR">
+          <div class="cvc-import-title">Import from URL</div>
+          <input class="cvc-input cvc-import-input" placeholder="Paste a Civitai model/version URL or AIR" />
+          <div class="cvc-import-err"></div>
+          <div class="cvc-import-actions">
+            <button class="cvc-import-cancel" type="button">Cancel</button>
+            <button class="cvc-import-go" type="button">Import</button>
+          </div>
+        </div>
+      </div>
     </div>`;
   document.body.appendChild(backdrop);
 
@@ -228,6 +260,48 @@ function openCatalog({ type: defaultType, ecosystem: defaultEcosystem, query: in
   document.addEventListener("keydown", function onKey(e) {
     if (e.key === "Escape") { close(); document.removeEventListener("keydown", onKey); }
   });
+
+  // "Import from URL": for a model search doesn't surface, paste a Civitai model/version URL or an
+  // AIR; the server resolves it to a catalogue entry and it flows through onPick like a card pick.
+  // The panel lives inside .cvc-modal so its clicks never hit the backdrop's close-on-outside check.
+  const importPanel = backdrop.querySelector(".cvc-import");
+  const importInput = backdrop.querySelector(".cvc-import-input");
+  const importGo = backdrop.querySelector(".cvc-import-go");
+  const importErr = backdrop.querySelector(".cvc-import-err");
+  backdrop.querySelector(".cvc-import-open").addEventListener("click", () => {
+    importErr.textContent = "";
+    importInput.value = "";
+    importPanel.classList.add("open");
+    importInput.focus();
+  });
+  backdrop.querySelector(".cvc-import-cancel").addEventListener("click", () => importPanel.classList.remove("open"));
+  importInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); runImport(); }
+  });
+  importGo.addEventListener("click", runImport);
+
+  async function runImport() {
+    const value = importInput.value.trim();
+    if (!value) { importErr.textContent = "Paste a URL or AIR first."; return; }
+    importGo.disabled = true;
+    importErr.textContent = "Resolving…";
+    try {
+      const res = await fetch("/civitai/catalog/resolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input: value }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error || !data.entry) throw new Error(data.error || `resolve failed (${res.status})`);
+      onPick?.(data.entry);
+      app.graph?.setDirtyCanvas?.(true, true);
+      close();
+    } catch (e) {
+      importErr.textContent = String(e.message || e);
+    } finally {
+      importGo.disabled = false;
+    }
+  }
 
   let reqId = 0;
   async function run() {

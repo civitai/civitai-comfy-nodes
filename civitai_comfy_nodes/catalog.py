@@ -7,9 +7,13 @@ truth: it maps each AIR ecosystem (the `urn:air:<ecosystem>:...` segment the orc
 on, lowercase) to the Civitai `baseModel` strings that belong to it.
 """
 
+import re
+from urllib.parse import parse_qs, urlparse
+
 import requests
 
 CIVITAI_MODELS_URL = "https://civitai.com/api/v1/models"
+CIVITAI_MODEL_API_URL = "https://civitai.com/api/v1/models/{model_id}"
 CIVITAI_VERSION_URL = "https://civitai.com/api/v1/model-versions/{version_id}"
 CIVITAI_MODEL_URL = "https://civitai.com/models/{model_id}?modelVersionId={version_id}"
 USER_AGENT = "civitai-comfy-nodes/0.1 (+https://github.com/civitai/civitai-comfy-nodes)"
@@ -249,23 +253,24 @@ def search(
     return flatten_models(items, type_filter=type_)
 
 
-def lookup(air: str, timeout: int = 15, token: str | None = None) -> dict | None:
-    """Resolve a single AIR to display metadata (name/version/thumbnail) via the model-version
-    endpoint, so the selector node can show what a stored or pasted AIR actually points at.
-    Returns None for an unparseable AIR or a deleted/unknown version (404)."""
-    version_id = version_id_from_air(air)
-    if not version_id:
-        return None
+def _get_json(url: str, timeout: int, token: str | None):
+    """GET a Civitai API endpoint; parsed JSON, or None on 404 (deleted/unknown resource)."""
     headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    response = requests.get(CIVITAI_VERSION_URL.format(version_id=version_id), headers=headers, timeout=timeout)
+    response = requests.get(url, headers=headers, timeout=timeout)
     if response.status_code == 404:
         return None
     response.raise_for_status()
-    version = response.json() or {}
+    return response.json() or {}
+
+
+def _entry_from_version(version: dict, air: str) -> dict:
+    """A catalogue entry from a model-version API payload (the same shape flatten_models emits,
+    minus the multi-version `versions` array)."""
     model = version.get("model") or {}
     model_id = version.get("modelId")
+    version_id = version.get("id") or version_id_from_air(air)
     images = version.get("images") or []
     return {
         "air": air,
@@ -278,11 +283,79 @@ def lookup(air: str, timeout: int = 15, token: str | None = None) -> dict | None
         "trainedWords": version.get("trainedWords") or [],
         "modelId": model_id,
         "versionId": version_id,
-        "modelUrl": (
-            CIVITAI_MODEL_URL.format(model_id=model_id, version_id=version_id) if model_id else None
-        ),
+        "modelUrl": (CIVITAI_MODEL_URL.format(model_id=model_id, version_id=version_id) if model_id else None),
         "components": _parse_components(version.get("files"), air),
     }
+
+
+def lookup(air: str, timeout: int = 15, token: str | None = None) -> dict | None:
+    """Resolve a single AIR to display metadata (name/version/thumbnail) via the model-version
+    endpoint, so the selector node can show what a stored or pasted AIR actually points at.
+    Returns None for an unparseable AIR or a deleted/unknown version (404)."""
+    version_id = version_id_from_air(air)
+    if not version_id:
+        return None
+    version = _get_json(CIVITAI_VERSION_URL.format(version_id=version_id), timeout, token)
+    if version is None:
+        return None
+    return _entry_from_version(version, air)
+
+
+def _version_air(version: dict) -> str | None:
+    """AIR for a model-version API payload. The ecosystem falls back to `other` for base models
+    without a registered ecosystem (search drops those, but Import-from-URL must still take them);
+    None when the model type isn't a downloadable resource or the ids are missing."""
+    model = version.get("model") or {}
+    air_type = TYPE_URN_MAP.get(model.get("type") or "")
+    model_id = version.get("modelId")
+    version_id = version.get("id")
+    if not (air_type and model_id and version_id):
+        return None
+    ecosystem = ecosystem_for(version.get("baseModel")) or "other"
+    return f"urn:air:{ecosystem}:{air_type}:civitai:{model_id}@{version_id}"
+
+
+def resolve_reference(text: str, timeout: int = 15, token: str | None = None) -> dict | None:
+    """Resolve a pasted reference — an AIR, a civitai.com model/version page URL, or a version
+    download URL — to a catalogue entry (the picker's Import-from-URL flow). None when the text
+    doesn't reference a resolvable Civitai model."""
+    text = (text or "").strip()
+    if text.startswith("urn:air:"):
+        return lookup(text, timeout=timeout, token=token)
+    try:
+        parsed = urlparse(text)
+    except ValueError:
+        return None
+    host = (parsed.netloc or "").lower()
+    if host != "civitai.com" and not host.endswith(".civitai.com"):
+        return None
+    version_id = (parse_qs(parsed.query).get("modelVersionId") or [None])[0]
+    if not version_id:
+        match = re.search(r"/(?:model-versions|api/download/models)/(\d+)", parsed.path or "")
+        version_id = match.group(1) if match else None
+    if version_id and str(version_id).isdigit():
+        version = _get_json(CIVITAI_VERSION_URL.format(version_id=version_id), timeout, token)
+        air = _version_air(version) if version else None
+        return _entry_from_version(version, air) if air else None
+    match = re.search(r"/models/(\d+)", parsed.path or "")
+    if not match:
+        return None
+    model = _get_json(CIVITAI_MODEL_API_URL.format(model_id=match.group(1)), timeout, token)
+    if not model:
+        return None
+    entries = flatten_models([model])
+    if entries:
+        return entries[0]
+    # Every version's base model lacks a registered ecosystem — build from the newest version with
+    # the `other` fallback instead of dropping the model like search does.
+    versions = model.get("modelVersions") or []
+    if not versions:
+        return None
+    version = dict(versions[0])
+    version.setdefault("modelId", model.get("id"))
+    version.setdefault("model", {"name": model.get("name"), "type": model.get("type")})
+    air = _version_air(version)
+    return _entry_from_version(version, air) if air else None
 
 
 # Civitai file `type` -> the Model Selector component output it feeds. Files outside this map (the

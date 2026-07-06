@@ -259,6 +259,24 @@ if _server is not None:
             return web.json_response({"error": str(e)}, status=502)
         return web.json_response({"entry": entry})
 
+    @_server.routes.post("/civitai/catalog/resolve")
+    async def _civitai_catalog_resolve(request):
+        body = await request.json()
+        text = (body.get("input") or "").strip()
+        if not text:
+            return web.json_response({"error": "input is required"}, status=400)
+        loop = asyncio.get_event_loop()
+        try:
+            entry = await loop.run_in_executor(None, lambda: catalog.resolve_reference(text))
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=502)
+        if not entry:
+            return web.json_response(
+                {"error": "Couldn't resolve that to a Civitai model — paste a model/version URL or AIR."},
+                status=404,
+            )
+        return web.json_response({"entry": entry})
+
     @_server.routes.get("/civitai/catalog/meta")
     async def _civitai_catalog_meta(request):
         ecosystems = [{"key": e["key"], "label": e["label"]} for e in catalog.ECOSYSTEMS]

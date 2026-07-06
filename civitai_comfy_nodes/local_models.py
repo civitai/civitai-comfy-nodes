@@ -48,11 +48,11 @@ def folder_for_air(air: str, default: str = "checkpoints") -> str:
 
 
 # Civitai file `type` (the web app's `modelFileTypes`) -> the ComfyUI model folder. The download
-# folder follows the *file's* role, which can differ from the model's AIR type — e.g. a Checkpoint
-# model whose primary file is a "Diffusion Model" must land in diffusion_models/, not checkpoints/.
+# folder follows the *file's* role when it's more specific than the model's AIR type — e.g. a
+# Checkpoint model whose primary file is a "Diffusion Model" must land in diffusion_models/, not
+# checkpoints/. "Model"/"Pruned Model" are deliberately absent: every model type's primary file
+# (LoRA, TextualInversion, …) carries them, so they say nothing — the AIR-type folder decides.
 FILE_TYPE_FOLDERS = {
-    "Model": "checkpoints",
-    "Pruned Model": "checkpoints",
     "Diffusion Model": "diffusion_models",
     "UNet": "diffusion_models",
     "VAE": "vae",
