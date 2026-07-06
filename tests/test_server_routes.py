@@ -83,6 +83,54 @@ def test_flatten_uses_type_field_when_present():
     assert sr.flatten_generations(workflows)[0]["media"][0]["kind"] == "audio"
 
 
+def test_flatten_infers_kind_from_blob_id_extension():
+    # customComfy outputs land under generic `blobs`/`tempBlobs` keys with no `type` field; the
+    # asset blob id keeps the original output filename, so its extension is the only kind signal.
+    workflows = [
+        _wf(
+            [
+                {
+                    "$type": "customComfy",
+                    "output": {
+                        "blobs": [
+                            {
+                                "id": "customcomfy-X-asset-audio-stable_audio_3_00063.mp3",
+                                "available": True,
+                                "url": "u1",
+                            },
+                            {"id": "customcomfy-X-asset-anim_00001.webm", "available": True, "url": "u2"},
+                            {"id": "customcomfy-X-asset-ComfyUI_00001.png", "available": True, "url": "u3"},
+                        ],
+                        "tempBlobs": [
+                            {"id": "customcomfy-X-asset-ComfyUI_temp_nxjwl_00001.flac", "available": True, "url": "u4"},
+                        ],
+                    },
+                }
+            ]
+        )
+    ]
+    assert [m["kind"] for m in sr.flatten_generations(workflows)[0]["media"]] == ["audio", "video", "image", "audio"]
+
+
+def test_flatten_unclassifiable_blobs_become_other():
+    # No type, no known extension, no telling key -> "other" (nodepack snapshot layers, extensionless
+    # customComfy assets). The singular ImageBlob-typed `blob` fields (convertImage etc.) stay image.
+    workflows = [
+        _wf(
+            [
+                {
+                    "output": {
+                        "blob": {"id": "converted-img", "available": True, "url": "cu"},
+                        "layer": {"id": "snapshot-layer", "available": True, "url": "lu"},
+                        "blobs": [{"id": "customcomfy-X-asset-noext", "available": True, "url": "bu"}],
+                    }
+                }
+            ]
+        )
+    ]
+    assert [m["kind"] for m in sr.flatten_generations(workflows)[0]["media"]] == ["image", "other", "other"]
+
+
 def test_flatten_kind_inference_and_filter():
     workflows = [
         _wf(

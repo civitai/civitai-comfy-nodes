@@ -22,6 +22,17 @@ except Exception:
 
 _BLOB_KINDS = {"image", "video", "audio", "model3d"}
 
+_EXT_KINDS = {
+    ext: kind
+    for kind, exts in {
+        "image": (".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif"),
+        "video": (".mp4", ".webm", ".mov", ".mkv", ".avi", ".m4v"),
+        "audio": (".mp3", ".flac", ".wav", ".ogg", ".opus", ".m4a", ".aac"),
+        "model3d": (".glb", ".gltf", ".fbx", ".obj", ".stl", ".ply", ".usdz"),
+    }.items()
+    for ext in exts
+}
+
 
 def _walk_blobs(node, key=None):
     """Yield (blob, containing_key) for every blob anywhere in a step output. A blob is any dict with
@@ -40,10 +51,17 @@ def _walk_blobs(node, key=None):
 
 
 def _blob_kind(blob: dict, key: str | None) -> str:
-    """image | video | audio | model3d — from the polymorphic `type` if present, else the property name."""
+    """image | video | audio | model3d | other — from the polymorphic `type` if present, else the
+    file extension in the blob id (customComfy asset ids keep the original output filename, and the
+    containing key — `blobs`/`tempBlobs` — says nothing about the media type), else the property
+    name. `other` = non-media or unidentifiable blobs (nodepack snapshot layers, extensionless
+    customComfy assets); the UI shows them as plain files."""
     declared = blob.get("type")
     if declared in _BLOB_KINDS:
         return declared
+    ext = os.path.splitext(str(blob.get("id") or ""))[1].lower()
+    if ext in _EXT_KINDS:
+        return _EXT_KINDS[ext]
     name = (key or "").lower()
     if "video" in name:
         return "video"
@@ -51,7 +69,11 @@ def _blob_kind(blob: dict, key: str | None) -> str:
         return "audio"
     if "model" in name or "fbx" in name or "3d" in name:
         return "model3d"
-    return "image"  # images, frames, thumbnails, samples, and the lone `ImageBlob Blob` field
+    # frames, thumbnails, samples, and the singular ImageBlob-typed `blob` fields (convertImage,
+    # imageUpload, humanoidImageMask) — concretely declared, so they never carry `type`.
+    if "image" in name or "frame" in name or "thumb" in name or "sample" in name or name == "blob":
+        return "image"
+    return "other"
 
 
 def flatten_generations(workflows: list, kinds: set | None = None) -> list:
