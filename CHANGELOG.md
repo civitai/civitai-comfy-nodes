@@ -9,6 +9,31 @@ The section matching the `pyproject.toml` version is published to the Comfy Regi
 [`.github/workflows/publish.yml`](.github/workflows/publish.yml). Add a new `## [x.y.z]`
 section at the top before bumping the version.
 
+## [0.4.0] - 2026-07-06
+
+### Added
+- **Import from Civitai** button in the Model Library sidebar (local ComfyUI): opens the
+  Browse Civitai picker pre-filled with your library search; picking a model downloads its
+  primary file — plus required CLIP/VAE component files — into the matching model folders
+  and refreshes the library. Hidden in hosted comfy-cloud sessions, where models resolve
+  via session pins instead.
+- **Import from URL** in the Browse Civitai picker: paste a civitai.com model/version page
+  URL, a download URL, or an AIR to import models search doesn't surface (e.g. base models
+  without a registered ecosystem).
+- Gallery: outputs that aren't image/video/audio/3D (extensionless customComfy assets,
+  nodepack snapshot layers) now show as plain files with an **Other** filter and an
+  Open ↗ action, instead of rendering as broken images.
+
+### Changed
+- Gallery infers the media kind from the output filename in the blob id when a customComfy
+  output declares no type, so audio/video outputs land under the right filter instead of
+  all showing as images.
+
+### Fixed
+- Generic "Model"/"Pruned Model" file types no longer force downloads into `checkpoints/` —
+  the model's AIR type decides the folder, so e.g. a LoRA whose primary file is typed
+  "Model" lands in `loras/`.
+
 ## [0.3.1] - 2026-06-29
 
 ### Fixed
