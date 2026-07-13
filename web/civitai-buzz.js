@@ -13,6 +13,7 @@ const TICK_MS = 250;
 
 const run = {
   phase: PHASE.IDLE,
+  promptId: null, // the offload workflow id this meter is tracking; set only by civitai.buzz frames
   rate: 0,
   anchorMs: null,
   clockOffset: 0,
@@ -172,6 +173,24 @@ function onLifecycleEnd() {
   freeze();
 }
 
+// Drop all meter state — used when a run that isn't the tracked offload starts (e.g. a plain local
+// "Run"), so a stale rate/badge from a prior offload can't bleed onto a free local run.
+function resetIdle() {
+  if (run.phase === PHASE.IDLE && run.promptId == null) return;
+  Object.assign(run, { phase: PHASE.IDLE, promptId: null, rate: 0, anchorMs: null, finalCost: null, display: null });
+  stopTick();
+  if (badge) { badge.remove(); badge = null; }
+}
+
+// A native execution frame drives the meter only if it belongs to the offload run a civitai.buzz
+// frame established. Local (free) runs never emit civitai.buzz, so their frames never match — the
+// meter stays idle for them. Backend synthetic + trace-relayed frames all carry the workflow id.
+function matchesRun(detail) {
+  if (run.promptId == null) return false;
+  const id = detail && typeof detail === "object" ? detail.prompt_id : null;
+  return id != null && String(id) === run.promptId;
+}
+
 function onBuzz(d) {
   if (!d || typeof d !== "object") return;
   const rate = num(d.buzz_per_second);
@@ -193,6 +212,8 @@ function onBuzz(d) {
     return;
   }
 
+  // A live buzz frame identifies the offload run to track; from here native frames can refine it.
+  if (d.prompt_id) run.promptId = String(d.prompt_id);
   if (run.phase === PHASE.IDLE || run.phase === PHASE.FINAL) beginPreparing();
   const startedAt = num(d.started_at);
   if (startedAt != null) { run.anchorMs = startedAt; anchorCompute(); }
@@ -205,12 +226,14 @@ function nodeOf(detail) {
 }
 
 function attachListeners() {
-  api.addEventListener("execution_start", () => beginPreparing());
-  api.addEventListener("progress", () => anchorCompute());
-  api.addEventListener("executing", (e) => { if (nodeOf(e.detail) != null) anchorCompute(); });
-  api.addEventListener("execution_success", onLifecycleEnd);
-  api.addEventListener("execution_error", onLifecycleEnd);
-  api.addEventListener("execution_interrupted", onLifecycleEnd);
+  // Native execution frames only refine the tracked offload meter (matched by prompt_id). A frame
+  // from any other run — a plain local "Run" — resets the meter to idle so no stale badge lingers.
+  api.addEventListener("execution_start", (e) => (matchesRun(e.detail) ? beginPreparing() : resetIdle()));
+  api.addEventListener("progress", (e) => { if (matchesRun(e.detail)) anchorCompute(); });
+  api.addEventListener("executing", (e) => { if (nodeOf(e.detail) != null && matchesRun(e.detail)) anchorCompute(); });
+  api.addEventListener("execution_success", (e) => { if (matchesRun(e.detail)) onLifecycleEnd(); });
+  api.addEventListener("execution_error", (e) => { if (matchesRun(e.detail)) onLifecycleEnd(); });
+  api.addEventListener("execution_interrupted", (e) => { if (matchesRun(e.detail)) onLifecycleEnd(); });
   api.addEventListener("civitai.buzz", (e) => onBuzz(e.detail));
   api.addEventListener("unhandled", (e) => { if (e.detail && e.detail.type === "civitai.buzz") onBuzz(e.detail.detail); });
 

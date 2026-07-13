@@ -500,25 +500,10 @@ function handleOffloadStatus(detail) {
 }
 
 function attachOffloadStatus() {
+  // addCustomEventListener registers the custom ws type so ComfyUI dispatches it reliably — this is
+  // the single delivery path. (An extra raw-socket sniff would double-fire: ComfyUI dispatches the
+  // event AND the sniff sees the same frame, popping the completion toast twice.)
   api.addCustomEventListener("civitai.offload.status", (event) => handleOffloadStatus(event.detail));
-  // Version-proof fallback: sniff the raw socket in case addCustomEventListener's
-  // custom-event dispatch drifts, re-attaching on reconnect (mirrors civitai-queue-state.js).
-  let sock = null;
-  const sniff = () => {
-    const s = api.socket;
-    if (!s || s === sock) return;
-    sock = s;
-    s.addEventListener("message", (ev) => {
-      if (typeof ev.data !== "string" || ev.data.indexOf("civitai.offload.status") === -1) return;
-      try {
-        const m = JSON.parse(ev.data);
-        if (m && m.type === "civitai.offload.status") handleOffloadStatus(m.data);
-      } catch { /* not ours */ }
-    });
-  };
-  sniff();
-  api.addEventListener("status", sniff);
-  api.addEventListener("reconnected", sniff);
 }
 
 app.registerExtension({

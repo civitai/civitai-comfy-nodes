@@ -396,6 +396,8 @@ def _publish_local_job_history(
     *,
     prompt_id: str,
     workflow_id: str | None,
+    started_ms: int | None = None,
+    completed_ms: int | None = None,
 ) -> None:
     if not output_nodes or not outputs or not prompt_id:
         return
@@ -409,6 +411,10 @@ def _publish_local_job_history(
         return
 
     now_ms = int(time.time() * 1000)
+    # Report the real remote runtime: the frontend derives duration from these two timestamps, so
+    # start == end (both now_ms) renders as "0.00s". Fall back to now only when usage lacks times.
+    start_ms = started_ms if started_ms is not None else now_ms
+    end_ms = completed_ms if completed_ms is not None and completed_ms >= start_ms else now_ms
     node_id = output_nodes[0]
     output_key = _preview_output_key(outputs)
     prompt_queue = getattr(PromptServer.instance, "prompt_queue", None)
@@ -416,7 +422,7 @@ def _publish_local_job_history(
         return
 
     extra_data = {
-        "create_time": now_ms,
+        "create_time": start_ms,
         "extra_pnginfo": {
             "workflow": {
                 "id": workflow_id or prompt_id,
@@ -431,8 +437,8 @@ def _publish_local_job_history(
             "status_str": "success",
             "completed": True,
             "messages": [
-                ("execution_start", {"prompt_id": prompt_id, "timestamp": now_ms}),
-                ("execution_success", {"prompt_id": prompt_id, "timestamp": now_ms}),
+                ("execution_start", {"prompt_id": prompt_id, "timestamp": start_ms}),
+                ("execution_success", {"prompt_id": prompt_id, "timestamp": end_ms}),
             ],
         },
     }
@@ -484,6 +490,19 @@ def _extract_usage(workflow: dict) -> dict | None:
         if isinstance(usage, dict):
             return usage
     return None
+
+
+def _workflow_run_times(workflow: dict) -> tuple[int | None, int | None]:
+    """Real (start_ms, end_ms) of the offloaded compute, from the customComfy usage — so the local
+    history entry reports the actual GPU runtime instead of a zero-length (start == end) span."""
+    usage = _extract_usage(workflow) or {}
+    start = _epoch_ms_from_iso(usage.get("startedAt"))
+    end = _epoch_ms_from_iso(usage.get("computedAt"))
+    if start is not None and end is None:
+        runtime = usage.get("runtimeSeconds")
+        if isinstance(runtime, (int, float)) and not isinstance(runtime, bool):
+            end = start + int(runtime * 1000)
+    return start, end
 
 
 # Buzz wallet (accountType) -> display name; the colour IS the currency (mirrors base._BUZZ_WALLETS).
@@ -626,7 +645,10 @@ def _inject_running_queue(
     return task_id
 
 
-def _remove_running_queue(task_id: int | None) -> None:
+def _remove_running_queue(task_id: int | None, *, notify: bool = True) -> None:
+    # `notify=False` at terminal: the caller publishes history immediately after and notifies once,
+    # so the frontend's single /api/jobs refetch sees the job already in history — never in neither
+    # list (a two-notify remove-then-publish leaves a window where a refetch drops the row entirely).
     if task_id is None:
         return
     with _running_lock:
@@ -640,7 +662,7 @@ def _remove_running_queue(task_id: int | None) -> None:
     except Exception:
         _log.debug("Could not remove offload running entry", exc_info=True)
         return
-    if existed:
+    if existed and notify:
         _notify_queue_updated()
 
 
@@ -1060,6 +1082,11 @@ def _offload_finalize(
                 info = _active_offloads.get(workflow_id)
                 if info is not None:
                     info["queue_state"] = _queue_state_data(wf, workflow_id)
+        # Re-assert the queue each poll while still running: the injected row lives in
+        # currently_running the whole run, but queue_updated only fires at inject + terminal, so a
+        # frontend that dropped the row mid-run would never re-fetch it back. This keeps it visible.
+        if new_status.lower() not in _TERMINAL_STATUSES:
+            _notify_queue_updated()
         last_status["value"] = new_status
 
     try:
@@ -1146,14 +1173,19 @@ def _run_local_tail(
         prompt_id=workflow_id,
         sid=client_id,
     )
-    # Remove the running row right before writing history so the job never falls into neither list.
-    _remove_running_queue(running_task_id)
+    # Remove the running row without notifying, then publish history with the single notify, so the
+    # frontend's one refetch sees running-gone AND history-present together — the job moves straight
+    # from Running to Completed with no in-between refetch that would drop it from both lists.
+    _remove_running_queue(running_task_id, notify=False)
+    started_ms, completed_ms = _workflow_run_times(offload_result.get("workflow") or {})
     _publish_local_job_history(
         prompt,
         output_nodes,
         [local_output],
         prompt_id=workflow_id,
         workflow_id=workflow_id,
+        started_ms=started_ms,
+        completed_ms=completed_ms,
     )
     continuation = None
     if kind == "image":

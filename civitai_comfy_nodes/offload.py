@@ -1386,6 +1386,150 @@ def bake_model_selectors(prompt: dict[str, Any], resources: set[str]) -> list[st
     return sorted(left_in_place, key=_node_sort_key)
 
 
+_HF_HOSTS = {"huggingface.co", "hf.co"}
+# HF file urls route through a "resolve" (download) or "blob" (viewer) segment.
+_HF_ROUTER_SEGMENTS = {"resolve", "blob"}
+_HF_DIRECTORY_TYPES = {
+    "checkpoints": "checkpoint",
+    "diffusion_models": "diffusion_model",
+    "loras": "lora",
+    "upscale_models": "upscaler",
+    "hypernetworks": "hypernetwork",
+    "embeddings": "embedding",
+    "repository": "other",  # never "repository": that routes to the whole-repo tar, not a file
+}
+_HF_AIR_SAFE_RE = re.compile(r"^[A-Za-z0-9_./-]+$")
+
+
+def _hf_type_for_directory(directory: str | None) -> str:
+    d = (directory or "").strip().lower()
+    if not d:
+        return "other"
+    return _HF_DIRECTORY_TYPES.get(d, d)
+
+
+def _hf_air_from_url(url: str | None, directory: str | None) -> str | None:
+    """Build a downloadable HuggingFace *file* AIR from a template loader's `properties.models` url
+    (`urn:air:other:{type}:huggingface:{repo}@{rev}/{path}`), or None for a null/non-HF/malformed
+    url. Mirrors comfy-cloud HuggingFaceModelAir.TryBuild — the orchestrator's huggingface resource
+    provider resolves the AIR to the presigned HF download, so a loaded template runs without a
+    manual Civitai pick."""
+    if not isinstance(url, str) or not url.strip():
+        return None
+    parsed = parse.urlparse(url.strip())
+    if parsed.scheme not in ("http", "https"):
+        return None
+    if (parsed.hostname or "").lower() not in _HF_HOSTS:
+        return None
+    segments = [s for s in parsed.path.split("/") if s]
+    router = next((i for i, s in enumerate(segments) if s in _HF_ROUTER_SEGMENTS), -1)
+    # Need >=1 repo segment before the router, a revision after it, and >=1 path segment.
+    if router < 1 or router + 2 >= len(segments):
+        return None
+    repo = parse.unquote("/".join(segments[:router]))
+    revision = parse.unquote(segments[router + 1])
+    path = parse.unquote("/".join(segments[router + 2 :]))
+    if not all(_HF_AIR_SAFE_RE.match(part) for part in (repo, revision, path)):
+        return None
+    return f"urn:air:other:{_hf_type_for_directory(directory)}:huggingface:{repo}@{revision}/{path}"
+
+
+def _hf_value_matches_name(value: str, name: str) -> bool:
+    """The widget value and the metadata name match when equal, or when either carries the folder
+    prefix the other omits (mirrors comfy-cloud ValueMatchesName / the JS findReferencingWidgets)."""
+    return (
+        value == name
+        or value.endswith("/" + name)
+        or value.endswith("\\" + name)
+        or name.endswith("/" + value)
+        or name.endswith("\\" + value)
+    )
+
+
+def _hf_models_from_nodes(
+    nodes: Any,
+    correlate_by_node_id: bool,
+    by_node: dict[str, list[tuple[str, str]]],
+    airs_by_name: dict[str, set[str]],
+) -> None:
+    for node in nodes or []:
+        if not isinstance(node, dict):
+            continue
+        properties = node.get("properties")
+        models = properties.get("models") if isinstance(properties, dict) else None
+        if not isinstance(models, list) or not models:
+            continue
+        node_id = _serialized_node_id(node) if correlate_by_node_id else None
+        for model in models:
+            if not isinstance(model, dict):
+                continue
+            name = model.get("name")
+            if not isinstance(name, str) or not name:
+                continue
+            air = _hf_air_from_url(model.get("url"), model.get("directory"))
+            if not air:
+                continue
+            if node_id is not None:
+                by_node.setdefault(node_id, []).append((name, air))
+            airs_by_name.setdefault(name, set()).add(air)
+
+
+def collect_huggingface_model_airs(
+    workflow: dict[str, Any] | None,
+) -> tuple[dict[str, list[tuple[str, str]]], dict[str, str]]:
+    """Build (by_node, global) HuggingFace AIR maps from a serialized workflow's loader metadata
+    (`nodes[].properties.models` = `{name, url, directory}` triples), covering both top-level nodes
+    and each subgraph definition. Mirrors comfy-cloud CollectHuggingFaceModelAirs. The API-format
+    prompt flattens subgraphs into composite ids, so subgraph models resolve via the global map
+    (name unique across the graph) rather than node-id correlation."""
+    by_node: dict[str, list[tuple[str, str]]] = {}
+    airs_by_name: dict[str, set[str]] = {}
+    root = workflow if isinstance(workflow, dict) else {}
+    if isinstance(root.get("workflow"), dict):
+        root = root["workflow"]
+    _hf_models_from_nodes(root.get("nodes"), True, by_node, airs_by_name)
+    definitions = root.get("definitions")
+    subgraphs = definitions.get("subgraphs") if isinstance(definitions, dict) else None
+    for subgraph in subgraphs or []:
+        if isinstance(subgraph, dict):
+            _hf_models_from_nodes(subgraph.get("nodes"), False, by_node, airs_by_name)
+    global_map = {name: next(iter(airs)) for name, airs in airs_by_name.items() if len(airs) == 1}
+    return by_node, global_map
+
+
+def apply_huggingface_model_airs(
+    prompt: dict[str, Any],
+    by_node: dict[str, list[tuple[str, str]]],
+    global_map: dict[str, str],
+    resources: set[str],
+) -> int:
+    """Rewrite every bare-filename loader input matching a template HuggingFace model to its AIR and
+    declare it as a resource, so the worker downloads it from HuggingFace. Skips values a Civitai pin
+    already owns (the ` — ` DisplayValue marker) or that are already AIRs. Returns the rewrite count.
+    Mirrors comfy-cloud ApplyHuggingFaceModelAirs."""
+    if not by_node and not global_map:
+        return 0
+    rewritten = 0
+    for node_id, node in prompt.items():
+        for input_name, value in list(_node_inputs(node).items()):
+            if not isinstance(value, str) or not value:
+                continue
+            if " — " in value or value.startswith("urn:air:"):
+                continue
+            air = next(
+                (a for name, a in by_node.get(str(node_id), []) if _hf_value_matches_name(value, name)),
+                None,
+            )
+            if air is None:
+                air = next((a for name, a in global_map.items() if _hf_value_matches_name(value, name)), None)
+            if air is None:
+                continue
+            node["inputs"][input_name] = air
+            resources.add(air)
+            rewritten += 1
+    return rewritten
+
+
 def build_custom_comfy_offload(
     prompt: dict[str, Any],
     *,
@@ -1424,6 +1568,13 @@ def build_custom_comfy_offload(
     # are removed, so they neither dangle nor re-download on the worker.
     resources: set[str] = set()
     selectors_left = bake_model_selectors(stripped, resources)
+
+    # Resolve template HuggingFace models (built-in ComfyUI templates reference HF files by bare
+    # filename + node metadata) to AIRs before the local-hash pass, which then skips the AIR values.
+    hf_by_node, hf_global = collect_huggingface_model_airs(workflow)
+    hf_rewritten = apply_huggingface_model_airs(stripped, hf_by_node, hf_global, resources)
+    if hf_rewritten:
+        _log.info("offload build: resolved %d HuggingFace template model AIRs", hf_rewritten)
 
     dangling = _dangling_links(stripped)
     if dangling:

@@ -301,6 +301,93 @@ def test_build_custom_comfy_offload_bakes_model_selector_into_resources():
     assert "urn:air:sdxl:checkpoint:civitai:1@2" in built.steps[0]["input"]["resources"]
 
 
+def test_hf_air_from_url_builds_file_air():
+    assert offload._hf_air_from_url(
+        "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/diffusion_models/z.safetensors",
+        "diffusion_models",
+    ) == (
+        "urn:air:other:diffusion_model:huggingface:Comfy-Org/z_image_turbo@main"
+        "/split_files/diffusion_models/z.safetensors"
+    )
+    # ?download=true query is dropped; blob router works like resolve
+    assert offload._hf_air_from_url("https://hf.co/org/repo/blob/v1/model.safetensors?download=true", "loras") == (
+        "urn:air:other:lora:huggingface:org/repo@v1/model.safetensors"
+    )
+
+
+def test_hf_air_from_url_rejects_non_hf_and_malformed():
+    assert offload._hf_air_from_url("https://example.com/org/repo/resolve/main/m.safetensors", "vae") is None
+    assert offload._hf_air_from_url("not a url", "vae") is None
+    assert offload._hf_air_from_url("https://huggingface.co/org/repo/main/m.safetensors", "vae") is None  # no router
+    assert offload._hf_air_from_url(None, "vae") is None
+
+
+def test_build_custom_comfy_offload_resolves_template_huggingface_models():
+    prompt = {
+        "66": {"class_type": "UNETLoader", "inputs": {"unet_name": "z_turbo.safetensors", "weight_dtype": "default"}},
+        "62": {"class_type": "CLIPLoader", "inputs": {"clip_name": "qwen.safetensors", "type": "lumina2"}},
+        "9": {"class_type": "SaveImage", "inputs": {"images": ["66", 0]}},
+    }
+    workflow = {
+        "nodes": [
+            {
+                "id": 66,
+                "type": "UNETLoader",
+                "properties": {
+                    "models": [
+                        {
+                            "name": "z_turbo.safetensors",
+                            "directory": "diffusion_models",
+                            "url": "https://huggingface.co/Comfy-Org/z/resolve/main/z_turbo.safetensors",
+                        }
+                    ]
+                },
+            },
+            {
+                "id": 62,
+                "type": "CLIPLoader",
+                "properties": {
+                    "models": [
+                        {
+                            "name": "qwen.safetensors",
+                            "directory": "text_encoders",
+                            "url": "https://huggingface.co/Comfy-Org/z/resolve/main/qwen.safetensors",
+                        }
+                    ]
+                },
+            },
+        ]
+    }
+    custom_input = offload.build_custom_comfy_offload(
+        prompt, model_records=[], nodepacks=[], workflow=workflow
+    ).steps[0]["input"]
+    assert (
+        custom_input["workflow"]["66"]["inputs"]["unet_name"]
+        == "urn:air:other:diffusion_model:huggingface:Comfy-Org/z@main/z_turbo.safetensors"
+    )
+    assert (
+        custom_input["workflow"]["62"]["inputs"]["clip_name"]
+        == "urn:air:other:text_encoders:huggingface:Comfy-Org/z@main/qwen.safetensors"
+    )
+    assert set(custom_input["resources"]) == {
+        "urn:air:other:diffusion_model:huggingface:Comfy-Org/z@main/z_turbo.safetensors",
+        "urn:air:other:text_encoders:huggingface:Comfy-Org/z@main/qwen.safetensors",
+    }
+
+
+def test_apply_huggingface_model_airs_skips_airs_and_pins():
+    # A value that's already an AIR or a Civitai DisplayValue pin must be left untouched.
+    prompt = {
+        "1": {"class_type": "UNETLoader", "inputs": {"unet_name": "urn:air:sdxl:checkpoint:civitai:1@2"}},
+        "2": {"class_type": "CLIPLoader", "inputs": {"clip_name": "My Model — v1"}},
+    }
+    global_map = {"urn:air:sdxl:checkpoint:civitai:1@2": "urn:air:x", "My Model — v1": "urn:air:y"}
+    n = offload.apply_huggingface_model_airs(prompt, {}, global_map, set())
+    assert n == 0
+    assert prompt["1"]["inputs"]["unet_name"] == "urn:air:sdxl:checkpoint:civitai:1@2"
+    assert prompt["2"]["inputs"]["clip_name"] == "My Model — v1"
+
+
 def test_build_custom_comfy_offload_uploads_load_image_inputs_as_blob_airs(tmp_path):
     image = tmp_path / "fried-duck.png"
     image.write_bytes(b"\x89PNG\r\n\x1a\nfake-png")
