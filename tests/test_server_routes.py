@@ -196,3 +196,66 @@ def test_guess_ext_sniffs_magic_bytes():
     assert sr._guess_ext("image", b"\xff\xd8\xff\xe0\x00\x10JFIF") == ".jpg"
     assert sr._guess_ext("video", b"\x00\x00\x00\x18ftypmp42") == ".mp4"
     assert sr._guess_ext("audio", b"not a known header") == ".flac"  # falls back by kind
+
+
+def _prep_step(job_status, rate, *, step_status="preparing"):
+    return {
+        "$type": "customComfy",
+        "status": step_status,
+        "jobs": [{"status": job_status, "estimatedProgressRate": rate}],
+    }
+
+
+def test_queue_phase_maps_orchestration_status():
+    assert sr._queue_phase("Preparing") == "preparing"
+    assert sr._queue_phase("Scheduled") == "preparing"
+    assert sr._queue_phase("Unassigned") == "preparing"
+    assert sr._queue_phase("Processing") == "processing"
+    assert sr._queue_phase("Succeeded") == "succeeded"
+    assert sr._queue_phase("Canceled") == "canceled"
+    assert sr._queue_phase("Cancelled") == "cancelled"
+
+
+def test_queue_state_data_carries_preparation_progress():
+    wf = {"id": "6-1", "status": "Preparing", "steps": [_prep_step("preparing", 0.42)]}
+    data = sr._queue_state_data(wf, "6-1")
+    assert data == {"prompt_id": "6-1", "status": "preparing", "progress": 0.42}
+
+
+def test_queue_state_data_processing_has_no_progress():
+    wf = {"id": "6-1", "status": "Processing", "steps": [_prep_step("processing", 0.9, step_status="processing")]}
+    data = sr._queue_state_data(wf, "6-1")
+    assert data == {"prompt_id": "6-1", "status": "processing"}
+
+
+def test_preparation_progress_ignores_non_preparing_jobs():
+    wf = {"steps": [_prep_step("processing", 0.9, step_status="processing")]}
+    assert sr._preparation_progress(wf) is None
+
+
+def test_offload_active_lists_only_preparing_and_processing():
+    with sr._running_lock:
+        sr._active_offloads.clear()
+        sr._active_offloads["6-1"] = {
+            "task_id": -1,
+            "sid": "s",
+            "queue_state": {"prompt_id": "6-1", "status": "preparing", "progress": 0.5},
+        }
+        sr._active_offloads["6-2"] = {
+            "task_id": -2,
+            "sid": "s",
+            "queue_state": {"prompt_id": "6-2", "status": "processing"},
+        }
+        sr._active_offloads["6-3"] = {
+            "task_id": -3,
+            "sid": "s",
+            "queue_state": {"prompt_id": "6-3", "status": "succeeded"},
+        }
+    try:
+        jobs = {job["id"]: job for job in sr._offload_active()["jobs"]}
+        assert set(jobs) == {"6-1", "6-2"}  # terminal 6-3 excluded
+        assert jobs["6-1"] == {"id": "6-1", "civitai_orch_status": "preparing", "civitai_preparation_progress": 0.5}
+        assert jobs["6-2"] == {"id": "6-2", "civitai_orch_status": "processing", "civitai_preparation_progress": None}
+    finally:
+        with sr._running_lock:
+            sr._active_offloads.clear()
