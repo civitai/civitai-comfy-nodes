@@ -9,19 +9,28 @@ def test_flatten_builds_airs_and_skips_unknown_ecosystems():
             "type": "LORA",
             "stats": {"downloadCount": 42},
             "modelVersions": [
-                {"id": 200, "name": "v1", "baseModel": "SDXL 1.0", "images": [{"url": "http://img/1.png"}],
-                 "trainedWords": ["brush stroke", "traditional media"]},
+                {
+                    "id": 200,
+                    "name": "v1",
+                    "baseModel": "SDXL 1.0",
+                    "images": [{"url": "http://img/1.png"}],
+                    "trainedWords": ["brush stroke", "traditional media"],
+                },
                 {"id": 201, "name": "v2", "baseModel": "Some Future Model"},  # no ecosystem -> skipped
                 {"id": 202, "name": "v3", "baseModel": "Pony"},
             ],
         }
     ]
     entries = catalog.flatten_models(items)
-    airs = [e["air"] for e in entries]
-    assert airs == [
+    # One entry per model; its versions ride along (the unknown-ecosystem one skipped).
+    assert len(entries) == 1
+    version_airs = [v["air"] for v in entries[0]["versions"]]
+    assert version_airs == [
         "urn:air:sdxl:lora:civitai:100@200",
         "urn:air:sdxl:lora:civitai:100@202",  # Pony -> sdxl
     ]
+    # Top-level fields mirror the representative (first) version.
+    assert entries[0]["air"] == "urn:air:sdxl:lora:civitai:100@200"
     assert entries[0]["thumbnailUrl"] == "http://img/1.png"
     assert entries[0]["downloadCount"] == 42
     assert entries[0]["name"] == "Cool LoRA"
@@ -29,7 +38,9 @@ def test_flatten_builds_airs_and_skips_unknown_ecosystems():
     assert entries[0]["versionId"] == 200
     assert entries[0]["modelUrl"] == "https://civitai.com/models/100?modelVersionId=200"
     assert entries[0]["trainedWords"] == ["brush stroke", "traditional media"]
-    assert entries[1]["trainedWords"] == []  # absent -> empty list
+    assert entries[0]["versions"][1]["trainedWords"] == []  # absent -> empty list
+    # Components are attached per version (no files here -> empty buckets).
+    assert entries[0]["versions"][0]["components"] == {"primary": None, "vae": [], "clip": []}
 
 
 def test_air_type_uses_civitai_type_map_not_lowercase():
@@ -54,8 +65,10 @@ def test_flatten_caps_versions_and_filters_type():
         {"id": 2, "type": "LORA", "modelVersions": [{"id": 99, "baseModel": "SD 1.5"}]},
     ]
     checkpoints = catalog.flatten_models(items, max_versions=3, type_filter="Checkpoint")
-    assert len(checkpoints) == 3
-    assert all(e["type"] == "Checkpoint" for e in checkpoints)
+    # max_versions caps versions within a model; the LORA model is filtered out by type.
+    assert len(checkpoints) == 1
+    assert checkpoints[0]["type"] == "Checkpoint"
+    assert len(checkpoints[0]["versions"]) == 3
 
 
 def test_ecosystem_map():
@@ -154,17 +167,42 @@ def _version_resp(files):
 
 def test_components_groups_vae_and_clip_in_api_order(monkeypatch):
     files = [
-        {"id": 1, "name": "model.safetensors", "type": "Model", "primary": True,
-         "downloadUrl": "https://civitai.com/api/download/models/999"},
-        {"id": 2, "name": "ae.safetensors", "type": "VAE", "primary": False,
-         "downloadUrl": "https://civitai.com/api/download/models/999?type=VAE",
-         "metadata": {"isRequired": True}},
-        {"id": 3, "name": "clip_l.safetensors", "type": "Text Encoder", "primary": False,
-         "downloadUrl": "https://civitai.com/api/download/models/999?type=Text%20Encoder&part=1"},
-        {"id": 4, "name": "t5.safetensors", "type": "Text Encoder", "primary": False,
-         "downloadUrl": "https://civitai.com/api/download/models/999?type=Text%20Encoder&part=2"},
-        {"id": 5, "name": "config.json", "type": "Config", "primary": False,
-         "downloadUrl": "https://civitai.com/api/download/models/999?type=Config"},
+        {
+            "id": 1,
+            "name": "model.safetensors",
+            "type": "Model",
+            "primary": True,
+            "downloadUrl": "https://civitai.com/api/download/models/999",
+        },
+        {
+            "id": 2,
+            "name": "ae.safetensors",
+            "type": "VAE",
+            "primary": False,
+            "downloadUrl": "https://civitai.com/api/download/models/999?type=VAE",
+            "metadata": {"isRequired": True},
+        },
+        {
+            "id": 3,
+            "name": "clip_l.safetensors",
+            "type": "Text Encoder",
+            "primary": False,
+            "downloadUrl": "https://civitai.com/api/download/models/999?type=Text%20Encoder&part=1",
+        },
+        {
+            "id": 4,
+            "name": "t5.safetensors",
+            "type": "Text Encoder",
+            "primary": False,
+            "downloadUrl": "https://civitai.com/api/download/models/999?type=Text%20Encoder&part=2",
+        },
+        {
+            "id": 5,
+            "name": "config.json",
+            "type": "Config",
+            "primary": False,
+            "downloadUrl": "https://civitai.com/api/download/models/999?type=Config",
+        },
     ]
     monkeypatch.setattr(catalog.requests, "get", lambda *a, **k: _version_resp(files))
     comps = catalog.components("urn:air:zimage:checkpoint:civitai:1@999")
@@ -230,7 +268,7 @@ def test_lookup_returns_none_on_404(monkeypatch):
     assert catalog.lookup("urn:air:sd1:checkpoint:civitai:4384@999") is None
 
 
-def test_search_always_filters_to_generation_models(monkeypatch):
+def test_search_does_not_filter_to_generation_models(monkeypatch):
     captured = {}
 
     class _Resp:
@@ -246,4 +284,87 @@ def test_search_always_filters_to_generation_models(monkeypatch):
 
     monkeypatch.setattr(catalog.requests, "get", fake_get)
     catalog.search(query="dreamshaper", type_="Checkpoint", ecosystem="sdxl")
-    assert ("supportsGeneration", "true") in captured["params"]
+    assert not any(k == "supportsGeneration" for k, _ in captured["params"])
+
+
+def _json_resp(payload, status=200):
+    class _Resp:
+        status_code = status
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return payload
+
+    return _Resp()
+
+
+_VERSION_PAYLOAD = {
+    "id": 128713,
+    "modelId": 4384,
+    "name": "v8",
+    "baseModel": "SD 1.5",
+    "model": {"name": "DreamShaper", "type": "Checkpoint"},
+    "images": [{"url": "http://img/cover.jpg"}],
+}
+
+
+def test_resolve_reference_air_delegates_to_lookup(monkeypatch):
+    monkeypatch.setattr(catalog.requests, "get", lambda *a, **k: _json_resp(_VERSION_PAYLOAD))
+    entry = catalog.resolve_reference("urn:air:sd1:checkpoint:civitai:4384@128713")
+    assert entry["name"] == "DreamShaper"
+    assert entry["air"] == "urn:air:sd1:checkpoint:civitai:4384@128713"
+
+
+def test_resolve_reference_version_url_builds_air(monkeypatch):
+    captured = {}
+
+    def fake_get(url, headers=None, timeout=None, **kw):
+        captured["url"] = url
+        return _json_resp(_VERSION_PAYLOAD)
+
+    monkeypatch.setattr(catalog.requests, "get", fake_get)
+    entry = catalog.resolve_reference("https://civitai.com/models/4384/dreamshaper?modelVersionId=128713")
+    assert captured["url"].endswith("/model-versions/128713")
+    assert entry["air"] == "urn:air:sd1:checkpoint:civitai:4384@128713"
+    assert entry["versionName"] == "v8"
+
+
+def test_resolve_reference_version_url_falls_back_to_other_ecosystem(monkeypatch):
+    payload = dict(_VERSION_PAYLOAD, baseModel="Some Future Base")
+    monkeypatch.setattr(catalog.requests, "get", lambda *a, **k: _json_resp(payload))
+    entry = catalog.resolve_reference("https://civitai.com/models/4384?modelVersionId=128713")
+    assert entry["air"] == "urn:air:other:checkpoint:civitai:4384@128713"
+
+
+def test_resolve_reference_model_url_uses_flatten(monkeypatch):
+    model = {
+        "id": 4384,
+        "name": "DreamShaper",
+        "type": "Checkpoint",
+        "modelVersions": [
+            {"id": 128713, "name": "v8", "baseModel": "SD 1.5", "images": [], "files": []},
+        ],
+    }
+    captured = {}
+
+    def fake_get(url, headers=None, timeout=None, **kw):
+        captured["url"] = url
+        return _json_resp(model)
+
+    monkeypatch.setattr(catalog.requests, "get", fake_get)
+    entry = catalog.resolve_reference("https://civitai.com/models/4384/dreamshaper")
+    assert captured["url"].endswith("/api/v1/models/4384")
+    assert entry["air"] == "urn:air:sd1:checkpoint:civitai:4384@128713"
+    assert entry["versions"][0]["versionName"] == "v8"
+
+
+def test_resolve_reference_rejects_non_civitai_input(monkeypatch):
+    def boom(*a, **k):
+        raise AssertionError("must not hit the network for unresolvable input")
+
+    monkeypatch.setattr(catalog.requests, "get", boom)
+    assert catalog.resolve_reference("https://example.com/models/123") is None
+    assert catalog.resolve_reference("not a url at all") is None
+    assert catalog.resolve_reference("") is None

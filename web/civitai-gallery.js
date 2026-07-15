@@ -127,7 +127,11 @@ function viewCenter() {
 async function addToCanvas(media, pos) {
   const type = nodeTypeFor(media.kind);
   if (!type) {
-    toast("warn", "No loader node", `Install a loader for ${media.kind} to add it to the graph.`);
+    const detail =
+      media.kind === "other"
+        ? "No loader can open this file type; use Open ↗ to download it."
+        : `Install a loader for ${media.kind} to add it to the graph.`;
+    toast("warn", "No loader node", detail);
     return;
   }
   let name;
@@ -174,7 +178,9 @@ function openLightbox(media, item) {
         ? `<audio src="${esc(src)}" controls autoplay></audio>`
         : media.kind === "model3d"
           ? `<a class="cvg-btn cvg-primary" href="${esc(src)}" target="_blank" rel="noopener">Open 3D model ↗</a>`
-          : `<img src="${esc(src)}" />`;
+          : media.kind === "other"
+            ? `<a class="cvg-btn cvg-primary" href="${esc(src)}" target="_blank" rel="noopener">Open file ↗</a>`
+            : `<img src="${esc(src)}" />`;
   const when = item.createdAt ? new Date(item.createdAt).toLocaleString() : "";
   const cost = item.cost != null ? ` · cost ${esc(item.cost)}` : "";
   const prompt = item.meta?.prompt ? `<div>${esc(item.meta.prompt)}</div>` : "";
@@ -183,15 +189,15 @@ function openLightbox(media, item) {
       ${view}
       <div class="cvg-lb-meta">${prompt}<div>${esc(item.workflowId)} · ${esc(item.status || "")}${cost}</div><div>${esc(when)}</div></div>
       <div class="cvg-lb-actions">
-        <button class="cvg-btn cvg-primary cvg-lb-add">Add to canvas</button>
-        <button class="cvg-btn cvg-lb-fill">Set on selected node</button>
+        ${media.kind === "other" ? "" : `<button class="cvg-btn cvg-primary cvg-lb-add">Add to canvas</button>
+        <button class="cvg-btn cvg-lb-fill">Set on selected node</button>`}
         <a class="cvg-btn" href="${esc(src)}" target="_blank" rel="noopener">Open ↗</a>
       </div>
     </div>`;
   const close = () => lb.remove();
   lb.addEventListener("mousedown", (e) => { if (e.target === lb) close(); });
-  lb.querySelector(".cvg-lb-add").addEventListener("click", () => { addToCanvas(media); close(); });
-  lb.querySelector(".cvg-lb-fill").addEventListener("click", () => { fillSelected(media); close(); });
+  lb.querySelector(".cvg-lb-add")?.addEventListener("click", () => { addToCanvas(media); close(); });
+  lb.querySelector(".cvg-lb-fill")?.addEventListener("click", () => { fillSelected(media); close(); });
   document.addEventListener("keydown", function onKey(e) {
     if (e.key === "Escape") { close(); document.removeEventListener("keydown", onKey); }
   });
@@ -204,18 +210,19 @@ function thumbHtml(media) {
     return `<video class="cvg-media" src="${esc(media.url)}#t=0.5" muted loop playsinline preload="metadata"></video>`;
   if (media.kind === "audio") return `<div class="cvg-ph">♪</div>`;
   if (media.kind === "model3d") return `<div class="cvg-ph">3D</div>`;
+  if (media.kind === "other") return `<div class="cvg-ph">FILE</div>`;
   return `<img class="cvg-media" loading="lazy" src="${esc(media.previewUrl || media.url)}" />`;
 }
 
 function card(media, item) {
   const el = document.createElement("div");
   el.className = "cvg-card";
-  el.draggable = true;
+  el.draggable = media.kind !== "other";
   el.innerHTML = `${thumbHtml(media)}
     <span class="cvg-badge">${esc(media.kind)}</span>
-    <button class="cvg-add" title="Add to canvas">＋</button>`;
+    ${media.kind === "other" ? "" : `<button class="cvg-add" title="Add to canvas">＋</button>`}`;
   el.addEventListener("click", (e) => { if (!e.target.closest(".cvg-add")) openLightbox(media, item); });
-  el.querySelector(".cvg-add").addEventListener("click", (e) => { e.stopPropagation(); addToCanvas(media); });
+  el.querySelector(".cvg-add")?.addEventListener("click", (e) => { e.stopPropagation(); addToCanvas(media); });
   const video = el.querySelector("video");
   if (video) {
     el.addEventListener("mouseenter", () => video.play?.().catch(() => {}));
@@ -289,6 +296,7 @@ function renderGallery(el) {
         <option value="video">Videos</option>
         <option value="audio">Audio</option>
         <option value="model3d">3D</option>
+        <option value="other">Other</option>
       </select>
       <span class="cvg-spacer"></span>
       <button class="cvg-btn cvg-refresh" title="Refresh">↻</button>

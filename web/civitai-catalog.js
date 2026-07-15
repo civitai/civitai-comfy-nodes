@@ -65,16 +65,45 @@ function resolveModelType(node) {
   return null;
 }
 
+// Civitai hexagon logo as a currentColor mask (same asset as the gallery tab icon).
+const LOGO = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNzggMTc4Ij48cGF0aCBkPSJNODkuMywyOS4ybDUyLDMwdjYwbC01MiwzMGwtNTItMzB2LTYwTDg5LjMsMjkuMiBNODkuMywxLjVsLTc2LDQzLjl2ODcuOGw3Niw0My45bDc2LTQzLjlWNDUuNEw4OS4zLDEuNUw4OS4zLDEuNXoiLz48cG9seWdvbiBwb2ludHM9IjEwNC4xLDk3LjIgODkuMiwxMDUuNyA3NC4zLDk3LjIgNzQuMyw4MC4yIDg5LjIsNzEuNyAxMDQuMSw4MC4yIDEyMi4zLDgwLjIgMTIyLjMsNjkuNyA4OS4zLDUwLjcgNTYuMyw2OS43IDU2LjMsMTA3LjggODkuMywxMjYuOCAxMjIuMywxMDcuOCAxMjIuMyw5Ny4yICIvPjwvc3ZnPg==";
+
 let stylesInjected = false;
 function injectStyles() {
   if (stylesInjected) return;
   stylesInjected = true;
   const css = `
+    .cvc-ml-import { background: #2563eb; color: #fff; border: none; border-radius: 6px;
+      padding: 5px 10px; font: 600 12px system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
+    .cvc-ml-import:hover { background: #1d4ed8; }
+    .cvc-ml-import::before { content: ""; display: inline-block; width: 1.2em; height: 1.2em;
+      vertical-align: -0.25em; margin-right: 5px; background-color: currentColor;
+      -webkit-mask: url("${LOGO}") center/contain no-repeat; mask: url("${LOGO}") center/contain no-repeat; }
     .cvc-backdrop { position: fixed; inset: 0; z-index: 2147483647; background: rgba(0,0,0,.6);
       display: flex; align-items: center; justify-content: center; font: 14px system-ui, sans-serif; }
     .cvc-modal { width: min(1100px, calc(100vw - 64px)); height: min(760px, calc(100vh - 64px));
       background: #18181b; color: #e4e4e7; border: 1px solid #3f3f46; border-radius: 14px;
-      box-shadow: 0 24px 64px rgba(0,0,0,.5); display: flex; flex-direction: column; overflow: hidden; }
+      box-shadow: 0 24px 64px rgba(0,0,0,.5); display: flex; flex-direction: column; overflow: hidden;
+      position: relative; }
+    .cvc-import-open { flex: none; background: #27272a; color: #e4e4e7; border: 1px solid #3f3f46;
+      border-radius: 8px; padding: 9px 12px; font: inherit; cursor: pointer; white-space: nowrap; }
+    .cvc-import-open:hover { border-color: #2563eb; color: #fff; }
+    .cvc-import { position: absolute; inset: 0; z-index: 5; padding: 24px; background: rgba(9,9,11,.72);
+      display: none; align-items: center; justify-content: center; }
+    .cvc-import.open { display: flex; }
+    .cvc-import-card { width: min(520px, 100%); background: #18181b; border: 1px solid #3f3f46;
+      border-radius: 12px; padding: 20px; box-shadow: 0 24px 64px rgba(0,0,0,.5); display: flex;
+      flex-direction: column; gap: 12px; }
+    .cvc-import-title { font-size: 15px; font-weight: 700; }
+    .cvc-import-err { color: #a1a1aa; font-size: 12px; min-height: 16px; }
+    .cvc-import-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+    .cvc-import-actions button { border-radius: 8px; padding: 9px 14px; font: inherit; font-weight: 600;
+      cursor: pointer; border: 1px solid #3f3f46; }
+    .cvc-import-cancel { background: transparent; color: #a1a1aa; }
+    .cvc-import-cancel:hover { background: #27272a; color: #e4e4e7; }
+    .cvc-import-go { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .cvc-import-go:hover { background: #1d4ed8; }
+    .cvc-import-go[disabled] { opacity: .6; cursor: default; }
     .cvc-head { display: flex; gap: 10px; align-items: center; padding: 14px 16px; border-bottom: 1px solid #27272a; }
     .cvc-title { font-size: 16px; font-weight: 700; white-space: nowrap; }
     .cvc-input { flex: 1; box-sizing: border-box; background: #27272a; color: #e4e4e7;
@@ -87,13 +116,14 @@ function injectStyles() {
     .cvc-close:hover { background: #27272a; color: #e4e4e7; }
     .cvc-status { padding: 6px 16px; color: #a1a1aa; font-size: 12px; min-height: 18px; }
     .cvc-grid { flex: 1; overflow-y: auto; padding: 4px 16px 16px; display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); grid-auto-rows: 300px; gap: 14px; align-content: start; }
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); grid-auto-rows: 310px; gap: 14px; align-content: start; }
     .cvc-card { height: 100%; background: #1f1f23; border: 1px solid #27272a; border-radius: 10px;
       overflow: hidden; cursor: pointer; display: flex; flex-direction: column; text-align: left; padding: 0;
       font: inherit; color: inherit; }
     .cvc-card:hover { border-color: #2563eb; }
+    .cvc-card:focus-visible { outline: 2px solid #2563eb; outline-offset: 2px; }
     .cvc-thumb { position: relative; flex: 1; min-height: 0; background: #111113; }
-    .cvc-thumb img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .cvc-thumb img, .cvc-thumb video { width: 100%; height: 100%; object-fit: contain; display: block; }
     .cvc-badges { position: absolute; left: 8px; bottom: 8px; display: flex; gap: 4px; }
     .cvc-badge { background: rgba(24,24,27,.85); color: #d4d4d8; border-radius: 5px; padding: 2px 7px;
       font-size: 11px; font-weight: 600; }
@@ -103,8 +133,19 @@ function injectStyles() {
     .cvc-meta { padding: 10px 10px 12px; min-width: 0; }
     .cvc-name { font-weight: 600; font-size: 13px; overflow: hidden; display: -webkit-box;
       -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-    .cvc-sub { color: #a1a1aa; font-size: 11px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .cvc-empty { grid-column: 1 / -1; color: #a1a1aa; text-align: center; padding: 48px 0; }
+    .cvc-comp { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .cvc-comp[hidden] { display: none; }
+    .cvc-chip { background: #27272a; color: #a1a1aa; border: 1px solid #3f3f46; border-radius: 5px;
+      padding: 1px 6px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+    .cvc-chip.req { color: #d4d4d8; border-color: #2563eb; }
+    .cvc-foot { display: flex; gap: 6px; margin-top: 8px; align-items: center; }
+    .cvc-ver { flex: 1; min-width: 0; background: #27272a; color: #e4e4e7; border: 1px solid #3f3f46;
+      border-radius: 6px; padding: 5px 6px; font: inherit; font-size: 11px; outline: none; cursor: pointer; }
+    .cvc-ver:focus { border-color: #2563eb; }
+    .cvc-btn { flex: none; background: #2563eb; color: #fff; border: none; border-radius: 6px;
+      padding: 5px 12px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .cvc-btn:hover { background: #1d4ed8; }
+    .cvc-empty { grid-column: 1 / -1; color: #a1a1aa; text-align: center; padding: 48px 0; line-height: 1.5; }
     .cvc-np { display: flex; gap: 9px; align-items: center; box-sizing: border-box; width: 100%; height: 100%;
       padding: 3px 4px; overflow: hidden; cursor: pointer; font: 12px system-ui, sans-serif; }
     .cvc-np-thumb { width: 54px; height: 54px; flex: 0 0 auto; border-radius: 7px; overflow: hidden;
@@ -151,8 +192,27 @@ function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-// openCatalog({ type, ecosystem, onPick }) — onPick(entry) receives the chosen catalogue entry.
-function openCatalog({ type: defaultType, ecosystem: defaultEcosystem, onPick }) {
+// Civitai serves some model-version previews as videos; an <img> for those just errors out, so
+// pick the element by extension.
+function thumbHtml(url) {
+  if (!url) return "";
+  const safe = esc(url);
+  if (/\.(mp4|webm)(\?|$)/i.test(url)) {
+    return `<video muted loop autoplay playsinline preload="metadata" src="${safe}" onerror="this.style.visibility='hidden'"></video>`;
+  }
+  return `<img loading="lazy" src="${safe}" onerror="this.style.visibility='hidden'" />`;
+}
+
+// The version's CLIP/VAE component groups, for the card chips. Empty when the version ships none.
+function componentSummary(components) {
+  const out = [];
+  if (components?.clip?.length) out.push({ kind: "CLIP", files: components.clip });
+  if (components?.vae?.length) out.push({ kind: "VAE", files: components.vae });
+  return out;
+}
+
+// openCatalog({ type, ecosystem, query, onPick }) — onPick(entry) receives the chosen catalogue entry.
+function openCatalog({ type: defaultType, ecosystem: defaultEcosystem, query: initialQuery, onPick }) {
   injectStyles();
   const types = META.types && META.types.length ? META.types : TYPES;
   const ecoOptions =
@@ -169,10 +229,22 @@ function openCatalog({ type: defaultType, ecosystem: defaultEcosystem, onPick })
         <input class="cvc-input" placeholder="Search Civitai models…" />
         <select class="cvc-select cvc-type">${types.map((t) => `<option value="${t}"${t === defaultType ? " selected" : ""}>${esc(t)}</option>`).join("")}</select>
         <select class="cvc-select cvc-eco" title="Filter by base-model ecosystem">${ecoOptions}</select>
+        <button class="cvc-import-open" title="Import by pasting a Civitai URL or AIR">Import from URL</button>
         <button class="cvc-close" title="Close">✕</button>
       </div>
       <div class="cvc-status"></div>
       <div class="cvc-grid"></div>
+      <div class="cvc-import">
+        <div class="cvc-import-card" role="dialog" aria-label="Import a model from a URL or AIR">
+          <div class="cvc-import-title">Import from URL</div>
+          <input class="cvc-input cvc-import-input" placeholder="Paste a Civitai model/version URL or AIR" />
+          <div class="cvc-import-err"></div>
+          <div class="cvc-import-actions">
+            <button class="cvc-import-cancel" type="button">Cancel</button>
+            <button class="cvc-import-go" type="button">Import</button>
+          </div>
+        </div>
+      </div>
     </div>`;
   document.body.appendChild(backdrop);
 
@@ -188,6 +260,48 @@ function openCatalog({ type: defaultType, ecosystem: defaultEcosystem, onPick })
   document.addEventListener("keydown", function onKey(e) {
     if (e.key === "Escape") { close(); document.removeEventListener("keydown", onKey); }
   });
+
+  // "Import from URL": for a model search doesn't surface, paste a Civitai model/version URL or an
+  // AIR; the server resolves it to a catalogue entry and it flows through onPick like a card pick.
+  // The panel lives inside .cvc-modal so its clicks never hit the backdrop's close-on-outside check.
+  const importPanel = backdrop.querySelector(".cvc-import");
+  const importInput = backdrop.querySelector(".cvc-import-input");
+  const importGo = backdrop.querySelector(".cvc-import-go");
+  const importErr = backdrop.querySelector(".cvc-import-err");
+  backdrop.querySelector(".cvc-import-open").addEventListener("click", () => {
+    importErr.textContent = "";
+    importInput.value = "";
+    importPanel.classList.add("open");
+    importInput.focus();
+  });
+  backdrop.querySelector(".cvc-import-cancel").addEventListener("click", () => importPanel.classList.remove("open"));
+  importInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); runImport(); }
+  });
+  importGo.addEventListener("click", runImport);
+
+  async function runImport() {
+    const value = importInput.value.trim();
+    if (!value) { importErr.textContent = "Paste a URL or AIR first."; return; }
+    importGo.disabled = true;
+    importErr.textContent = "Resolving…";
+    try {
+      const res = await fetch("/civitai/catalog/resolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input: value }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error || !data.entry) throw new Error(data.error || `resolve failed (${res.status})`);
+      onPick?.(data.entry);
+      app.graph?.setDirtyCanvas?.(true, true);
+      close();
+    } catch (e) {
+      importErr.textContent = String(e.message || e);
+    } finally {
+      importGo.disabled = false;
+    }
+  }
 
   let reqId = 0;
   async function run() {
@@ -212,45 +326,126 @@ function openCatalog({ type: defaultType, ecosystem: defaultEcosystem, onPick })
 
   function render(entries) {
     status.textContent = entries.length ? `${entries.length} result${entries.length === 1 ? "" : "s"}` : "";
-    if (!entries.length) { grid.innerHTML = `<div class="cvc-empty">No matching resources.</div>`; return; }
     grid.innerHTML = "";
-    for (const e of entries) {
-      const card = document.createElement("div");
-      card.className = "cvc-card";
-      card.setAttribute("role", "button");
-      card.tabIndex = 0;
-      const thumb = e.thumbnailUrl ? `<img src="${esc(e.thumbnailUrl)}" loading="lazy" />` : "";
-      const link = e.modelUrl
-        ? `<a class="cvc-link" href="${esc(e.modelUrl)}" target="_blank" rel="noopener" title="Open on Civitai">↗</a>`
-        : "";
-      card.innerHTML = `
-        <div class="cvc-thumb">${thumb}
-          <div class="cvc-badges"><span class="cvc-badge">${esc(e.baseModel || e.ecosystem)}</span></div>
-          ${link}
-        </div>
-        <div class="cvc-meta">
-          <div class="cvc-name">${esc(e.name)}</div>
-          <div class="cvc-sub">${esc(e.versionName)} · ⬇ ${e.downloadCount ?? 0}</div>
-        </div>`;
-      // The ↗ link opens the model page; don't let that click also pick the card.
-      card.querySelector(".cvc-link")?.addEventListener("click", (ev) => ev.stopPropagation());
-      const pick = () => {
-        onPick?.(e);
-        app.graph?.setDirtyCanvas?.(true, true);
-        close();
-      };
-      card.addEventListener("click", pick);
-      card.addEventListener("keydown", (ev) => {
-        if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); pick(); }
-      });
-      grid.appendChild(card);
+    if (!entries.length) {
+      // CLIP/VAE/text-encoder files live as components of a checkpoint, not standalone models, so
+      // these types are almost always empty — point the user at the checkpoint that fills them in.
+      const t = select.value;
+      const hint = (t === "VAE" || t === "TextEncoder" || t === "CLIPVision")
+        ? "No standalone results — CLIP/VAE files usually ship with a checkpoint. Pick the checkpoint and its components fill in automatically."
+        : "No matching resources.";
+      grid.innerHTML = `<div class="cvc-empty">${hint}</div>`;
+      return;
     }
+    for (const entry of entries) renderCard(entry);
+  }
+
+  function renderCard(entry) {
+    // A model carries its other versions in `versions`; fall back to the representative version for
+    // older responses / lookup-shaped entries.
+    const versions = entry.versions?.length ? entry.versions : [{
+      air: entry.air, versionName: entry.versionName, ecosystem: entry.ecosystem,
+      baseModel: entry.baseModel, thumbnailUrl: entry.thumbnailUrl, modelUrl: entry.modelUrl,
+      trainedWords: entry.trainedWords, components: entry.components,
+    }];
+    let sel = versions[0];
+
+    const card = document.createElement("div");
+    card.className = "cvc-card";
+    card.setAttribute("role", "button");
+    card.tabIndex = 0;
+    card.title = `${entry.name} — ${sel.versionName}`;
+    card.innerHTML = `
+      <div class="cvc-thumb">
+        ${thumbHtml(sel.thumbnailUrl)}
+        <div class="cvc-badges"><span class="cvc-badge">${esc(sel.baseModel || sel.ecosystem || "")}</span></div>
+        <a class="cvc-link" target="_blank" rel="noopener" title="Open on Civitai">↗</a>
+      </div>
+      <div class="cvc-meta">
+        <div class="cvc-name">${esc(entry.name)}</div>
+        <div class="cvc-comp" hidden></div>
+        <div class="cvc-foot">
+          <select class="cvc-ver" title="Version">${versions
+            .map((v, i) => `<option value="${i}">${esc(v.versionName)}</option>`).join("")}</select>
+          <button type="button" class="cvc-btn">Select</button>
+        </div>
+      </div>`;
+
+    const thumbEl = card.querySelector(".cvc-thumb");
+    const badgeEl = card.querySelector(".cvc-badge");
+    const linkEl = card.querySelector(".cvc-link");
+    const verEl = card.querySelector(".cvc-ver");
+    const btnEl = card.querySelector(".cvc-btn");
+    const compEl = card.querySelector(".cvc-comp");
+
+    if (sel.modelUrl) linkEl.href = sel.modelUrl; else linkEl.hidden = true;
+
+    // Chips for the version's required components (CLIP/VAE files that ship with the model), so the
+    // user can see what a pick will pull into the node's component outputs.
+    function renderComps() {
+      const groups = componentSummary(sel.components);
+      if (!groups.length) { compEl.hidden = true; compEl.innerHTML = ""; return; }
+      compEl.hidden = false;
+      compEl.innerHTML = groups.map((g) => {
+        const req = g.files.some((f) => f.isRequired);
+        const names = g.files.map((f) => f.name).join(", ");
+        return `<span class="cvc-chip${req ? " req" : ""}" title="${esc(names)}">🧩 ${esc(g.kind)}</span>`;
+      }).join("");
+    }
+    renderComps();
+
+    function applyVersion() {
+      card.title = `${entry.name} — ${sel.versionName}`;
+      badgeEl.textContent = sel.baseModel || sel.ecosystem || "";
+      thumbEl.querySelectorAll("img, video").forEach((el) => el.remove());
+      if (sel.thumbnailUrl) thumbEl.insertAdjacentHTML("afterbegin", thumbHtml(sel.thumbnailUrl));
+      if (sel.modelUrl) { linkEl.href = sel.modelUrl; linkEl.hidden = false; }
+      else { linkEl.removeAttribute("href"); linkEl.hidden = true; }
+      renderComps();
+    }
+
+    // The ↗ link opens the model page and the version <select> changes the pick target; neither
+    // click should also pick the card.
+    linkEl.addEventListener("click", (ev) => ev.stopPropagation());
+    ["mousedown", "click"].forEach((evt) => verEl.addEventListener(evt, (ev) => ev.stopPropagation()));
+    verEl.addEventListener("change", (ev) => {
+      ev.stopPropagation();
+      sel = versions[verEl.value] ?? sel;
+      applyVersion();
+    });
+
+    const pick = () => {
+      // Resolve the selected version into the flat entry shape the callers (Browse button / LoRA
+      // rows) already expect, so onPick stays unchanged.
+      onPick?.({
+        air: sel.air,
+        name: entry.name,
+        versionName: sel.versionName,
+        ecosystem: sel.ecosystem,
+        baseModel: sel.baseModel,
+        thumbnailUrl: sel.thumbnailUrl,
+        modelUrl: sel.modelUrl,
+        trainedWords: sel.trainedWords || entry.trainedWords || [],
+        components: sel.components,
+        type: entry.type,
+        downloadCount: entry.downloadCount,
+      });
+      app.graph?.setDirtyCanvas?.(true, true);
+      close();
+    };
+    btnEl.addEventListener("click", (ev) => { ev.stopPropagation(); pick(); });
+    card.addEventListener("click", pick);
+    card.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); pick(); }
+    });
+    grid.appendChild(card);
   }
 
   let debounce;
   input.addEventListener("input", () => { clearTimeout(debounce); debounce = setTimeout(run, 300); });
   select.addEventListener("change", run);
   ecoSelect.addEventListener("change", run);
+  if (initialQuery) input.value = initialQuery;
   input.focus();
   run();
 }
@@ -401,11 +596,17 @@ function refreshPreview(node, airWidget) {
 function setupPreview(node, airWidget) {
   previewState(node); // create up-front so the preview sits above the Browse button
   const resWidget = node.widgets?.find((w) => w.name === "resources_json");
-  if (resWidget) {
+  if (resWidget && node.widgets) {
     // Serialized data for the customComfy submitter; hide its raw text widget.
     resWidget.hidden = true;
     resWidget.type = "hidden";
-    resWidget.computeSize = () => [0, -4];
+
+    const ri = node.widgets.indexOf(resWidget);
+    const pi = node.widgets.findIndex((x) => x.name === "civitai_model_preview");
+    if (ri > -1 && pi > -1 && ri < pi) {
+      node.widgets.splice(ri, 1);
+      node.widgets.push(resWidget);
+    }
   }
   const origCb = airWidget.callback;
   airWidget.callback = function (...a) {
@@ -588,9 +789,16 @@ function setupLoraRows(node) {
     // The JSON string is the serialized source of truth; hide its raw widget, show the rows UI.
     w.hidden = true;
     w.type = "hidden";
-    w.computeSize = () => [0, -4];
   }
   loraState(node);
+  if (w && node.widgets) {
+    const ci = node.widgets.indexOf(w);
+    const di = node.widgets.findIndex((x) => x.name === "civitai_loras");
+    if (ci > -1 && di > -1 && ci < di) {
+      node.widgets.splice(ci, 1);
+      node.widgets.push(w);
+    }
+  }
   // Default to a sane width (and recover from any stale over-wide size) before the first measure.
   const currentWidth = node.size?.[0] || 0;
   if (currentWidth < 360 || currentWidth > 720) node.setSize?.([380, node.size?.[1] || 140]);
@@ -601,6 +809,90 @@ function setupLoraRows(node) {
     renderLoraRows(node);
     return r;
   };
+}
+
+// ── "Import from Civitai" button in the Model Library sidebar header ───────────────────────────────
+// Opens the catalogue picker; a pick downloads the version's primary file (plus required CLIP/VAE
+// components) into the local model folders via /civitai/models/import, then refreshes the library.
+// Skipped in hosted comfy-cloud sessions: models there resolve via session pins (the shared origin
+// is read-only), and comfy-cloud's injected overlay provides its own pin-based header button.
+const SESSION_PROXY_RE = /^\/sessions\/[^/]+\/proxy\//;
+
+function toast(severity, summary, detail) {
+  try {
+    app.extensionManager.toast.add({ severity, summary, detail, life: 5000 });
+  } catch (e) {
+    console[severity === "error" ? "error" : "log"](`[civitai-catalog] ${summary}: ${detail ?? ""}`);
+  }
+}
+
+// The library header has no stable test id across frontend versions; walk up from the (already
+// matched) search input to the nearest ancestor containing a refresh-ish button. Icon classes vary
+// by version — pi-refresh/pi-sync (PrimeVue) vs icon-[lucide--refresh-cw] — [class*='refresh']
+// spans both, with the aria-label/title text as a last resort.
+function libraryRefreshButton(input) {
+  for (let scope = input?.parentElement; scope && scope !== document.body; scope = scope.parentElement) {
+    const btn = [...scope.querySelectorAll("button")].find(
+      (b) =>
+        b.querySelector(".pi-sync, [class*='refresh']") ||
+        /refresh/i.test(b.getAttribute("aria-label") || b.title || "")
+    );
+    if (btn) return btn;
+  }
+  return null;
+}
+
+function currentLibraryInput() {
+  return [...document.querySelectorAll("input[placeholder]")].find(
+    (i) => !i.closest(".cvc-backdrop") && /search.*model|model.*search/i.test(i.placeholder)
+  );
+}
+
+async function importModel(entry) {
+  toast("info", "Downloading from Civitai", `${entry.name} — large models can take a while.`);
+  try {
+    const res = await fetch("/civitai/models/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ air: entry.air }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || `import failed (${res.status})`);
+    const names = (data.files || []).map((f) => `${f.folder}/${f.name}`).join(", ");
+    toast("success", "Model imported", names || entry.name);
+    // Re-resolve the refresh button from the live DOM — the one from attach time may have been
+    // unmounted (tab closed / re-rendered) during a long download.
+    libraryRefreshButton(currentLibraryInput())?.click();
+  } catch (e) {
+    toast("error", "Import failed", String(e.message || e));
+  }
+}
+
+function attachLibraryButton(input) {
+  const refresh = libraryRefreshButton(input);
+  if (!refresh || refresh.parentElement.querySelector(".cvc-ml-import")) return;
+  injectStyles();
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "cvc-ml-import";
+  btn.textContent = "Civitai";
+  btn.title = "Import a model from Civitai into your local model folders";
+  btn.addEventListener("click", () =>
+    openCatalog({ type: "Checkpoint", query: input.value.trim(), onPick: importModel })
+  );
+  refresh.parentElement.insertBefore(btn, refresh);
+}
+
+function installLibraryImport() {
+  if (SESSION_PROXY_RE.test(location.pathname)) return;
+  const obs = new MutationObserver(() => {
+    document.querySelectorAll("input[placeholder]").forEach((i) => {
+      // Our own picker's input also matches the placeholder probe — skip it.
+      if (i.closest(".cvc-backdrop")) return;
+      if (/search.*model|model.*search/i.test(i.placeholder)) attachLibraryButton(i);
+    });
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
 }
 
 function targetFor(node) {
@@ -617,6 +909,7 @@ function targetFor(node) {
 app.registerExtension({
   name: "civitai.catalog",
   async setup() {
+    installLibraryImport();
     try {
       META = await (await fetch("/civitai/catalog/meta")).json();
     } catch (e) {

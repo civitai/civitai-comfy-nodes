@@ -22,6 +22,17 @@ except Exception:
 
 _BLOB_KINDS = {"image", "video", "audio", "model3d"}
 
+_EXT_KINDS = {
+    ext: kind
+    for kind, exts in {
+        "image": (".png", ".jpg", ".jpeg", ".webp", ".gif", ".avif"),
+        "video": (".mp4", ".webm", ".mov", ".mkv", ".avi", ".m4v"),
+        "audio": (".mp3", ".flac", ".wav", ".ogg", ".opus", ".m4a", ".aac"),
+        "model3d": (".glb", ".gltf", ".fbx", ".obj", ".stl", ".ply", ".usdz"),
+    }.items()
+    for ext in exts
+}
+
 
 def _walk_blobs(node, key=None):
     """Yield (blob, containing_key) for every blob anywhere in a step output. A blob is any dict with
@@ -40,10 +51,17 @@ def _walk_blobs(node, key=None):
 
 
 def _blob_kind(blob: dict, key: str | None) -> str:
-    """image | video | audio | model3d — from the polymorphic `type` if present, else the property name."""
+    """image | video | audio | model3d | other — from the polymorphic `type` if present, else the
+    file extension in the blob id (customComfy asset ids keep the original output filename, and the
+    containing key — `blobs`/`tempBlobs` — says nothing about the media type), else the property
+    name. `other` = non-media or unidentifiable blobs (nodepack snapshot layers, extensionless
+    customComfy assets); the UI shows them as plain files."""
     declared = blob.get("type")
     if declared in _BLOB_KINDS:
         return declared
+    ext = os.path.splitext(str(blob.get("id") or ""))[1].lower()
+    if ext in _EXT_KINDS:
+        return _EXT_KINDS[ext]
     name = (key or "").lower()
     if "video" in name:
         return "video"
@@ -51,7 +69,11 @@ def _blob_kind(blob: dict, key: str | None) -> str:
         return "audio"
     if "model" in name or "fbx" in name or "3d" in name:
         return "model3d"
-    return "image"  # images, frames, thumbnails, samples, and the lone `ImageBlob Blob` field
+    # frames, thumbnails, samples, and the singular ImageBlob-typed `blob` fields (convertImage,
+    # imageUpload, humanoidImageMask) — concretely declared, so they never carry `type`.
+    if "image" in name or "frame" in name or "thumb" in name or "sample" in name or name == "blob":
+        return "image"
+    return "other"
 
 
 def flatten_generations(workflows: list, kinds: set | None = None) -> list:
@@ -165,6 +187,36 @@ def _import_blob(blob_id: str | None, url: str | None, kind: str) -> dict:
     return {"name": name, "subfolder": "", "type": "input"}
 
 
+def _import_model(air: str) -> dict:
+    """Model Library import: download a version's primary file — plus its *required* CLIP/VAE
+    component files — into the matching ComfyUI model folders (same folder rules as the Model
+    Selector node). Returns {"files": [{"folder", "name"}, …]} in download order, primary first."""
+    from . import local_models
+    from .config import auth_state
+
+    token = auth_state()[0]
+    files = catalog.components(air, token=token)
+    primary = files.get("primary") or {}
+    folder = local_models.folder_for_file_type(primary.get("type"), local_models.folder_for_air(air))
+    path = local_models.download_model(air, folder=folder, token=token, in_execution=False)
+    downloaded = [{"folder": folder, "name": os.path.basename(path)}]
+    for bucket, fallback in (("clip", "text_encoders"), ("vae", "vae")):
+        for f in files.get(bucket) or []:
+            if not f.get("isRequired"):
+                continue
+            comp_folder = local_models.folder_for_file_type(f.get("type"), fallback)
+            path = local_models.download_model(
+                air,
+                folder=comp_folder,
+                token=token,
+                download_url=f["downloadUrl"],
+                file_id=f["id"],
+                in_execution=False,
+            )
+            downloaded.append({"folder": comp_folder, "name": os.path.basename(path)})
+    return {"files": downloaded}
+
+
 def node_ecosystem_map() -> dict:
     """Map each recipe node class -> its expected AIR ecosystem (for the picker's default filter)."""
     from . import NODE_CLASS_MAPPINGS  # noqa: PLC0415 - deferred to call time to avoid an import cycle
@@ -205,6 +257,24 @@ if _server is not None:
             entry = await loop.run_in_executor(None, lambda: catalog.lookup(air))
         except Exception as e:
             return web.json_response({"error": str(e)}, status=502)
+        return web.json_response({"entry": entry})
+
+    @_server.routes.post("/civitai/catalog/resolve")
+    async def _civitai_catalog_resolve(request):
+        body = await request.json()
+        text = (body.get("input") or "").strip()
+        if not text:
+            return web.json_response({"error": "input is required"}, status=400)
+        loop = asyncio.get_event_loop()
+        try:
+            entry = await loop.run_in_executor(None, lambda: catalog.resolve_reference(text))
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=502)
+        if not entry:
+            return web.json_response(
+                {"error": "Couldn't resolve that to a Civitai model — paste a model/version URL or AIR."},
+                status=404,
+            )
         return web.json_response({"entry": entry})
 
     @_server.routes.get("/civitai/catalog/meta")
@@ -286,5 +356,18 @@ if _server is not None:
         except CivitaiAuthError:
             return web.json_response({"error": "auth_required"}, status=401)
         except Exception as e:
+            return web.json_response({"error": str(e)}, status=502)
+        return web.json_response(result)
+
+    @_server.routes.post("/civitai/models/import")
+    async def _civitai_models_import(request):
+        body = await request.json()
+        air = (body.get("air") or "").strip()
+        if not air:
+            return web.json_response({"error": "air is required"}, status=400)
+        loop = asyncio.get_event_loop()
+        try:
+            result = await loop.run_in_executor(None, lambda: _import_model(air))
+        except Exception as e:  # metadata/download failures -> picker toast
             return web.json_response({"error": str(e)}, status=502)
         return web.json_response(result)

@@ -83,6 +83,54 @@ def test_flatten_uses_type_field_when_present():
     assert sr.flatten_generations(workflows)[0]["media"][0]["kind"] == "audio"
 
 
+def test_flatten_infers_kind_from_blob_id_extension():
+    # customComfy outputs land under generic `blobs`/`tempBlobs` keys with no `type` field; the
+    # asset blob id keeps the original output filename, so its extension is the only kind signal.
+    workflows = [
+        _wf(
+            [
+                {
+                    "$type": "customComfy",
+                    "output": {
+                        "blobs": [
+                            {
+                                "id": "customcomfy-X-asset-audio-stable_audio_3_00063.mp3",
+                                "available": True,
+                                "url": "u1",
+                            },
+                            {"id": "customcomfy-X-asset-anim_00001.webm", "available": True, "url": "u2"},
+                            {"id": "customcomfy-X-asset-ComfyUI_00001.png", "available": True, "url": "u3"},
+                        ],
+                        "tempBlobs": [
+                            {"id": "customcomfy-X-asset-ComfyUI_temp_nxjwl_00001.flac", "available": True, "url": "u4"},
+                        ],
+                    },
+                }
+            ]
+        )
+    ]
+    assert [m["kind"] for m in sr.flatten_generations(workflows)[0]["media"]] == ["audio", "video", "image", "audio"]
+
+
+def test_flatten_unclassifiable_blobs_become_other():
+    # No type, no known extension, no telling key -> "other" (nodepack snapshot layers, extensionless
+    # customComfy assets). The singular ImageBlob-typed `blob` fields (convertImage etc.) stay image.
+    workflows = [
+        _wf(
+            [
+                {
+                    "output": {
+                        "blob": {"id": "converted-img", "available": True, "url": "cu"},
+                        "layer": {"id": "snapshot-layer", "available": True, "url": "lu"},
+                        "blobs": [{"id": "customcomfy-X-asset-noext", "available": True, "url": "bu"}],
+                    }
+                }
+            ]
+        )
+    ]
+    assert [m["kind"] for m in sr.flatten_generations(workflows)[0]["media"]] == ["image", "other", "other"]
+
+
 def test_flatten_kind_inference_and_filter():
     workflows = [
         _wf(
@@ -101,6 +149,46 @@ def test_flatten_kind_inference_and_filter():
     assert kinds == {"image", "video", "model3d"}
     only_video = sr.flatten_generations(workflows, kinds={"video"})
     assert [m["kind"] for m in only_video[0]["media"]] == ["video"]
+
+
+def test_import_model_downloads_primary_and_required_components(monkeypatch):
+    # The Model Library import mirrors the Model Selector's folder rules: the primary file's folder
+    # follows the *file's* type (Diffusion Model -> diffusion_models, not the AIR's checkpoints),
+    # and only isRequired components ride along, keyed by their own downloadUrl + file id.
+    air = "urn:air:sdxl:checkpoint:civitai:101@202"
+    monkeypatch.setattr(
+        sr.catalog,
+        "components",
+        lambda a, token=None: {
+            "primary": {"id": 1, "name": "model.safetensors", "type": "Diffusion Model", "downloadUrl": "du1"},
+            "clip": [
+                {"id": 2, "name": "te.safetensors", "type": "Text Encoder", "downloadUrl": "du2", "isRequired": True},
+            ],
+            "vae": [
+                {"id": 3, "name": "opt.safetensors", "type": "VAE", "downloadUrl": "du3", "isRequired": False},
+            ],
+        },
+    )
+    from civitai_comfy_nodes import config, local_models
+
+    monkeypatch.setattr(config, "auth_state", lambda: (None, None))
+    calls = []
+
+    def fake_download(a, folder="checkpoints", token=None, *, download_url=None, file_id=None, in_execution=True):
+        assert in_execution is False  # route path must not touch execution-scoped progress/interrupts
+        calls.append({"folder": folder, "download_url": download_url, "file_id": file_id})
+        return f"/models/{folder}/file{len(calls)}.safetensors"
+
+    monkeypatch.setattr(local_models, "download_model", fake_download)
+    result = sr._import_model(air)
+    assert result == {
+        "files": [
+            {"folder": "diffusion_models", "name": "file1.safetensors"},
+            {"folder": "text_encoders", "name": "file2.safetensors"},
+        ]
+    }
+    assert calls[0] == {"folder": "diffusion_models", "download_url": None, "file_id": None}
+    assert calls[1] == {"folder": "text_encoders", "download_url": "du2", "file_id": 2}
 
 
 def test_guess_ext_sniffs_magic_bytes():

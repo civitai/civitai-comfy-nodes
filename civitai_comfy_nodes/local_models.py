@@ -50,11 +50,11 @@ def folder_for_air(air: str, default: str = "checkpoints") -> str:
 
 
 # Civitai file `type` (the web app's `modelFileTypes`) -> the ComfyUI model folder. The download
-# folder follows the *file's* role, which can differ from the model's AIR type — e.g. a Checkpoint
-# model whose primary file is a "Diffusion Model" must land in diffusion_models/, not checkpoints/.
+# folder follows the *file's* role when it's more specific than the model's AIR type — e.g. a
+# Checkpoint model whose primary file is a "Diffusion Model" must land in diffusion_models/, not
+# checkpoints/. "Model"/"Pruned Model" are deliberately absent: every model type's primary file
+# (LoRA, TextualInversion, …) carries them, so they say nothing — the AIR-type folder decides.
 FILE_TYPE_FOLDERS = {
-    "Model": "checkpoints",
-    "Pruned Model": "checkpoints",
     "Diffusion Model": "diffusion_models",
     "UNet": "diffusion_models",
     "VAE": "vae",
@@ -97,11 +97,17 @@ def download_model(
     *,
     download_url: str | None = None,
     file_id: int | str | None = None,
+    in_execution: bool = True,
 ) -> str:
     """Download a Civitai resource into ComfyUI's model directory; returns the local path. Cached so
     a second use loads from disk. Pass `download_url` + `file_id` to fetch a specific additional file
     of the version (e.g. a VAE or text encoder) rather than the primary file; the file id keeps the
-    cache key distinct from the primary and from sibling files that share the same folder."""
+    cache key distinct from the primary and from sibling files that share the same folder.
+
+    Pass `in_execution=False` when calling outside a running prompt (e.g. the Model Library import
+    route): the ProgressBar hook dereferences per-prompt server state (PromptServer.last_prompt_id —
+    AttributeError before the first prompt ever runs), and the interrupt flag belongs to whichever
+    prompt is executing, so checking it would let an unrelated cancel abort this download."""
     version_id = version_id_from_air(air)
     dest_dir = _model_dir(folder)
     # Additional files key on their file id so siblings sharing a folder (e.g. a model's several
@@ -129,15 +135,16 @@ def download_model(
     path = os.path.join(dest_dir, _filename(response, version_id, prefix))
     tmp = path + ".part"
     total = int(response.headers.get("content-length") or 0)
-    bar = comfy_compat.progress_bar(total or 100)
+    bar = comfy_compat.progress_bar(total or 100) if in_execution else None
     written = 0
     try:
         with open(tmp, "wb") as out:
             for chunk in response.iter_content(chunk_size=4 * 1024 * 1024):
-                comfy_compat.check_interrupted()
+                if in_execution:
+                    comfy_compat.check_interrupted()
                 out.write(chunk)
                 written += len(chunk)
-                if total:
+                if bar and total:
                     bar.update_absolute(written, total)
     except BaseException:
         response.close()

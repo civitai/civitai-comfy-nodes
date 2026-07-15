@@ -9,6 +9,59 @@ The section matching the `pyproject.toml` version is published to the Comfy Regi
 [`.github/workflows/publish.yml`](.github/workflows/publish.yml). Add a new `## [x.y.z]`
 section at the top before bumping the version.
 
+## [0.4.0] - 2026-07-06
+
+### Added
+- **Import from Civitai** button in the Model Library sidebar (local ComfyUI): opens the
+  Browse Civitai picker pre-filled with your library search; picking a model downloads its
+  primary file — plus required CLIP/VAE component files — into the matching model folders
+  and refreshes the library. Hidden in hosted comfy-cloud sessions, where models resolve
+  via session pins instead.
+- **Import from URL** in the Browse Civitai picker: paste a civitai.com model/version page
+  URL, a download URL, or an AIR to import models search doesn't surface (e.g. base models
+  without a registered ecosystem).
+- Gallery: outputs that aren't image/video/audio/3D (extensionless customComfy assets,
+  nodepack snapshot layers) now show as plain files with an **Other** filter and an
+  Open ↗ action, instead of rendering as broken images.
+
+### Changed
+- Gallery infers the media kind from the output filename in the blob id when a customComfy
+  output declares no type, so audio/video outputs land under the right filter instead of
+  all showing as images.
+
+### Fixed
+- Generic "Model"/"Pruned Model" file types no longer force downloads into `checkpoints/` —
+  the model's AIR type decides the folder, so e.g. a LoRA whose primary file is typed
+  "Model" lands in `loras/`.
+
+## [0.3.1] - 2026-06-29
+
+### Fixed
+- Browse Civitai picker now lists all models, not only those flagged for onsite generation.
+  The `supportsGeneration` filter was excluding eligible resources.
+
+## [0.3.0] - 2026-06-26
+
+### Added
+- **Model Selector** exposes a version's VAE and CLIP files as extra outputs (`vae`, `clip`,
+  `clip 2`, `clip 3`); the picker adapts outputs to the selected model. Covers multi-component
+  models like Z-Image-Turbo and WAN.
+- **Hosted credentials** read per-prompt from `extra_data.civitai` (no cross-user leakage in
+  pooled containers, no browser-login fallback).
+- New generated nodes: **Qwen Image Bench**, **boogu**/**krea2** image variants, **HappyHorse
+  v1.1** video, **AI-Toolkit Anima** training.
+
+### Changed
+- Files download into the folder for each file's Civitai type (e.g. a Checkpoint whose primary
+  is a Diffusion Model lands in `diffusion_models/`).
+- Component outputs block obviously-wrong connections by target name (`vae` won't wire to a
+  clip/unet input).
+
+### Fixed
+- Model Selector declares the primary under the plain version AIR, so workers reuse a held
+  checkpoint instead of re-downloading a file-pinned copy.
+- `resources_json` is now optional, fixing "Required input is missing" on local/older graphs.
+
 ## [0.2.0] - 2026-06-17
 
 ### Added

@@ -23,12 +23,16 @@ def test_folder_for_air_maps_type_to_comfy_folder():
 def test_folder_for_file_type_maps_civitai_file_type():
     assert local_models.folder_for_file_type("Diffusion Model") == "diffusion_models"
     assert local_models.folder_for_file_type("UNet") == "diffusion_models"
-    assert local_models.folder_for_file_type("Model") == "checkpoints"
     assert local_models.folder_for_file_type("VAE") == "vae"
     assert local_models.folder_for_file_type("Text Encoder") == "text_encoders"
     assert local_models.folder_for_file_type("CLIPVision") == "clip_vision"
     assert local_models.folder_for_file_type("Config", "checkpoints") == "checkpoints"  # non-model -> default
     assert local_models.folder_for_file_type(None) == "checkpoints"
+    # "Model" is what EVERY model type's primary file carries (LoRA, TextualInversion, Checkpoint
+    # alike), so it must NOT override the AIR-type folder — an embedding's primary typed "Model"
+    # belongs in embeddings/, not checkpoints/.
+    assert local_models.folder_for_file_type("Model", "embeddings") == "embeddings"
+    assert local_models.folder_for_file_type("Pruned Model", "loras") == "loras"
 
 
 def test_download_uses_disk_cache(monkeypatch, tmp_path):
@@ -72,6 +76,33 @@ def test_download_specific_file_keyed_by_file_id(monkeypatch, tmp_path):
     )
     assert captured["url"].endswith("type=Text%20Encoder")  # the file's own downloadUrl, not the version URL
     assert out == str(tmp_path / "civitai_999_f4_clip_l.safetensors")  # cache name scoped by file id
+
+
+def test_download_outside_execution_skips_progress_and_interrupts(monkeypatch, tmp_path):
+    # In a live ComfyUI, progress_bar/check_interrupted are execution-scoped: the ProgressBar hook
+    # dereferences PromptServer.last_prompt_id (AttributeError before any prompt has run) and the
+    # interrupt flag belongs to the executing prompt. in_execution=False must not touch either.
+    monkeypatch.setattr(local_models, "_model_dir", lambda folder: str(tmp_path))
+
+    def boom(*a, **k):
+        raise AssertionError("execution-scoped facility used outside a prompt")
+
+    monkeypatch.setattr(local_models.comfy_compat, "progress_bar", boom)
+    monkeypatch.setattr(local_models.comfy_compat, "check_interrupted", boom)
+
+    class _Resp:
+        status_code = 200
+        headers = {"content-disposition": 'filename="model.safetensors"', "content-length": "5"}
+
+        def iter_content(self, chunk_size=0):
+            yield b"abcde"
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(local_models.requests, "get", lambda *a, **k: _Resp())
+    out = local_models.download_model("urn:air:x:checkpoint:civitai:1@42", in_execution=False)
+    assert out == str(tmp_path / "civitai_42_model.safetensors")
 
 
 def test_download_specific_file_uses_its_own_cache(monkeypatch, tmp_path):
@@ -160,6 +191,33 @@ def test_select_path_folder_follows_primary_file_type(monkeypatch):
     result = CivitaiModelSelector().select("urn:air:zimage:checkpoint:civitai:1@9", prompt=prompt, unique_id="3")
     assert captured["folder"] == "diffusion_models"  # from the FILE type, not the AIR's "checkpoint"
     assert result[1] == "civitai_9_m.safetensors"
+
+
+def test_select_lora_with_generic_model_file_type_lands_in_loras(monkeypatch):
+    # Regression for civitai-comfy-nodes#10: every model type's primary file is typed "Model"
+    # (LoRAs included), which used to override the AIR's folder and drop LoRAs in checkpoints/ —
+    # where Load LoRA (which resolves lora_name against loras/) could never find them.
+    monkeypatch.setattr(config, "auth_state", lambda: (None, "none"))
+    monkeypatch.setattr(
+        catalog,
+        "components",
+        lambda air, token=None: {
+            "primary": {"id": 1, "name": "more_details.safetensors", "type": "Model", "downloadUrl": "u"},
+            "vae": [],
+            "clip": [],
+        },
+    )
+    captured = {}
+
+    def fake_download(air, folder, token, **kw):
+        captured["folder"] = folder
+        return f"/models/{folder}/civitai_2_more_details.safetensors"
+
+    monkeypatch.setattr(local_models, "download_model", fake_download)
+    prompt = {"9": {"inputs": {"lora_name": ["3", 1]}}}
+    result = CivitaiModelSelector().select("urn:air:sd1:lora:civitai:82098@2", prompt=prompt, unique_id="3")
+    assert captured["folder"] == "loras"
+    assert result[1] == "civitai_2_more_details.safetensors"
 
 
 def test_select_downloads_components_when_wired(monkeypatch):
