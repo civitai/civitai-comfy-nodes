@@ -3,6 +3,7 @@ import time
 
 import requests
 
+from ._debug import debug_log
 from .config import ClientConfig
 from .errors import CivitaiNodeError, http_error_message
 from .proxy import get_proxy
@@ -25,9 +26,12 @@ class OrchestrationClient:
     def _request(self, method: str, path: str, *, max_tries: int = 4, **kwargs) -> requests.Response:
         url = path if path.startswith("http") else f"{self.config.base_url}{path}"
         kwargs.setdefault("timeout", 120)
+        proxy = self.session.proxies.get("http") if self.session.proxies else None
+        debug_log(f"{method} {url} | params={kwargs.get('params')} | proxy={proxy}")
         last_response = None
         for attempt in range(max_tries):
             response = self.session.request(method, url, **kwargs)
+            debug_log(f"{method} {url} -> {response.status_code} (attempt {attempt + 1}/{max_tries})")
             if response.status_code not in RETRYABLE_STATUSES:
                 if response.status_code >= 400:
                     self._raise_api_error(response)
@@ -117,10 +121,15 @@ class OrchestrationClient:
             raise CivitaiNodeError(
                 f"Blob {blob.get('id', '?')} has no download URL (available={blob.get('available')})"
             )
+        proxy = self.session.proxies.get("http") if self.session.proxies else None
+        debug_log(f"GET {url} | proxy={proxy}")
         response = self.session.get(url, timeout=300)
+        debug_log(f"GET {url} -> {response.status_code}")
         if response.status_code in (401, 403) and blob.get("id"):
             refreshed = self.refresh_blob(blob["id"])
+            debug_log(f"GET {refreshed['url']} | proxy={proxy}")
             response = self.session.get(refreshed["url"], timeout=300)
+            debug_log(f"GET {refreshed['url']} -> {response.status_code}")
         if response.status_code >= 400:
             raise CivitaiNodeError(f"Blob download failed ({response.status_code}) for blob {blob.get('id', '?')}")
         return response.content
@@ -129,7 +138,10 @@ class OrchestrationClient:
         """Upload bytes via the presigned-blob endpoint; returns a URL usable as a recipe input."""
         presign = self._request("GET", "/v2/consumer/blobs/upload").json()
         upload_url = presign["uploadUrl"]
+        proxy = self.session.proxies.get("http") if self.session.proxies else None
+        debug_log(f"POST {upload_url} | content_type={content_type} | proxy={proxy}")
         response = self.session.post(upload_url, data=data, headers={"Content-Type": content_type}, timeout=300)
+        debug_log(f"POST {upload_url} -> {response.status_code}")
         if response.status_code >= 400:
             raise CivitaiNodeError(http_error_message(response.status_code, response.text))
         try:

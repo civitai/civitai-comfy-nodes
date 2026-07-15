@@ -9,6 +9,7 @@ import re
 import requests
 
 from . import comfy_compat
+from ._debug import debug_log
 from .errors import CivitaiNodeError
 from .proxy import get_proxy
 
@@ -116,7 +117,10 @@ def download_model(
     if token:
         headers["Authorization"] = f"Bearer {token}"
     url = download_url or CIVITAI_DOWNLOAD_URL.format(version_id=version_id)
-    response = requests.get(url, headers=headers, stream=True, timeout=60, allow_redirects=True, proxies=get_proxy())
+    proxy = get_proxy()
+    debug_log(f"GET {url} | stream=True | proxy={proxy.get('http') if proxy else None}")
+    response = requests.get(url, headers=headers, stream=True, timeout=60, allow_redirects=True, proxies=proxy)
+    debug_log(f"GET {url} -> {response.status_code}")
     if response.status_code >= 400:
         response.close()
         hint = " (this model may be gated — connect a Civitai Auth node)" if response.status_code in (401, 403) else ""

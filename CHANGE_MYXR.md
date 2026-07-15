@@ -6,17 +6,32 @@
 
 ## 修改的文件
 
+### `civitai_comfy_nodes/_debug.py` (新文件)
+- 新增 `DEBUG: bool = False` 模块级变量
+- 新增 `debug_log()` 函数，`DEBUG=True` 时在控制台打印请求详情
+
 ### `civitai_comfy_nodes/config.py`
 - 新增 `PROXY_URL: str | None = None` 模块级变量，可直接在文件中设置代理地址
 - 新增 `proxy_url()` 函数，解析优先级：`CIVITAI_COMFY_PROXY` 环境变量 > `PROXY_URL`
 - `ClientConfig` 数据类新增 `proxy_url: str = ""` 字段
 - `resolve_config()` 新增代理解析逻辑：节点输入 > 环境变量 > 模块默认值
+- 从 `._debug` 重新导出 `DEBUG` 和 `debug_log`，方便用户统一在 `config.py` 中配置
 
 ### `civitai_comfy_nodes/proxy.py`
 - `get_proxy()` 扩展代理解析链：`CivitaiProxy` 节点设置 > `config.proxy_url()` > 环境变量
 
 ### `civitai_comfy_nodes/client.py`
 - `OrchestrationClient.__init__()` 优先使用 `config.proxy_url`，其次回退到 `get_proxy()`
+- `_request()`、`download_blob()`、`upload_media()` 新增调试日志
+
+### `civitai_comfy_nodes/catalog.py`
+- `search()`、`lookup()`、`components()` 新增调试日志
+
+### `civitai_comfy_nodes/oauth.py`
+- `_refresh()`、`interactive_login()` 新增调试日志
+
+### `civitai_comfy_nodes/local_models.py`
+- `download_model()` 新增调试日志
 
 ### `civitai_comfy_nodes/nodes_manual.py`
 - `CivitaiAuth` 节点新增可选 `proxy_url` 输入字段，可在工作流中直接配置代理
@@ -30,12 +45,27 @@
 | 3 | `CIVITAI_COMFY_PROXY` 环境变量 | 进程级全局代理 |
 | 4 (最低) | `config.py` 中 `PROXY_URL` 变量 | 代码级默认值 |
 
+## DEBUG 调试模式
+
+在 `config.py` 中设置 `DEBUG = True` 可在控制台详细打印所有 HTTP 请求信息：
+
+```python
+# civitai_comfy_nodes/config.py
+DEBUG = True   # 开启调试日志
+```
+
+开启后每次请求会打印：
+- 请求方法、完整 URL、查询参数
+- 使用的代理地址（如有）
+- 响应状态码
+
 ## 使用示例
 
 ### 方式一：在 `config.py` 中设置
 ```python
 # civitai_comfy_nodes/config.py
 PROXY_URL = "http://127.0.0.1:7890"
+DEBUG = True   # 可选：开启调试日志
 ```
 
 ### 方式二：环境变量

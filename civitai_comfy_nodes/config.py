@@ -11,13 +11,17 @@ DEFAULT_BASE_URL = "https://orchestration.civitai.com"
 # Proxy configuration — set this to route all HTTP(S) requests through a proxy.
 # Overridable via CIVITAI_COMFY_PROXY env var or the CivitaiProxy node.
 PROXY_URL: str | None = None
-PROXY_URL = "http://127.0.0.1:7898"
 
 
 def proxy_url() -> str | None:
     """Resolve proxy URL: env var > module-level PROXY_URL."""
     url = os.environ.get("CIVITAI_COMFY_PROXY") or PROXY_URL
     return url.strip() if url else None
+
+
+# Debug mode — set to True to print detailed request info (URL, params, proxy, response) to console.
+# Defined in _debug.py and re-exported here for convenience.
+from ._debug import DEBUG, debug_log  # noqa: F401
 
 # Workflows submitted by this pack carry two indexed tags so the gallery can scope its listing:
 # SOURCE_TAG (any workflow from this pack) and a per-session tag identifying the submitter.
