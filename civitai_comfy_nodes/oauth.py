@@ -20,7 +20,9 @@ from pathlib import Path
 import requests
 
 from . import comfy_compat
+from ._debug import debug_log
 from .errors import CivitaiNodeError
+from .proxy import get_proxy
 
 OAUTH_BASE = os.environ.get("CIVITAI_OAUTH_BASE", "https://civitai.com")
 # UserRead | AIServicesRead | AIServicesWrite | BuzzRead = 1 + 16384 + 32768 + 65536
@@ -127,15 +129,20 @@ def _store_token_response(payload: dict) -> dict:
 def _refresh(tokens: dict) -> dict | None:
     if not tokens.get("refresh_token") or not CLIENT_ID:
         return None
+    url = f"{OAUTH_BASE}/api/auth/oauth/token"
+    proxy = get_proxy()
+    debug_log(f"POST {url} | grant_type=refresh_token | proxy={proxy.get('http') if proxy else None}")
     response = requests.post(
-        f"{OAUTH_BASE}/api/auth/oauth/token",
+        url,
         data={
             "grant_type": "refresh_token",
             "refresh_token": tokens["refresh_token"],
             "client_id": CLIENT_ID,
         },
         timeout=30,
+        proxies=proxy,
     )
+    debug_log(f"POST {url} -> {response.status_code}")
     if response.status_code != 200:
         return None
     return _store_token_response(response.json())
@@ -282,8 +289,11 @@ def interactive_login() -> str:
     if "error" in result:
         raise CivitaiNodeError(f"Civitai login failed: {result.get('error_description') or result['error']}")
 
+    url = f"{OAUTH_BASE}/api/auth/oauth/token"
+    proxy = get_proxy()
+    debug_log(f"POST {url} | grant_type=authorization_code | proxy={proxy.get('http') if proxy else None}")
     response = requests.post(
-        f"{OAUTH_BASE}/api/auth/oauth/token",
+        url,
         data={
             "grant_type": "authorization_code",
             "code": result["code"],
@@ -292,7 +302,9 @@ def interactive_login() -> str:
             "redirect_uri": redirect_uri,
         },
         timeout=30,
+        proxies=proxy,
     )
+    debug_log(f"POST {url} -> {response.status_code}")
     if response.status_code != 200:
         raise CivitaiNodeError(f"Civitai token exchange failed ({response.status_code}): {response.text}")
     tokens = _store_token_response(response.json())

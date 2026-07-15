@@ -12,6 +12,9 @@ from urllib.parse import parse_qs, urlparse
 
 import requests
 
+from ._debug import debug_log
+from .proxy import get_proxy
+
 CIVITAI_MODELS_URL = "https://civitai.com/api/v1/models"
 CIVITAI_MODEL_API_URL = "https://civitai.com/api/v1/models/{model_id}"
 CIVITAI_VERSION_URL = "https://civitai.com/api/v1/model-versions/{version_id}"
@@ -246,7 +249,10 @@ def search(
     headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    response = requests.get(CIVITAI_MODELS_URL, params=params, headers=headers, timeout=timeout)
+    proxy = get_proxy()
+    debug_log(f"GET {CIVITAI_MODELS_URL} | params={dict(params)} | proxy={proxy.get('http') if proxy else None}")
+    response = requests.get(CIVITAI_MODELS_URL, params=params, headers=headers, timeout=timeout, proxies=proxy)
+    debug_log(f"GET {CIVITAI_MODELS_URL} -> {response.status_code}")
     response.raise_for_status()
     items = response.json().get("items") or []
     # `type_filter` is a backstop in case the API returns mixed types for some query combinations.
@@ -258,7 +264,11 @@ def _get_json(url: str, timeout: int, token: str | None):
     headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    response = requests.get(url, headers=headers, timeout=timeout)
+    url = CIVITAI_VERSION_URL.format(version_id=version_id)
+    proxy = get_proxy()
+    debug_log(f"GET {url} | proxy={proxy.get('http') if proxy else None}")
+    response = requests.get(url, headers=headers, timeout=timeout, proxies=proxy)
+    debug_log(f"GET {url} -> {response.status_code}")
     if response.status_code == 404:
         return None
     response.raise_for_status()
@@ -438,7 +448,11 @@ def components(air: str, timeout: int = 15, token: str | None = None) -> dict:
     headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    response = requests.get(CIVITAI_VERSION_URL.format(version_id=version_id), headers=headers, timeout=timeout)
+    url = CIVITAI_VERSION_URL.format(version_id=version_id)
+    proxy = get_proxy()
+    debug_log(f"GET {url} | proxy={proxy.get('http') if proxy else None}")
+    response = requests.get(url, headers=headers, timeout=timeout, proxies=proxy)
+    debug_log(f"GET {url} -> {response.status_code}")
     if response.status_code == 404:
         return {"primary": None, "vae": [], "clip": []}
     response.raise_for_status()

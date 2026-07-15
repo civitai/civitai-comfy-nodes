@@ -3,8 +3,10 @@ import time
 
 import requests
 
+from ._debug import debug_log
 from .config import ClientConfig
 from .errors import CivitaiNodeError, http_error_message
+from .proxy import get_proxy
 
 RETRYABLE_STATUSES = {429, 500, 502, 503, 504}
 TERMINAL_STATUSES = {"succeeded", "failed", "expired", "canceled"}
@@ -15,15 +17,34 @@ class OrchestrationClient:
         self.config = config
         self.session = requests.Session()
         self.session.headers["Authorization"] = f"Bearer {config.token}"
+        raw_proxy = config.proxy_url or get_proxy()
+        if raw_proxy:
+            if isinstance(raw_proxy, dict):
+                proxies = {}
+                for key in ("http", "https", "socks5", "socks5h"):
+                    val = raw_proxy.get(key)
+                    if val and isinstance(val, str):
+                        proxies[key] = val
+                if not proxies:
+                    url = raw_proxy.get("proxy_url") or raw_proxy.get("url")
+                    if url and isinstance(url, str):
+                        proxies = {"http": url, "https": url}
+                if proxies:
+                    self.session.proxies = proxies
+            elif isinstance(raw_proxy, str):
+                self.session.proxies = {"http": raw_proxy, "https": raw_proxy}
         # Older orchestrations type GET ?wait as bool and 400 on an integer; flipped off on first 400.
         self._get_wait_supported = True
 
     def _request(self, method: str, path: str, *, max_tries: int = 4, **kwargs) -> requests.Response:
         url = path if path.startswith("http") else f"{self.config.base_url}{path}"
         kwargs.setdefault("timeout", 120)
+        proxy = self.session.proxies.get("http") if self.session.proxies else None
+        debug_log(f"{method} {url} | params={kwargs.get('params')} | proxy={proxy}")
         last_response = None
         for attempt in range(max_tries):
             response = self.session.request(method, url, **kwargs)
+            debug_log(f"{method} {url} -> {response.status_code} (attempt {attempt + 1}/{max_tries})")
             if response.status_code not in RETRYABLE_STATUSES:
                 if response.status_code >= 400:
                     self._raise_api_error(response)
@@ -113,10 +134,15 @@ class OrchestrationClient:
             raise CivitaiNodeError(
                 f"Blob {blob.get('id', '?')} has no download URL (available={blob.get('available')})"
             )
+        proxy = self.session.proxies.get("http") if self.session.proxies else None
+        debug_log(f"GET {url} | proxy={proxy}")
         response = self.session.get(url, timeout=300)
+        debug_log(f"GET {url} -> {response.status_code}")
         if response.status_code in (401, 403) and blob.get("id"):
             refreshed = self.refresh_blob(blob["id"])
+            debug_log(f"GET {refreshed['url']} | proxy={proxy}")
             response = self.session.get(refreshed["url"], timeout=300)
+            debug_log(f"GET {refreshed['url']} -> {response.status_code}")
         if response.status_code >= 400:
             raise CivitaiNodeError(f"Blob download failed ({response.status_code}) for blob {blob.get('id', '?')}")
         return response.content
@@ -125,7 +151,10 @@ class OrchestrationClient:
         """Upload bytes via the presigned-blob endpoint; returns a URL usable as a recipe input."""
         presign = self._request("GET", "/v2/consumer/blobs/upload").json()
         upload_url = presign["uploadUrl"]
+        proxy = self.session.proxies.get("http") if self.session.proxies else None
+        debug_log(f"POST {upload_url} | content_type={content_type} | proxy={proxy}")
         response = self.session.post(upload_url, data=data, headers={"Content-Type": content_type}, timeout=300)
+        debug_log(f"POST {upload_url} -> {response.status_code}")
         if response.status_code >= 400:
             raise CivitaiNodeError(http_error_message(response.status_code, response.text))
         try:
