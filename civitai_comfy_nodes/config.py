@@ -8,6 +8,17 @@ from .errors import CivitaiAuthError, CivitaiNodeError
 
 DEFAULT_BASE_URL = "https://orchestration.civitai.com"
 
+# Proxy configuration — set this to route all HTTP(S) requests through a proxy.
+# Overridable via CIVITAI_COMFY_PROXY env var or the CivitaiProxy node.
+PROXY_URL: str | None = None
+PROXY_URL = "http://127.0.0.1:7898"
+
+
+def proxy_url() -> str | None:
+    """Resolve proxy URL: env var > module-level PROXY_URL."""
+    url = os.environ.get("CIVITAI_COMFY_PROXY") or PROXY_URL
+    return url.strip() if url else None
+
 # Workflows submitted by this pack carry two indexed tags so the gallery can scope its listing:
 # SOURCE_TAG (any workflow from this pack) and a per-session tag identifying the submitter.
 SOURCE_TAG = "civitai-comfy-nodes"
@@ -67,6 +78,7 @@ class ClientConfig:
     token: str
     allow_mature_content: bool = False
     timeout_minutes: float = 30.0
+    proxy_url: str = ""
 
 
 def base_url() -> str:
@@ -98,11 +110,13 @@ def resolve_config(api_config: dict | None = None, *, interactive: bool = True) 
     """Resolve auth + endpoint: CivitaiAuth node input > env var > stored API key > stored OAuth >
     (when `interactive`) browser login. With `interactive=False` (server routes), raise
     CivitaiAuthError instead of opening a browser."""
+    cfg = api_config or {}
     resolved_base = (
-        (api_config or {}).get("base_url") or os.environ.get("CIVITAI_ORCHESTRATION_URL") or DEFAULT_BASE_URL
+        cfg.get("base_url") or os.environ.get("CIVITAI_ORCHESTRATION_URL") or DEFAULT_BASE_URL
     ).rstrip("/")
-    allow_mature = bool((api_config or {}).get("allow_mature_content", False))
-    timeout_minutes = float((api_config or {}).get("timeout_minutes") or os.environ.get("CIVITAI_COMFY_TIMEOUT", 30))
+    allow_mature = bool(cfg.get("allow_mature_content", False))
+    timeout_minutes = float(cfg.get("timeout_minutes") or os.environ.get("CIVITAI_COMFY_TIMEOUT", 30))
+    resolved_proxy = cfg.get("proxy_url") or proxy_url() or ""
 
     mode = (api_config or {}).get("mode", "auto")
     token = (api_config or {}).get("api_token")
@@ -119,4 +133,5 @@ def resolve_config(api_config: dict | None = None, *, interactive: bool = True) 
         token=token,
         allow_mature_content=allow_mature,
         timeout_minutes=timeout_minutes,
+        proxy_url=resolved_proxy,
     )

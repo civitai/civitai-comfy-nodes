@@ -9,6 +9,8 @@ on, lowercase) to the Civitai `baseModel` strings that belong to it.
 
 import requests
 
+from .proxy import get_proxy
+
 CIVITAI_MODELS_URL = "https://civitai.com/api/v1/models"
 CIVITAI_VERSION_URL = "https://civitai.com/api/v1/model-versions/{version_id}"
 CIVITAI_MODEL_URL = "https://civitai.com/models/{model_id}?modelVersionId={version_id}"
@@ -219,7 +221,7 @@ def search(
     headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    response = requests.get(CIVITAI_MODELS_URL, params=params, headers=headers, timeout=timeout)
+    response = requests.get(CIVITAI_MODELS_URL, params=params, headers=headers, timeout=timeout, proxies=get_proxy())
     response.raise_for_status()
     items = response.json().get("items") or []
     # `type_filter` is a backstop in case the API returns mixed types for some query combinations.
@@ -236,7 +238,7 @@ def lookup(air: str, timeout: int = 15, token: str | None = None) -> dict | None
     headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    response = requests.get(CIVITAI_VERSION_URL.format(version_id=version_id), headers=headers, timeout=timeout)
+    response = requests.get(CIVITAI_VERSION_URL.format(version_id=version_id), headers=headers, timeout=timeout, proxies=get_proxy())
     if response.status_code == 404:
         return None
     response.raise_for_status()
@@ -342,7 +344,7 @@ def components(air: str, timeout: int = 15, token: str | None = None) -> dict:
     headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    response = requests.get(CIVITAI_VERSION_URL.format(version_id=version_id), headers=headers, timeout=timeout)
+    response = requests.get(CIVITAI_VERSION_URL.format(version_id=version_id), headers=headers, timeout=timeout, proxies=get_proxy())
     if response.status_code == 404:
         return {"primary": None, "vae": [], "clip": []}
     response.raise_for_status()

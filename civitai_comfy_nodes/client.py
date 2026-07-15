@@ -5,6 +5,7 @@ import requests
 
 from .config import ClientConfig
 from .errors import CivitaiNodeError, http_error_message
+from .proxy import get_proxy
 
 RETRYABLE_STATUSES = {429, 500, 502, 503, 504}
 TERMINAL_STATUSES = {"succeeded", "failed", "expired", "canceled"}
@@ -15,6 +16,9 @@ class OrchestrationClient:
         self.config = config
         self.session = requests.Session()
         self.session.headers["Authorization"] = f"Bearer {config.token}"
+        proxy_url = config.proxy_url or get_proxy()
+        if proxy_url:
+            self.session.proxies = proxy_url if isinstance(proxy_url, dict) else {"http": proxy_url, "https": proxy_url}
         # Older orchestrations type GET ?wait as bool and 400 on an integer; flipped off on first 400.
         self._get_wait_supported = True
 

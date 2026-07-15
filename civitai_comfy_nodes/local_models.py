@@ -10,6 +10,7 @@ import requests
 
 from . import comfy_compat
 from .errors import CivitaiNodeError
+from .proxy import get_proxy
 
 CIVITAI_DOWNLOAD_URL = "https://civitai.com/api/download/models/{version_id}"
 USER_AGENT = "civitai-comfy-nodes/0.1 (+https://github.com/civitai/civitai-comfy-nodes)"
@@ -115,7 +116,7 @@ def download_model(
     if token:
         headers["Authorization"] = f"Bearer {token}"
     url = download_url or CIVITAI_DOWNLOAD_URL.format(version_id=version_id)
-    response = requests.get(url, headers=headers, stream=True, timeout=60, allow_redirects=True)
+    response = requests.get(url, headers=headers, stream=True, timeout=60, allow_redirects=True, proxies=get_proxy())
     if response.status_code >= 400:
         response.close()
         hint = " (this model may be gated — connect a Civitai Auth node)" if response.status_code in (401, 403) else ""

@@ -1,9 +1,51 @@
-"""Hand-written nodes: auth/config and convenience wrappers around awkward recipes."""
+"""Hand-written nodes: auth/config, proxy, and convenience wrappers around awkward recipes."""
 
 import json
 
 from .base import CivitaiRecipeNodeBase, F
 from .errors import CivitaiNodeError
+
+
+class CivitaiProxy:
+    """HTTP proxy configuration for all Civitai ComfyUI nodes. Place this node in your workflow
+    and all HTTP requests made by this node pack will be routed through the proxy. The proxy
+    only affects this pack — other ComfyUI custom nodes are unaffected. You can also set the
+    CIVITAI_COMFY_PROXY environment variable instead of using this node."""
+
+    CATEGORY = "Civitai"
+    FUNCTION = "configure"
+    RETURN_TYPES = ("CIVITAI_PROXY",)
+    RETURN_NAMES = ("proxy_config",)
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "enabled": (
+                    "BOOLEAN",
+                    {"default": True, "tooltip": "Enable or disable the proxy"},
+                ),
+            },
+            "optional": {
+                "proxy_url": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "multiline": False,
+                        "tooltip": "HTTP proxy URL (e.g. http://127.0.0.1:7890 or socks5://127.0.0.1:1080)",
+                    },
+                ),
+            },
+        }
+
+    def configure(self, enabled=True, proxy_url=""):
+        from . import proxy
+
+        if enabled and proxy_url.strip():
+            proxy.set_proxy(proxy_url.strip())
+        else:
+            proxy.set_proxy(None)
+        return ({"enabled": enabled and bool(proxy_url.strip()), "proxy_url": proxy_url.strip()},)
 
 
 class CivitaiAuth:
@@ -36,10 +78,17 @@ class CivitaiAuth:
                 ),
                 "allow_mature_content": ("BOOLEAN", {"default": False}),
                 "timeout_minutes": ("FLOAT", {"default": 30.0, "min": 1.0, "max": 720.0, "step": 1.0}),
+                "proxy_url": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "tooltip": "HTTP proxy URL (e.g. http://127.0.0.1:7890). Overrides CIVITAI_COMFY_PROXY env var and the CivitaiProxy node.",
+                    },
+                ),
             },
         }
 
-    def configure(self, mode, api_token="", base_url="", allow_mature_content=False, timeout_minutes=30.0):
+    def configure(self, mode, api_token="", base_url="", allow_mature_content=False, timeout_minutes=30.0, proxy_url=""):
         config = {
             "mode": mode,
             "allow_mature_content": allow_mature_content,
@@ -49,6 +98,8 @@ class CivitaiAuth:
             config["api_token"] = api_token
         if base_url:
             config["base_url"] = base_url
+        if proxy_url.strip():
+            config["proxy_url"] = proxy_url.strip()
         return (config,)
 
 
@@ -409,6 +460,7 @@ class CivitaiEmbeddingSelector:
 
 
 NODE_CLASS_MAPPINGS = {
+    "CivitaiProxy": CivitaiProxy,
     "CivitaiAuth": CivitaiAuth,
     "CivitaiChatSimple": CivitaiChatSimple,
     "CivitaiLoraLoader": CivitaiLoraLoader,
@@ -418,6 +470,7 @@ NODE_CLASS_MAPPINGS = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
+    "CivitaiProxy": "Civitai Proxy",
     "CivitaiAuth": "Civitai Auth",
     "CivitaiChatSimple": "Civitai Chat (Simple)",
     "CivitaiLoraLoader": "Civitai LoRA Selector",

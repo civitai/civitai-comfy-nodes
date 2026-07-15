@@ -21,6 +21,7 @@ import requests
 
 from . import comfy_compat
 from .errors import CivitaiNodeError
+from .proxy import get_proxy
 
 OAUTH_BASE = os.environ.get("CIVITAI_OAUTH_BASE", "https://civitai.com")
 # UserRead | AIServicesRead | AIServicesWrite | BuzzRead = 1 + 16384 + 32768 + 65536
@@ -135,6 +136,7 @@ def _refresh(tokens: dict) -> dict | None:
             "client_id": CLIENT_ID,
         },
         timeout=30,
+        proxies=get_proxy(),
     )
     if response.status_code != 200:
         return None
@@ -292,6 +294,7 @@ def interactive_login() -> str:
             "redirect_uri": redirect_uri,
         },
         timeout=30,
+        proxies=get_proxy(),
     )
     if response.status_code != 200:
         raise CivitaiNodeError(f"Civitai token exchange failed ({response.status_code}): {response.text}")
