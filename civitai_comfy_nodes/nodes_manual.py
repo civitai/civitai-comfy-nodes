@@ -4,6 +4,7 @@ import json
 
 from .base import CivitaiRecipeNodeBase, F
 from .errors import CivitaiNodeError
+from ._debug import debug_log
 
 
 class CivitaiProxy:
@@ -16,6 +17,7 @@ class CivitaiProxy:
     FUNCTION = "configure"
     RETURN_TYPES = ("CIVITAI_PROXY",)
     RETURN_NAMES = ("proxy_config",)
+    OUTPUT_NODE = True
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -41,11 +43,14 @@ class CivitaiProxy:
     def configure(self, enabled=True, proxy_url=""):
         from . import proxy
 
-        if enabled and proxy_url.strip():
-            proxy.set_proxy(proxy_url.strip())
+        url = proxy_url.get("proxy_url") if isinstance(proxy_url, dict) else proxy_url
+        url = url.strip() if isinstance(url, str) else ""
+        if enabled and url:
+            debug_log(f"proxy_url: {url}")
+            proxy.set_proxy(url)
         else:
             proxy.set_proxy(None)
-        return ({"enabled": enabled and bool(proxy_url.strip()), "proxy_url": proxy_url.strip()},)
+        return ({"enabled": enabled and bool(url), "proxy_url": url},)
 
 
 class CivitaiAuth:
@@ -98,8 +103,9 @@ class CivitaiAuth:
             config["api_token"] = api_token
         if base_url:
             config["base_url"] = base_url
-        if proxy_url.strip():
-            config["proxy_url"] = proxy_url.strip()
+        url = proxy_url.get("proxy_url") if isinstance(proxy_url, dict) else proxy_url
+        if isinstance(url, str) and url.strip():
+            config["proxy_url"] = url.strip()
         return (config,)
 
 

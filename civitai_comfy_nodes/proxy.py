@@ -17,7 +17,7 @@ def set_proxy(proxy_url: str | None) -> None:
 
 def get_proxy() -> dict[str, str] | None:
     from .config import proxy_url as _config_proxy_url
-
+    global _proxy_url
     proxy = _proxy_url or _config_proxy_url()
     if proxy:
         proxy = proxy.strip()

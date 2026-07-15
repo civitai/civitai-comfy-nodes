@@ -17,9 +17,22 @@ class OrchestrationClient:
         self.config = config
         self.session = requests.Session()
         self.session.headers["Authorization"] = f"Bearer {config.token}"
-        proxy_url = config.proxy_url or get_proxy()
-        if proxy_url:
-            self.session.proxies = proxy_url if isinstance(proxy_url, dict) else {"http": proxy_url, "https": proxy_url}
+        raw_proxy = config.proxy_url or get_proxy()
+        if raw_proxy:
+            if isinstance(raw_proxy, dict):
+                proxies = {}
+                for key in ("http", "https", "socks5", "socks5h"):
+                    val = raw_proxy.get(key)
+                    if val and isinstance(val, str):
+                        proxies[key] = val
+                if not proxies:
+                    url = raw_proxy.get("proxy_url") or raw_proxy.get("url")
+                    if url and isinstance(url, str):
+                        proxies = {"http": url, "https": url}
+                if proxies:
+                    self.session.proxies = proxies
+            elif isinstance(raw_proxy, str):
+                self.session.proxies = {"http": raw_proxy, "https": raw_proxy}
         # Older orchestrations type GET ?wait as bool and 400 on an integer; flipped off on first 400.
         self._get_wait_supported = True
 

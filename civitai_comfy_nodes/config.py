@@ -12,7 +12,6 @@ DEFAULT_BASE_URL = "https://orchestration.civitai.com"
 # Overridable via CIVITAI_COMFY_PROXY env var or the CivitaiProxy node.
 PROXY_URL: str | None = None
 
-
 def proxy_url() -> str | None:
     """Resolve proxy URL: env var > module-level PROXY_URL."""
     url = os.environ.get("CIVITAI_COMFY_PROXY") or PROXY_URL
