@@ -4,7 +4,7 @@ Set DEBUG = True in config.py or set this module-level flag to enable
 detailed request/response logging to the console.
 """
 
-DEBUG: bool = True
+DEBUG: bool = False
 
 
 def debug_log(msg: str) -> None:
