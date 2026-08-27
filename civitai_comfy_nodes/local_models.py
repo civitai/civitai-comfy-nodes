@@ -139,13 +139,14 @@ def _stream_to_file(
                     bar.update_absolute(written, total)
                 if on_progress is not None:
                     on_progress(written, total)
+        os.replace(tmp, path)
+        return digest.hexdigest()
     except BaseException:
-        response.close()
         if os.path.exists(tmp):
             os.remove(tmp)
         raise
-    os.replace(tmp, path)
-    return digest.hexdigest()
+    finally:
+        response.close()
 
 
 def stream_download(
