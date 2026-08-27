@@ -252,6 +252,7 @@ function render() {
         if (!res.ok || data.error) throw new Error(data.error || res.status);
       } catch (e) {
         err.textContent = `Cancel failed: ${e.message || e}`;
+        btn.disabled = false;
       }
     });
   }
