@@ -1,12 +1,15 @@
+import json
 import os
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 from . import oauth, prompt_context
 from .errors import CivitaiAuthError, CivitaiNodeError
 
 DEFAULT_BASE_URL = "https://orchestration.civitai.com"
+DEFAULT_LINK_URL = "https://link.civitai.com"
 
 # Workflows submitted by this pack carry two indexed tags so the gallery can scope its listing:
 # SOURCE_TAG (any workflow from this pack) and a per-session tag identifying the submitter.
@@ -54,6 +57,82 @@ def session_tag() -> str:
 
 def submit_tags() -> list[str]:
     return [SOURCE_TAG, session_tag()]
+
+
+def is_hosted_session() -> bool:
+    """A host (comfy-cloud) pins CIVITAI_COMFY_SESSION_ID on pooled containers, where per-user
+    features like Civitai Link must stay off."""
+    return bool((os.environ.get("CIVITAI_COMFY_SESSION_ID") or "").strip())
+
+
+def settings_store_path() -> Path:
+    override = os.environ.get("CIVITAI_COMFY_SETTINGS_STORE")
+    if override:
+        return Path(override)
+    return Path.home() / ".civitai" / "comfy-settings.json"
+
+
+def load_pack_settings() -> dict:
+    """Persisted pack settings written by the Settings dialog ({} when absent/corrupt)."""
+    try:
+        data = json.loads(settings_store_path().read_text())
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def save_pack_settings(data: dict) -> None:
+    path = settings_store_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2))
+    path.chmod(0o600)
+
+
+def stored_enable_link() -> bool:
+    return bool(load_pack_settings().get("enableLink", True))
+
+
+def stored_link_url() -> str | None:
+    url = (load_pack_settings().get("linkUrl") or "").strip()
+    return url or None
+
+
+def link_url() -> str:
+    return (os.environ.get("CIVITAI_LINK_URL") or stored_link_url() or DEFAULT_LINK_URL).rstrip("/")
+
+
+def link_key_store_path() -> Path:
+    override = os.environ.get("CIVITAI_COMFY_LINK_STORE")
+    if override:
+        return Path(override)
+    return Path.home() / ".civitai" / "comfy-link.json"
+
+
+def load_link_key() -> dict | None:
+    """The persisted Civitai Link pairing: ``{"key", "activated", "paired_at"}`` or None."""
+    try:
+        data = json.loads(link_key_store_path().read_text())
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return None
+    key = (data.get("key") or "").strip() if isinstance(data, dict) else ""
+    if not key:
+        return None
+    return {"key": key, "activated": bool(data.get("activated")), "paired_at": data.get("paired_at")}
+
+
+def save_link_key(key: str, *, activated: bool) -> None:
+    path = link_key_store_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    record = {"key": key, "activated": activated, "paired_at": datetime.now(timezone.utc).isoformat()}
+    path.write_text(json.dumps(record))
+    path.chmod(0o600)
+
+
+def clear_link_key() -> None:
+    try:
+        link_key_store_path().unlink()
+    except FileNotFoundError:
+        pass
 
 _NO_CREDS_MESSAGE = (
     "No Civitai credentials. Set the CIVITAI_API_TOKEN environment variable to a token from "

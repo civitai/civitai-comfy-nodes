@@ -300,3 +300,70 @@ def test_lora_loader_local_mode_applies_whole_stack(monkeypatch):
     assert [a for a, _ in downloaded] == ["urn:air:x:lora:civitai:1@2", "urn:air:x:lora:civitai:3@4"]
     assert applied == [("/urn:air:x:lora:civitai:1@2", 0.5), ("/urn:air:x:lora:civitai:3@4", 0.8)]
     assert model.startswith("M+") and clip.startswith("C+")
+
+
+class _StreamResp:
+    status_code = 200
+    headers = {"content-length": "10"}
+
+    def __init__(self, chunks=(b"abcde", b"fghij")):
+        self._chunks = chunks
+        self.closed = False
+
+    def iter_content(self, chunk_size=0):
+        yield from self._chunks
+
+    def close(self):
+        self.closed = True
+
+
+def test_stream_download_hashes_while_writing_and_reports_progress(monkeypatch, tmp_path):
+    import hashlib
+
+    monkeypatch.setattr(local_models.requests, "get", lambda *a, **k: _StreamResp())
+    progress = []
+    dest = tmp_path / "x.safetensors"
+    sha = local_models.stream_download("http://u", str(dest), on_progress=lambda w, t: progress.append((w, t)))
+    assert dest.read_bytes() == b"abcdefghij"
+    assert sha == hashlib.sha256(b"abcdefghij").hexdigest()
+    assert progress == [(5, 10), (10, 10)]
+    assert not (tmp_path / "x.safetensors.part").exists()
+
+
+def test_stream_download_cancel_removes_partial_file(monkeypatch, tmp_path):
+    import threading
+
+    resp = _StreamResp()
+    monkeypatch.setattr(local_models.requests, "get", lambda *a, **k: resp)
+    cancel = threading.Event()
+    dest = tmp_path / "x.safetensors"
+
+    def on_progress(written, total):
+        cancel.set()  # cancel after the first chunk lands
+
+    with pytest.raises(local_models.DownloadCanceledError):
+        local_models.stream_download("http://u", str(dest), on_progress=on_progress, cancel=cancel)
+    assert not dest.exists() and not (tmp_path / "x.safetensors.part").exists()
+    assert resp.closed
+
+
+def test_stream_download_http_error_carries_status(monkeypatch, tmp_path):
+    class _Denied:
+        status_code = 403
+        headers = {}
+
+        def close(self):
+            pass
+
+    captured = {}
+
+    def fake_get(url, headers=None, **kw):
+        captured["headers"] = headers
+        return _Denied()
+
+    monkeypatch.setattr(local_models.requests, "get", fake_get)
+    with pytest.raises(local_models.DownloadHttpError) as info:
+        local_models.stream_download("http://u", str(tmp_path / "x"), token="tok")
+    assert info.value.status_code == 403
+    assert captured["headers"]["Authorization"] == "Bearer tok"
+    assert isinstance(info.value, CivitaiNodeError)

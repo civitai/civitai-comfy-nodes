@@ -3,8 +3,11 @@ local (non-Civitai) nodes like KSampler. comfy/folder_paths imports are guarded 
 still imports under pytest without ComfyUI."""
 
 import glob
+import hashlib
 import os
 import re
+import threading
+from collections.abc import Callable
 
 import requests
 
@@ -33,6 +36,16 @@ AIR_TYPE_FOLDERS = {
 }
 
 
+class DownloadCanceledError(CivitaiNodeError):
+    pass
+
+
+class DownloadHttpError(CivitaiNodeError):
+    def __init__(self, message: str, status_code: int):
+        super().__init__(message)
+        self.status_code = status_code
+
+
 def version_id_from_air(air: str) -> str:
     match = re.search(r"@(\d+)", air or "")
     if not match:
@@ -47,11 +60,7 @@ def folder_for_air(air: str, default: str = "checkpoints") -> str:
     return AIR_TYPE_FOLDERS.get(air_type, default)
 
 
-# Civitai file `type` (the web app's `modelFileTypes`) -> the ComfyUI model folder. The download
-# folder follows the *file's* role when it's more specific than the model's AIR type — e.g. a
-# Checkpoint model whose primary file is a "Diffusion Model" must land in diffusion_models/, not
-# checkpoints/. "Model"/"Pruned Model" are deliberately absent: every model type's primary file
-# (LoRA, TextualInversion, …) carries them, so they say nothing — the AIR-type folder decides.
+# "Model"/"Pruned Model" are deliberately absent: every model type's primary file carries them.
 FILE_TYPE_FOLDERS = {
     "Diffusion Model": "diffusion_models",
     "UNet": "diffusion_models",
@@ -88,6 +97,71 @@ def _filename(response: requests.Response, version_id: str, prefix: str) -> str:
     return f"{prefix}{name}"
 
 
+def _open_download(url: str, token: str | None, *, label: str) -> requests.Response:
+    headers = {"User-Agent": USER_AGENT}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    response = requests.get(url, headers=headers, stream=True, timeout=60, allow_redirects=True)
+    if response.status_code >= 400:
+        status = response.status_code
+        response.close()
+        hint = " (this model may be gated — connect a Civitai Auth node)" if status in (401, 403) else ""
+        raise DownloadHttpError(f"Civitai download failed ({status}) for {label}{hint}", status)
+    return response
+
+
+def _stream_to_file(
+    response: requests.Response,
+    path: str,
+    *,
+    on_progress: Callable[[int, int], None] | None = None,
+    cancel: threading.Event | None = None,
+    in_execution: bool = False,
+) -> str:
+    """Stream the response body to `path` via a `.part` sibling; returns the body's SHA256 hex
+    (hashed as it streams, so no second read). `cancel` is checked per chunk."""
+    tmp = path + ".part"
+    total = int(response.headers.get("content-length") or 0)
+    bar = comfy_compat.progress_bar(total or 100) if in_execution else None
+    digest = hashlib.sha256()
+    written = 0
+    try:
+        with open(tmp, "wb") as out:
+            for chunk in response.iter_content(chunk_size=4 * 1024 * 1024):
+                if in_execution:
+                    comfy_compat.check_interrupted()
+                if cancel is not None and cancel.is_set():
+                    raise DownloadCanceledError("Download canceled")
+                out.write(chunk)
+                digest.update(chunk)
+                written += len(chunk)
+                if bar and total:
+                    bar.update_absolute(written, total)
+                if on_progress is not None:
+                    on_progress(written, total)
+    except BaseException:
+        response.close()
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        raise
+    os.replace(tmp, path)
+    return digest.hexdigest()
+
+
+def stream_download(
+    url: str,
+    dest_path: str,
+    *,
+    token: str | None = None,
+    on_progress: Callable[[int, int], None] | None = None,
+    cancel: threading.Event | None = None,
+    in_execution: bool = False,
+) -> str:
+    """Download `url` to exactly `dest_path` (no cache lookup, no name prefix); returns the SHA256 hex."""
+    response = _open_download(url, token, label=url)
+    return _stream_to_file(response, dest_path, on_progress=on_progress, cancel=cancel, in_execution=in_execution)
+
+
 def download_model(
     air: str,
     folder: str = "checkpoints",
@@ -108,45 +182,17 @@ def download_model(
     prompt is executing, so checking it would let an unrelated cancel abort this download."""
     version_id = version_id_from_air(air)
     dest_dir = _model_dir(folder)
-    # Additional files key on their file id so siblings sharing a folder (e.g. a model's several
-    # text encoders, all in text_encoders/) never collide. The primary file lands in its own
-    # type folder, separate from any component folder, so its plain version glob stays unambiguous.
+    # File id keeps sibling component files sharing a folder (several text encoders) from colliding.
     prefix = f"civitai_{version_id}_f{file_id}_" if file_id is not None else f"civitai_{version_id}_"
     cached = glob.glob(os.path.join(dest_dir, f"{prefix}*"))
     cached = [p for p in cached if not p.endswith(".part")]
     if cached:
         return cached[0]
 
-    headers = {"User-Agent": USER_AGENT}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
     url = download_url or CIVITAI_DOWNLOAD_URL.format(version_id=version_id)
-    response = requests.get(url, headers=headers, stream=True, timeout=60, allow_redirects=True)
-    if response.status_code >= 400:
-        response.close()
-        hint = " (this model may be gated — connect a Civitai Auth node)" if response.status_code in (401, 403) else ""
-        raise CivitaiNodeError(f"Civitai download failed ({response.status_code}) for version {version_id}{hint}")
-
+    response = _open_download(url, token, label=f"version {version_id}")
     path = os.path.join(dest_dir, _filename(response, version_id, prefix))
-    tmp = path + ".part"
-    total = int(response.headers.get("content-length") or 0)
-    bar = comfy_compat.progress_bar(total or 100) if in_execution else None
-    written = 0
-    try:
-        with open(tmp, "wb") as out:
-            for chunk in response.iter_content(chunk_size=4 * 1024 * 1024):
-                if in_execution:
-                    comfy_compat.check_interrupted()
-                out.write(chunk)
-                written += len(chunk)
-                if bar and total:
-                    bar.update_absolute(written, total)
-    except BaseException:
-        response.close()
-        if os.path.exists(tmp):
-            os.remove(tmp)
-        raise
-    os.replace(tmp, path)
+    _stream_to_file(response, path, in_execution=in_execution)
     return path
 
 

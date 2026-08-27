@@ -1,3 +1,5 @@
+import pytest
+
 from civitai_comfy_nodes import server_routes as sr
 
 
@@ -196,3 +198,71 @@ def test_guess_ext_sniffs_magic_bytes():
     assert sr._guess_ext("image", b"\xff\xd8\xff\xe0\x00\x10JFIF") == ".jpg"
     assert sr._guess_ext("video", b"\x00\x00\x00\x18ftypmp42") == ".mp4"
     assert sr._guess_ext("audio", b"not a known header") == ".flac"  # falls back by kind
+
+
+@pytest.fixture()
+def settings_store(tmp_path, monkeypatch):
+    monkeypatch.setenv("CIVITAI_COMFY_SETTINGS_STORE", str(tmp_path / "settings.json"))
+    monkeypatch.delenv("CIVITAI_LINK_URL", raising=False)
+    return tmp_path
+
+
+def test_pack_config_payload_defaults(settings_store):
+    payload = sr._pack_config_payload()
+    assert payload["enableLink"] is True
+    assert payload["linkUrl"] == ""
+    assert payload["linkUrlEffective"] == "https://link.civitai.com"
+    assert payload["linkUrlSource"] == "default"
+
+
+def test_apply_pack_config_update_link_keys_reconfigure_the_client(settings_store, monkeypatch):
+    calls = []
+    monkeypatch.setattr(sr.link, "reconfigure", lambda: calls.append(1))
+    sr._apply_pack_config_update({"enableLink": False, "linkUrl": "http://relay/"})
+    payload = sr._pack_config_payload()
+    assert payload["enableLink"] is False and payload["linkUrl"] == "http://relay"
+    assert payload["linkUrlSource"] == "stored"
+    assert calls == [1]
+    sr._apply_pack_config_update({"unrelated": True})
+    assert calls == [1]  # unrelated settings don't touch the socket
+    sr._apply_pack_config_update({"linkUrl": ""})
+    assert sr._pack_config_payload()["linkUrlSource"] == "default"
+    with pytest.raises(ValueError):
+        sr._apply_pack_config_update({"linkUrl": "ws://relay"})
+
+
+def test_link_pair_route_helper_delegates_after_validation(monkeypatch):
+    with pytest.raises(ValueError):
+        sr._link_pair({"code": "xyz"})
+    monkeypatch.setattr(sr.link, "pair", lambda code: {"paired": True, "code": code})
+    assert sr._link_pair({"code": "A1b2C3"}) == {"paired": True, "code": "A1b2C3"}
+
+
+def test_known_models_maps_library_keys_to_civitai_urls(tmp_path, monkeypatch):
+    from civitai_comfy_nodes import model_cache, model_resolve
+
+    monkeypatch.setenv("CIVITAI_COMFY_MODEL_CACHE", str(tmp_path / "cache.json"))
+    resolved = tmp_path / "loras" / "sub" / "a.safetensors"
+    resolved.parent.mkdir(parents=True)
+    resolved.write_bytes(b"a")
+    air = "urn:air:sd1:lora:civitai:82098@87153"
+    model_cache.put(resolved, hashes={"SHA256": "A"}, air=air, model_version_id=87153)
+    unresolved = tmp_path / "loras" / "b.safetensors"
+    unresolved.write_bytes(b"b")
+    model_cache.put(unresolved, hashes={"SHA256": "B"})
+    records = [
+        model_resolve.LocalModelRecord(folder="loras", name="sub/a.safetensors", path=str(resolved)),
+        model_resolve.LocalModelRecord(folder="loras", name="b.safetensors", path=str(unresolved)),
+        model_resolve.LocalModelRecord(folder="vae", name="c.safetensors", path=str(tmp_path / "missing")),
+    ]
+    monkeypatch.setattr(model_resolve, "scan_local_model_files", lambda roots=None: records)
+    monkeypatch.setattr(model_resolve, "model_roots_by_folder", lambda folders=None: {})
+
+    assert sr._known_models() == {
+        "loras/sub/a.safetensors": {
+            "air": air,
+            "modelId": 82098,
+            "modelVersionId": 87153,
+            "url": "https://civitai.com/models/82098?modelVersionId=87153",
+        }
+    }

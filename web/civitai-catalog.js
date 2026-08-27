@@ -76,7 +76,10 @@ function injectStyles() {
     .cvc-ml-import { background: #2563eb; color: #fff; border: none; border-radius: 6px;
       padding: 5px 10px; font: 600 12px system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
     .cvc-ml-import:hover { background: #1d4ed8; }
-    .cvc-ml-import::before { content: ""; display: inline-block; width: 1.2em; height: 1.2em;
+    .cvc-ml-civitai { display: inline-flex; align-items: center; margin-left: 6px; color: #60a5fa; opacity: .55;
+      line-height: 1; vertical-align: middle; }
+    .cvc-ml-civitai:hover { opacity: 1; }
+    .cvc-ml-import::before, .cvc-ml-civitai::before { content: ""; display: inline-block; width: 1.2em; height: 1.2em;
       vertical-align: -0.25em; margin-right: 5px; background-color: currentColor;
       -webkit-mask: url("${LOGO}") center/contain no-repeat; mask: url("${LOGO}") center/contain no-repeat; }
     .cvc-backdrop { position: fixed; inset: 0; z-index: 2147483647; background: rgba(0,0,0,.6);
@@ -883,6 +886,68 @@ function attachLibraryButton(input) {
   refresh.parentElement.insertBefore(btn, refresh);
 }
 
+// Model Library rows: `.tree-node.tree-leaf[data-testid="tree-node-root/<folder>/<file>"] > .node-content > .node-label`;
+// the key matches the server's folder/relative-name key.
+const LIBRARY_ROW_PREFIX = "tree-node-root/";
+const KNOWN_TTL_MS = 5000;
+let knownModels = null;
+let knownFetchedAt = 0;
+let knownFetch = null;
+
+async function fetchKnownModels() {
+  if (knownModels && Date.now() - knownFetchedAt < KNOWN_TTL_MS) return knownModels;
+  if (!knownFetch) {
+    knownFetch = fetch("/civitai/models/known")
+      .then((r) => (r.ok ? r.json() : {}))
+      .catch(() => ({}))
+      .then((data) => {
+        knownModels = data || {};
+        knownFetchedAt = Date.now();
+        knownFetch = null;
+        return knownModels;
+      });
+  }
+  return knownFetch;
+}
+
+function decorateLibraryRow(row, known) {
+  const key = (row.dataset.testid || "").slice(LIBRARY_ROW_PREFIX.length);
+  const existing = row.querySelector(".cvc-ml-civitai");
+  const entry = known[key];
+  if (!entry) {
+    existing?.remove();
+    return;
+  }
+  if (existing) {
+    existing.href = entry.url;
+    return;
+  }
+  const label = row.querySelector(".node-label");
+  if (!label) return;
+  injectStyles();
+  const a = document.createElement("a");
+  a.className = "cvc-ml-civitai";
+  a.href = entry.url;
+  a.target = "_blank";
+  a.rel = "noopener";
+  a.title = `Open on Civitai (${entry.air})`;
+  // The row itself adds the model to the graph on click and starts a drag on mousedown.
+  for (const type of ["click", "mousedown", "dragstart"]) a.addEventListener(type, (e) => e.stopPropagation());
+  a.draggable = false;
+  label.appendChild(a);
+}
+
+let decoratePending = false;
+const ROW_SELECTOR = `.tree-leaf[data-testid^="${LIBRARY_ROW_PREFIX}"]`;
+function decorateLibraryRows() {
+  if (decoratePending || !document.querySelector(ROW_SELECTOR)) return;
+  decoratePending = true;
+  fetchKnownModels().then((known) => {
+    decoratePending = false;
+    for (const row of document.querySelectorAll(ROW_SELECTOR)) decorateLibraryRow(row, known);
+  });
+}
+
 function installLibraryImport() {
   if (SESSION_PROXY_RE.test(location.pathname)) return;
   const obs = new MutationObserver(() => {
@@ -891,6 +956,7 @@ function installLibraryImport() {
       if (i.closest(".cvc-backdrop")) return;
       if (/search.*model|model.*search/i.test(i.placeholder)) attachLibraryButton(i);
     });
+    decorateLibraryRows();
   });
   obs.observe(document.body, { childList: true, subtree: true });
 }

@@ -1,1 +1,2 @@
 requests
+python-socketio[client]>=5.8,<6

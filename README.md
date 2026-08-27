@@ -34,7 +34,7 @@ Clone (or unzip) into your ComfyUI `custom_nodes` directory:
 ```bash
 cd ComfyUI/custom_nodes
 git clone https://github.com/civitai/civitai-comfy-nodes.git
-pip install -r civitai-comfy-nodes/requirements.txt   # just `requests`
+pip install -r civitai-comfy-nodes/requirements.txt   # `requests` + `python-socketio[client]`
 ```
 
 ## Authentication
@@ -118,6 +118,23 @@ result for a lightbox. Pull a result back into the graph three ways: **add to ca
 matching loader node — image→`LoadImage`, video/audio/3D→their loaders — wired to the imported file),
 **fill** a selected loader node, or **drag** a thumbnail onto the canvas. If no credentials are
 configured, the tab shows a connect panel (OAuth sign-in or paste an API key).
+
+## Civitai Link
+
+The pack is a [Civitai Link](https://civitai.com/user/account) client: pair it once and the
+**download via Civitai Link** button on any civitai.com model page downloads that model straight into
+the matching ComfyUI folder (`models/loras`, `models/checkpoints`, `models/diffusion_models`, …),
+verifies its SHA256, and refreshes the model lists. The site also sees which models you already have,
+and the Model Library shows a Civitai icon next to every model it recognises (click to open it).
+
+1. On civitai.com open **Civitai Link** (the link icon in the header), add an instance and copy its
+   6-character code.
+2. In ComfyUI open the **Civitai** sidebar tab and paste the code into the **Civitai Link** panel.
+
+The pairing is stored in `~/.civitai/comfy-link.json` and reconnects automatically after restarts.
+Removing a model from the site's Link panel deletes the file locally. Toggle the feature under
+**Settings › Civitai › Civitai Link**; a `CIVITAI_LINK_URL` env var (or the settings entry) points
+at a different relay. Link stays off in hosted comfy-cloud sessions.
 
 ## Development
 

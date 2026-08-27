@@ -21,7 +21,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install deps
-        run: pip install pytest ruff pillow numpy requests
+        run: pip install pytest ruff pillow numpy requests "python-socketio[client]"
 
       - name: Sync spec + regenerate + test
         env:
