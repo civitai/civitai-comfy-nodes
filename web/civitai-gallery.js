@@ -24,6 +24,7 @@ function injectStyles() {
       mask: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxNzggMTc4Ij48cGF0aCBkPSJNODkuMywyOS4ybDUyLDMwdjYwbC01MiwzMGwtNTItMzB2LTYwTDg5LjMsMjkuMiBNODkuMywxLjVsLTc2LDQzLjl2ODcuOGw3Niw0My45bDc2LTQzLjlWNDUuNEw4OS4zLDEuNUw4OS4zLDEuNXoiLz48cG9seWdvbiBwb2ludHM9IjEwNC4xLDk3LjIgODkuMiwxMDUuNyA3NC4zLDk3LjIgNzQuMyw4MC4yIDg5LjIsNzEuNyAxMDQuMSw4MC4yIDEyMi4zLDgwLjIgMTIyLjMsNjkuNyA4OS4zLDUwLjcgNTYuMyw2OS43IDU2LjMsMTA3LjggODkuMywxMjYuOCAxMjIuMywxMDcuOCAxMjIuMyw5Ny4yICIvPjwvc3ZnPg==") center/contain no-repeat; }
     .cvg-root { display: flex; flex-direction: column; height: 100%; color: #e4e4e7;
       font: 13px system-ui, sans-serif; box-sizing: border-box; }
+    .cvg-body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
     .cvg-bar { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-bottom: 1px solid #27272a; }
     .cvg-bar select, .cvg-btn { background: #27272a; color: #e4e4e7; border: 1px solid #3f3f46;
       border-radius: 7px; padding: 6px 9px; font: inherit; outline: none; cursor: pointer; }
@@ -382,13 +383,20 @@ function renderGallery(el) {
 async function init(el) {
   injectStyles();
   el.classList.add("cvg-root");
-  el.innerHTML = `<div class="cvg-msg">Loading…</div>`;
+  el.innerHTML = "";
+  const link = document.createElement("div");
+  el.appendChild(link);
+  window.civitaiLink?.renderPanel(link);
+  const body = document.createElement("div");
+  body.className = "cvg-body";
+  body.innerHTML = `<div class="cvg-msg">Loading…</div>`;
+  el.appendChild(body);
   try {
     const status = await (await fetch("/civitai/auth/status")).json();
-    if (status.authenticated) renderGallery(el);
-    else renderConnect(el, () => renderGallery(el));
+    if (status.authenticated) renderGallery(body);
+    else renderConnect(body, () => renderGallery(body));
   } catch (e) {
-    el.innerHTML = `<div class="cvg-msg">Civitai gallery unavailable: ${esc(e.message || e)}</div>`;
+    body.innerHTML = `<div class="cvg-msg">Civitai gallery unavailable: ${esc(e.message || e)}</div>`;
   }
 }
 

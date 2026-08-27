@@ -35,6 +35,14 @@ converts blob outputs to native Comfy types.
   blob download with expired-URL refresh, presigned uploads for URL-only media fields.
 - `civitai_comfy_nodes/config.py` + `oauth.py` — auth chain: CivitaiAuth node input >
   `CIVITAI_API_TOKEN` env > stored OAuth tokens (auto-refresh) > interactive PKCE login.
+- `civitai_comfy_nodes/link.py` + `link_protocol.py` — Civitai Link client. `link_protocol` is
+  pure (ModelType→folder maps, `commandStatus` shapes, progress math, activity ring);
+  `link.LinkClient` owns one relay socket (python-socketio, optional import) and the download
+  workers, and the module singleton (`register`/`reconfigure`/`pair`/`unpair`/`status`) is driven
+  by `server_routes` (`/civitai/link/*`, `enableLink`/`linkUrl` config keys) and rendered by
+  `web/civitai-link.js` inside the Civitai sidebar tab. Downloads reuse
+  `local_models.stream_download`; the installed list comes from `model_resolve.scan_local_model_files`
+  + `model_cache`, with `model_resolve.resolve_model_air` filling missing hashes in the background.
 - `civitai_comfy_nodes/comfy_compat.py` — guarded comfy imports; the package must always
   import (and pass tests) without ComfyUI installed.
 - `codegen/` — `ir.py` (spec parsing, discriminator expansion/flattening), `emit.py`
@@ -65,6 +73,22 @@ converts blob outputs to native Comfy types.
   (114689 = UserRead|AIServicesRead|AIServicesWrite|BuzzRead), access 1h / refresh 30d.
   Interactive login needs `CIVITAI_OAUTH_CLIENT_ID` (registered app with
   `http://localhost:18188/civitai/callback` as redirect URI).
+
+## Load-bearing Civitai Link facts (verified against link-service + civitai `shared-types.ts`)
+
+- The relay is a dumb pipe: `iam {type:'sd'}` must precede `join(key)` on **every** connect
+  (reconnects re-fire the `connect` handler); `commandStatus` sent before the join ack is dropped.
+- `upgradeKey` replaces the 6-char pairing code with a 128-hex key and the code stops working —
+  persist it immediately. `kicked` means the instance was deleted: drop the key, don't rejoin.
+- python-socketio runs handlers, acks and callbacks on its read-loop thread: never `sio.call()`
+  or block in a handler; every command runs on its own thread.
+- `resources:add` carries the SHA256 **uppercase**; `resources:list` must report it **lowercase**
+  (the site matches installed models by exact lowercase equality). `resources:remove` echoes our
+  own list entry back, so `path` is `folder/relative` for locating the file.
+- The site's download `url` is signed; an `Authorization` header breaks the signature — send the
+  token only on a 401/403 retry.
+- A safetensors header can't contain its own whole-file SHA256; header hashes are AutoV3-style
+  and resolve to the real SHA256 through the by-hash API (`model_resolve._with_canonical_sha256`).
 
 ## Cross-Repo Data Flow (spec sync)
 

@@ -3,11 +3,15 @@ Civitai sidebar can list the user's generations, and each node learns its expect
 No-op when imported outside ComfyUI (e.g. pytest)."""
 
 import asyncio
+import logging
 import os
+import re
 import uuid
 
-from . import catalog
+from . import catalog, link
 from .errors import CivitaiAuthError
+
+_log = logging.getLogger("civitai_comfy_nodes.server_routes")
 
 try:
     from aiohttp import web
@@ -229,6 +233,77 @@ def node_ecosystem_map() -> dict:
     return result
 
 
+def _broadcast_event(event: str, data: dict) -> None:
+    try:
+        from server import PromptServer  # ComfyUI runtime
+
+        PromptServer.instance.send_sync(event, data)
+    except Exception:
+        _log.debug("Could not broadcast %s frame", event, exc_info=True)
+
+
+def _pack_config_payload() -> dict:
+    from . import config as cfg
+
+    return {
+        "enableLink": cfg.stored_enable_link(),
+        "linkUrl": cfg.stored_link_url() or "",
+        "linkUrlEffective": cfg.link_url(),
+        "linkUrlSource": link.status()["urlSource"],
+    }
+
+
+def _apply_pack_config_update(body: dict) -> None:
+    """Validate a settings patch from POST /civitai/config and persist it. Raises ValueError on bad
+    input (the route maps it to HTTP 400)."""
+    from . import config as cfg
+
+    settings = cfg.load_pack_settings()
+    if "enableLink" in body:
+        settings["enableLink"] = bool(body.get("enableLink"))
+    if "linkUrl" in body:
+        url = (body.get("linkUrl") or "").strip().rstrip("/")
+        if url and not url.startswith(("http://", "https://")):
+            raise ValueError("Civitai Link URL must start with http:// or https://")
+        if url:
+            settings["linkUrl"] = url
+        else:
+            settings.pop("linkUrl", None)
+    cfg.save_pack_settings(settings)
+    if "enableLink" in body or "linkUrl" in body:
+        link.reconfigure()
+
+
+def _link_pair(body: dict) -> dict:
+    return link.pair(str((body or {}).get("code") or ""))
+
+
+_AIR_IDS_RE = re.compile(r":civitai:(\d+)@(\d+)")
+
+
+def _known_models() -> dict[str, dict]:
+    """Local model files already resolved to a Civitai version (from the hash cache, no hashing),
+    keyed by the Model Library's `folder/relative-name` node key."""
+    from . import link_protocol, model_cache, model_resolve
+
+    records = model_resolve.scan_local_model_files(model_resolve.model_roots_by_folder(link_protocol.LIST_FOLDERS))
+    cache = model_cache.bulk_get([record.path for record in records])
+    known: dict[str, dict] = {}
+    for record in records:
+        air = (cache.get(str(record.path)) or {}).get("air") or ""
+        match = _AIR_IDS_RE.search(air)
+        if not match:
+            continue
+        model_id, version_id = match.groups()
+        known[f"{record.folder}/{record.name.replace(os.sep, '/')}"] = {
+            "air": air,
+            "modelId": int(model_id),
+            "modelVersionId": int(version_id),
+            "url": catalog.CIVITAI_MODEL_URL.format(model_id=model_id, version_id=version_id),
+        }
+    return known
+
+
 if _server is not None:
 
     @_server.routes.get("/civitai/catalog/search")
@@ -322,6 +397,52 @@ if _server is not None:
         oauth.clear_credentials()
         return web.json_response({"ok": True})
 
+    @_server.routes.get("/civitai/config")
+    async def _civitai_config_get(request):
+        return web.json_response(_pack_config_payload())
+
+    @_server.routes.post("/civitai/config")
+    async def _civitai_config_post(request):
+        body = await request.json()
+        loop = asyncio.get_event_loop()
+        try:
+            await loop.run_in_executor(None, lambda: _apply_pack_config_update(body))
+        except ValueError as e:
+            return web.json_response({"error": str(e)}, status=400)
+        return web.json_response({"ok": True})
+
+    @_server.routes.get("/civitai/models/known")
+    async def _civitai_models_known(request):
+        loop = asyncio.get_event_loop()
+        return web.json_response(await loop.run_in_executor(None, _known_models))
+
+    @_server.routes.get("/civitai/link/status")
+    async def _civitai_link_status(request):
+        return web.json_response(link.status())
+
+    @_server.routes.post("/civitai/link/pair")
+    async def _civitai_link_pair(request):
+        body = await request.json()
+        loop = asyncio.get_event_loop()
+        try:
+            payload = await loop.run_in_executor(None, lambda: _link_pair(body))
+        except ValueError as e:
+            return web.json_response({"error": str(e)}, status=400)
+        return web.json_response(payload)
+
+    @_server.routes.post("/civitai/link/cancel")
+    async def _civitai_link_cancel(request):
+        body = await request.json()
+        try:
+            return web.json_response(link.cancel(str((body or {}).get("id") or "")))
+        except ValueError as e:
+            return web.json_response({"error": str(e)}, status=404)
+
+    @_server.routes.post("/civitai/link/unpair")
+    async def _civitai_link_unpair(request):
+        loop = asyncio.get_event_loop()
+        return web.json_response(await loop.run_in_executor(None, link.unpair))
+
     @_server.routes.get("/civitai/workflows/list")
     async def _civitai_workflows_list(request):
         cursor = request.query.get("cursor") or None
@@ -371,3 +492,7 @@ if _server is not None:
         except Exception as e:  # metadata/download failures -> picker toast
             return web.json_response({"error": str(e)}, status=502)
         return web.json_response(result)
+
+
+if _server is not None:
+    link.register(notify=_broadcast_event)

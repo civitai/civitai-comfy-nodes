@@ -51,3 +51,10 @@ def test_api_config_input_present_on_recipe_nodes():
         optional = cls.INPUT_TYPES().get("optional", {})
         assert "api_config" in optional, name
         assert optional["api_config"][0] == "CIVITAI_CONFIG", name
+
+
+def test_link_modules_import_without_the_comfy_runtime():
+    from civitai_comfy_nodes import link, link_protocol
+
+    assert isinstance(link.available(), bool)
+    assert link_protocol.LINK_TYPE_FOLDERS["LORA"] == "loras"
