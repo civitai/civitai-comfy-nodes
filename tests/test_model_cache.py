@@ -64,3 +64,38 @@ def test_put_without_air_stores_hashes_only(tmp_path, monkeypatch):
 def test_get_missing_file_returns_none(tmp_path, monkeypatch):
     monkeypatch.setenv("CIVITAI_COMFY_MODEL_CACHE", str(tmp_path / "cache.json"))
     assert model_cache.get(tmp_path / "does-not-exist.safetensors") is None
+
+
+def test_bulk_get_returns_only_fresh_entries(tmp_path, monkeypatch):
+    monkeypatch.setenv("CIVITAI_COMFY_MODEL_CACHE", str(tmp_path / "cache.json"))
+    fresh = _model(tmp_path)
+    stale = tmp_path / "stale.safetensors"
+    stale.write_bytes(b"v1")
+    model_cache.put(fresh, hashes={"SHA256": "ABC"})
+    model_cache.put(stale, hashes={"SHA256": "DEF"})
+    stale.write_bytes(b"v2-longer")
+
+    found = model_cache.bulk_get([fresh, stale, tmp_path / "missing.safetensors"])
+
+    assert set(found) == {str(fresh)}
+    assert found[str(fresh)]["hashes"] == {"SHA256": "ABC"}
+
+
+def test_find_by_hash_is_case_insensitive_and_ignores_changed_files(tmp_path, monkeypatch):
+    monkeypatch.setenv("CIVITAI_COMFY_MODEL_CACHE", str(tmp_path / "cache.json"))
+    model = _model(tmp_path)
+    model_cache.put(model, hashes={"SHA256": "ABC123"})
+
+    assert model_cache.find_by_hash("abc123") == str(model)
+    assert model_cache.find_by_hash("zzz") is None
+    model.write_bytes(b"changed-contents")
+    assert model_cache.find_by_hash("ABC123") is None
+
+
+def test_remove_drops_the_entry(tmp_path, monkeypatch):
+    monkeypatch.setenv("CIVITAI_COMFY_MODEL_CACHE", str(tmp_path / "cache.json"))
+    model = _model(tmp_path)
+    model_cache.put(model, hashes={"SHA256": "ABC"})
+    model_cache.remove(model)
+    assert model_cache.get(model) is None
+    model_cache.remove(model)  # idempotent

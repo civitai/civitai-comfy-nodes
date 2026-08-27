@@ -13,3 +13,7 @@ os.environ.setdefault(
     "CIVITAI_COMFY_MODEL_CACHE",
     os.path.join(tempfile.gettempdir(), "civitai-comfy-nodes-tests", "model-air-cache.json"),
 )
+os.environ.setdefault(
+    "CIVITAI_COMFY_LINK_STORE",
+    os.path.join(tempfile.gettempdir(), "civitai-comfy-nodes-tests", "nonexistent-link.json"),
+)

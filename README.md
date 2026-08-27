@@ -34,7 +34,7 @@ Clone (or unzip) into your ComfyUI `custom_nodes` directory:
 ```bash
 cd ComfyUI/custom_nodes
 git clone https://github.com/civitai/civitai-comfy-nodes.git
-pip install -r civitai-comfy-nodes/requirements.txt   # just `requests`
+pip install -r civitai-comfy-nodes/requirements.txt   # `requests` + `python-socketio[client]`
 ```
 
 ## Authentication
@@ -133,6 +133,22 @@ Nodes after `End` are not included in the submitted customComfy job.
 The markers are selection hints for **Run on Civitai**. When the cloud job returns an output asset,
 the node pack imports that asset into local Comfy and queues the downstream nodes after `End` as a
 local continuation.
+
+## Civitai Link
+
+The pack is a [Civitai Link](https://civitai.com/user/account) client: pair it once and the
+**download via Civitai Link** button on any civitai.com model page downloads that model straight into
+the matching ComfyUI folder (`models/loras`, `models/checkpoints`, `models/diffusion_models`, …),
+verifies its SHA256, and refreshes the model lists. The site also sees which models you already have.
+
+1. On civitai.com open **Civitai Link** (the link icon in the header), add an instance and copy its
+   6-character code.
+2. In ComfyUI open the **Civitai** sidebar tab and paste the code into the **Civitai Link** panel.
+
+The pairing is stored in `~/.civitai/comfy-link.json` and reconnects automatically after restarts.
+Removing a model from the site's Link panel deletes the file locally. Toggle the feature under
+**Settings › Civitai › Civitai Link**; a `CIVITAI_LINK_URL` env var (or the settings entry) points
+at a different relay. Link stays off in hosted comfy-cloud sessions.
 
 ## Development
 

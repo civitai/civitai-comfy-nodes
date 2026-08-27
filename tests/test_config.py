@@ -126,3 +126,45 @@ def test_session_tag_and_submit_tags(session_store, monkeypatch):
     monkeypatch.setenv("CIVITAI_COMFY_SESSION_ID", "abc")
     assert config.session_tag() == f"{config.SOURCE_TAG}:session:abc"
     assert config.submit_tags() == [config.SOURCE_TAG, f"{config.SOURCE_TAG}:session:abc"]
+
+
+@pytest.fixture()
+def link_store(tmp_path, monkeypatch):
+    monkeypatch.setenv("CIVITAI_COMFY_LINK_STORE", str(tmp_path / "link.json"))
+    monkeypatch.delenv("CIVITAI_LINK_URL", raising=False)
+    monkeypatch.delenv("CIVITAI_COMFY_SESSION_ID", raising=False)
+    return tmp_path / "link.json"
+
+
+def test_link_key_store_round_trip_is_private(link_store):
+    import os
+    import stat
+
+    assert config.load_link_key() is None
+    config.save_link_key("abc123", activated=False)
+    stored = config.load_link_key()
+    assert stored["key"] == "abc123" and stored["activated"] is False and stored["paired_at"]
+    assert stat.S_IMODE(os.stat(link_store).st_mode) == 0o600
+    config.save_link_key("f" * 128, activated=True)
+    assert config.load_link_key()["activated"] is True
+    config.clear_link_key()
+    config.clear_link_key()  # idempotent
+    assert config.load_link_key() is None
+    link_store.write_text("{not json")
+    assert config.load_link_key() is None
+
+
+def test_link_url_precedence_and_defaults(settings_store, link_store, monkeypatch):
+    assert config.link_url() == config.DEFAULT_LINK_URL
+    assert config.stored_enable_link() is True
+    config.save_pack_settings({"linkUrl": "http://stored/", "enableLink": False})
+    assert config.link_url() == "http://stored"
+    assert config.stored_enable_link() is False
+    monkeypatch.setenv("CIVITAI_LINK_URL", "http://env/")
+    assert config.link_url() == "http://env"
+
+
+def test_is_hosted_session_follows_the_pinned_session_env(link_store, monkeypatch):
+    assert config.is_hosted_session() is False
+    monkeypatch.setenv("CIVITAI_COMFY_SESSION_ID", " cloud ")
+    assert config.is_hosted_session() is True

@@ -9,6 +9,21 @@ The section matching the `pyproject.toml` version is published to the Comfy Regi
 [`.github/workflows/publish.yml`](.github/workflows/publish.yml). Add a new `## [x.y.z]`
 section at the top before bumping the version.
 
+## [0.5.0] - 2026-08-27
+
+### Added
+- **Civitai Link client**: pair the pack with civitai.com from the Civitai sidebar tab, then the
+  site's "download via Civitai Link" button downloads models into the matching ComfyUI model
+  folder (SHA256-verified, progress reported back, model lists refreshed). The site shows which
+  models are already installed; removing one from the site deletes it locally. New dependency
+  `python-socketio[client]`; toggle under Settings › Civitai › Civitai Link.
+
+### Changed
+- `download_model` streams through a shared core that hashes while writing and supports
+  cancellation outside a running prompt.
+- Local-model resolution keeps the canonical whole-file SHA256 from the Civitai by-hash lookup,
+  so safetensors resolved via their embedded hash no longer need a full read.
+
 ## [0.4.0] - 2026-07-06
 
 ### Added

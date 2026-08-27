@@ -10,6 +10,7 @@ Best-effort: any IO/JSON error degrades to "no cache" rather than failing the of
 import json
 import os
 import threading
+from collections.abc import Iterable
 from pathlib import Path
 
 _lock = threading.Lock()
@@ -49,20 +50,50 @@ def _write(data: dict) -> None:
         pass
 
 
+def _fresh(entry, path: str | os.PathLike[str]) -> dict | None:
+    if not isinstance(entry, dict):
+        return None
+    identity = _identity(path)
+    if identity is None or entry.get("size") != identity[0] or entry.get("mtime_ns") != identity[1]:
+        return None
+    return entry
+
+
 def get(path: str | os.PathLike[str]) -> dict | None:
     """Return the cached entry for ``path`` when the file is unchanged (size + mtime match), else
     None. Entry shape: ``{"size", "mtime_ns", "hashes": {...}, "air": str|None, "model_version_id"}``.
     """
-    identity = _identity(path)
-    if identity is None:
-        return None
     with _lock:
         entry = _read().get(str(path))
-    if not isinstance(entry, dict):
+    return _fresh(entry, path)
+
+
+def bulk_get(paths: Iterable[str | os.PathLike[str]]) -> dict[str, dict]:
+    """Fresh entries for many paths from a single read of the store, keyed by ``str(path)``."""
+    with _lock:
+        data = _read()
+    found: dict[str, dict] = {}
+    for path in paths:
+        entry = _fresh(data.get(str(path)), path)
+        if entry is not None:
+            found[str(path)] = entry
+    return found
+
+
+def find_by_hash(sha256: str) -> str | None:
+    """The path of a still-unchanged cached file whose SHA256 matches (case-insensitive), or None."""
+    wanted = (sha256 or "").strip().lower()
+    if not wanted:
         return None
-    if entry.get("size") != identity[0] or entry.get("mtime_ns") != identity[1]:
-        return None
-    return entry
+    with _lock:
+        data = _read()
+    for path, entry in data.items():
+        if not isinstance(entry, dict):
+            continue
+        cached = str((entry.get("hashes") or {}).get("SHA256") or "").lower()
+        if cached == wanted and _fresh(entry, path) is not None:
+            return path
+    return None
 
 
 def put(
@@ -83,3 +114,10 @@ def put(
         data = _read()
         data[str(path)] = entry
         _write(data)
+
+
+def remove(path: str | os.PathLike[str]) -> None:
+    with _lock:
+        data = _read()
+        if data.pop(str(path), None) is not None:
+            _write(data)

@@ -12,6 +12,8 @@ const IDS = {
   gpu: "Civitai.gpuGeneration",
   enableOffload: "Civitai.enableOffload",
   enableRecipeNodes: "Civitai.enableRecipeNodes",
+  enableLink: "Civitai.enableLink",
+  linkUrl: "Civitai.linkUrl",
 };
 
 // Start suppressed: ComfyUI may fire each setting's onChange with its persisted value during init.
@@ -64,6 +66,16 @@ app.registerExtension({
       onChange: (value) => pushConfig({ enableOffload: !!value }),
     },
     {
+      id: IDS.enableLink,
+      name: "Civitai Link",
+      category: ["Civitai", "Features", "Civitai Link"],
+      type: "boolean",
+      defaultValue: true,
+      tooltip:
+        "Pair with civitai.com (Civitai sidebar tab) so the site's download button drops models into your model folders. Applies immediately.",
+      onChange: (value) => pushConfig({ enableLink: !!value }),
+    },
+    {
       id: IDS.url,
       name: "Orchestrator URL",
       category: ["Civitai", "Connection", "Orchestrator URL"],
@@ -72,6 +84,16 @@ app.registerExtension({
       tooltip:
         "Civitai Orchestration endpoint. Empty = https://orchestration.civitai.com. A CIVITAI_ORCHESTRATION_URL env var set on the server overrides this.",
       onChange: (value) => pushConfig({ orchestratorUrl: (value || "").trim() }),
+    },
+    {
+      id: IDS.linkUrl,
+      name: "Civitai Link server URL",
+      category: ["Civitai", "Connection", "Civitai Link server URL"],
+      type: "text",
+      defaultValue: "",
+      tooltip:
+        "Civitai Link relay. Empty = https://link.civitai.com. A CIVITAI_LINK_URL env var set on the server overrides this.",
+      onChange: (value) => pushConfig({ linkUrl: (value || "").trim() }),
     },
     {
       id: IDS.vram,
@@ -135,6 +157,8 @@ app.registerExtension({
       app.ui.settings.setSettingValue(IDS.sage, !!cfg.useSageAttention);
       app.ui.settings.setSettingValue(IDS.enableOffload, cfg.enableOffload !== false);
       app.ui.settings.setSettingValue(IDS.enableRecipeNodes, cfg.enableRecipeNodes !== false);
+      app.ui.settings.setSettingValue(IDS.enableLink, cfg.enableLink !== false);
+      app.ui.settings.setSettingValue(IDS.linkUrl, cfg.linkUrl || "");
       if (cfg.gpuGeneration) app.ui.settings.setSettingValue(IDS.gpu, cfg.gpuGeneration);
     } finally {
       setTimeout(() => {

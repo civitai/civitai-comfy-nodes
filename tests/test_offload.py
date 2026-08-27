@@ -884,3 +884,42 @@ def test_build_custom_comfy_offload_omits_trace_by_default():
     build = offload.build_custom_comfy_offload(prompt, model_records=[], nodepacks=[])
 
     assert "trace" not in build.steps[0]["input"]
+
+
+def test_version_file_for_hash_matches_any_hash_type_case_insensitively():
+    version = {
+        "files": [
+            {"type": "Model", "hashes": {"SHA256": "AAA", "AutoV3": "aaa3"}},
+            {"type": "VAE", "hashes": {"SHA256": "BBB", "AutoV3": "BBB3"}},
+        ]
+    }
+    assert offload.version_file_for_hash(version, "bbb3")["type"] == "VAE"
+    assert offload.version_file_for_hash(version, "aaa")["type"] == "Model"
+    assert offload.version_file_for_hash(version, "nope") is None
+    assert offload.version_file_for_hash(None, "aaa") is None
+
+
+def test_lookup_record_replaces_metadata_sha256_with_the_canonical_file_hash(tmp_path, monkeypatch):
+    # A header can't hold its own whole-file digest, so a metadata "SHA256" is a tensor hash; the
+    # version file record from the by-hash lookup carries the real one.
+    model = tmp_path / "m.safetensors"
+    model.write_bytes(b"x")
+    version = {
+        "id": 5,
+        "air": "urn:air:sd1:lora:civitai:1@5",
+        "files": [{"type": "Model", "hashes": {"SHA256": "REAL", "AutoV3": "TENSORHASH"}}],
+    }
+    monkeypatch.setattr(
+        offload, "lookup_model_version_by_hash", lambda value, **kw: version if value == "TENSORHASH" else None
+    )
+
+    record = offload._lookup_record(
+        model, {"SHA256": "BOGUS", "AutoV3": "TENSORHASH"}, "metadata", token=None, session=None, civitai_base_url=None
+    )
+
+    assert record.air == version["air"] and record.lookup_hash_type == "AutoV3"
+    assert record.hashes == {"AutoV3": "TENSORHASH", "SHA256": "REAL"}
+    computed = offload._lookup_record(
+        model, {"SHA256": "REAL2", "AutoV3": "TENSORHASH"}, "computed", token=None, session=None, civitai_base_url=None
+    )
+    assert computed.hashes["SHA256"] == "REAL"  # the API's value wins even over a computed one

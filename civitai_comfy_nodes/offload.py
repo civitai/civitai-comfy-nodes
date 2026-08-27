@@ -341,6 +341,31 @@ def lookup_model_version_by_hash(
     return data if isinstance(data, dict) and data.get("air") else None
 
 
+def version_file_for_hash(version: dict[str, Any] | None, hash_value: str) -> dict[str, Any] | None:
+    """The file entry of a model version whose `hashes` (any type) contain `hash_value`."""
+    wanted = (hash_value or "").strip().upper()
+    if not version or not wanted:
+        return None
+    for file in version.get("files") or []:
+        file_hashes = file.get("hashes") if isinstance(file, dict) else None
+        if isinstance(file_hashes, dict) and any(str(v).upper() == wanted for v in file_hashes.values()):
+            return file
+    return None
+
+
+def _with_canonical_sha256(hashes: dict[str, str], source: str, version: dict[str, Any], hash_value: str) -> dict:
+    # A file can't embed its own whole-file digest, so a "SHA256" read from safetensors metadata is
+    # some tensor-payload hash; only the version file record knows the real one.
+    merged = dict(hashes)
+    if source == "metadata":
+        merged.pop("SHA256", None)
+    file = version_file_for_hash(version, hash_value)
+    sha256 = (file or {}).get("hashes", {}).get("SHA256") if file else None
+    if sha256:
+        merged["SHA256"] = str(sha256).upper()
+    return merged
+
+
 def _lookup_record(
     path: str | os.PathLike[str],
     hashes: dict[str, str],
@@ -359,7 +384,7 @@ def _lookup_record(
                 folder="",
                 name=Path(path).name,
                 path=str(path),
-                hashes=hashes,
+                hashes=_with_canonical_sha256(hashes, source, version, hash_value),
                 hash_source=source,
                 air=version.get("air"),
                 model_version_id=version.get("id"),
