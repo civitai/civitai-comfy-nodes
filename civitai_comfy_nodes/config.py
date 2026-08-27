@@ -85,8 +85,10 @@ def save_pack_settings(data: dict) -> None:
     path = settings_store_path()
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2))
-    path.chmod(0o600)
-
+    try:
+        path.chmod(0o600)
+    except OSError:
+        pass
 
 def stored_enable_link() -> bool:
     return bool(load_pack_settings().get("enableLink", True))
