@@ -203,6 +203,7 @@ class LinkClient:
         self.room_ready = False
         config.clear_link_key()
         self.last_error = "civitai.com rejected this pairing — generate a new code and pair again"
+        _log.warning("Civitai Link: kicked by the relay (instance deleted on civitai.com?) — pairing cleared")
         self._wake.set()
         self._changed()
 

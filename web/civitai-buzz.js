@@ -1,0 +1,272 @@
+// Live Buzz cost meter for "Run on Civitai" offload runs. The backend
+// (server_routes._send_buzz) pushes `civitai.buzz` ws frames during the offload
+// poll — the pinned rate while running and the final charge at terminal. This
+// extension shows a ⚡ cost line on the running job's progress row (ComfyUI's
+// QueueProgressOverlay), ticking the per-second cost between frames (anchored on
+// the worker's first compute frame, replayed via the trace tail) and snapping to
+// the final value. Nothing is shown when idle.
+import { app } from "../../scripts/app.js";
+import { api } from "../../scripts/api.js";
+
+const PHASE = { IDLE: "idle", PREPARING: "preparing", RUNNING: "running", FINAL: "final" };
+const TICK_MS = 250;
+
+const run = {
+  phase: PHASE.IDLE,
+  promptId: null, // the offload workflow id this meter is tracking; set only by civitai.buzz frames
+  rate: 0,
+  anchorMs: null,
+  clockOffset: 0,
+  finalCost: null,
+  display: null,
+};
+let timer = null;
+let badge = null;
+const txnCache = new Map(); // prompt_id -> { transactions: [{amount,currency,refund}], total }
+
+function injectStyles() {
+  const style = document.createElement("style");
+  style.textContent = `
+    .cvz-buzz-q { position:absolute; right:4px; top:50%; transform:translateY(-50%); z-index:2;
+      padding:1px 6px; border-radius:9px; font:600 11px/1.4 system-ui,sans-serif; white-space:nowrap;
+      color:#ffd43b; background:rgba(255,212,59,.18); border:1px solid rgba(255,212,59,.45); }
+    .cvz-buzz-q[data-final="1"] { color:#69db7c; background:rgba(105,219,124,.18); border-color:rgba(105,219,124,.5); }
+    .cvz-buzz-item { position:absolute; top:3px; right:5px; z-index:2; pointer-events:none; white-space:nowrap;
+      padding:0 5px; border-radius:8px; font:600 10px/1.4 system-ui,sans-serif;
+      color:#ffd43b; background:rgba(255,212,59,.16); border:1px solid rgba(255,212,59,.4); }`;
+  document.head.appendChild(style);
+}
+
+const fmtRate = (r) => (Number.isInteger(r) ? String(r) : r.toFixed(2).replace(/\.?0+$/, ""));
+
+// Overlay the live value at the right of ComfyUI's running-progress panel (the "Total: …%" row).
+// We attach to the text COLUMN (which is position:relative and — unlike the row — Vue doesn't
+// reconcile our node away) and absolutely-position it, so it shows through the run without adding
+// a line to the fixed-height row. Re-attached if Vue re-renders; gone when the panel is.
+function render() {
+  const totalSpan = document.querySelector('span[title^="Total:"]');
+  const col = totalSpan && (totalSpan.closest(".flex-col") || totalSpan.parentElement?.parentElement);
+  if (!col || run.phase === PHASE.IDLE) { if (badge) badge.remove(); return; }
+  if (!badge) { badge = document.createElement("span"); badge.className = "cvz-buzz-q"; }
+  if (badge.parentElement !== col) col.appendChild(badge);
+  badge.textContent = `⚡ ${run.display == null ? 0 : run.display}`;
+  badge.dataset.final = run.phase === PHASE.FINAL ? "1" : "0";
+  badge.title = run.rate > 0 ? `${fmtRate(run.rate)} Buzz/sec` : "";
+}
+
+// --- job-details popup: a "Transactions" row from the cached terminal frame -----
+
+function txnText(entry) {
+  const parts = (entry?.transactions || [])
+    .map((t) => `${t.amount} ${t.currency ? t.currency + " " : ""}Buzz${t.refund ? " refunded" : ""}`);
+  if (parts.length) return parts.join(", ");
+  return entry?.total != null ? `${entry.total} Buzz` : null;
+}
+
+function txnTotal(entry) {
+  if (!entry) return null;
+  if (entry.total != null) return entry.total;
+  const txns = entry.transactions || [];
+  if (!txns.length) return null;
+  return txns.reduce((sum, t) => sum + (t.refund ? -t.amount : t.amount), 0);
+}
+
+// Inline ⚡cost on completed queue rows: the sidebar tags every row with `data-job-id`, so map each
+// to its cached terminal civitai.buzz frame. In-session only (txnCache isn't re-seeded on reload).
+function decorateQueueItems() {
+  for (const row of document.querySelectorAll("[data-job-id]")) {
+    const id = row.getAttribute("data-job-id");
+    const host = row.firstElementChild || row; // AssetsListItem root (relative + overflow-hidden)
+    const existing = host.querySelector(":scope > .cvz-buzz-item");
+    const total = txnTotal(txnCache.get(id));
+    if (total == null) { if (existing) existing.remove(); continue; }
+    if (existing && existing.dataset.promptId === id) continue; // already correct for this row
+    if (existing) existing.remove(); // virtualized row reused for a different job
+    const value = Math.ceil(Math.max(0, total));
+    const badge = document.createElement("span");
+    badge.className = "cvz-buzz-item";
+    badge.dataset.promptId = id;
+    badge.textContent = `⚡${value}`;
+    badge.title = `${value} Buzz`;
+    host.appendChild(badge);
+  }
+}
+
+function addRow(jobIdLabel, text, promptId) {
+  const container = jobIdLabel.closest(".flex.flex-col");
+  if (!container) return;
+  const grid = document.createElement("div");
+  grid.className = "grid grid-cols-2 items-center gap-2 cvz-buzz-txn";
+  grid.dataset.promptId = promptId;
+  const label = document.createElement("div");
+  label.className = jobIdLabel.className;
+  label.textContent = "Transactions";
+  const value = jobIdLabel.nextElementSibling.cloneNode(false);
+  const span = document.createElement("span");
+  span.className = "block min-w-0 truncate";
+  span.textContent = text;
+  span.title = text;
+  value.replaceChildren(span);
+  grid.append(label, value);
+  container.appendChild(grid);
+}
+
+// ComfyUI reuses one Job Details panel and swaps its content as you hover different jobs, so the row
+// must track the CURRENT Job ID — refresh it whenever the panel's job changes, not once.
+function injectJobDetails() {
+  for (const panel of document.querySelectorAll(".bg-interface-panel-surface")) {
+    const jobIdLabel = [...panel.querySelectorAll(".grid > div")]
+      .find((d) => /^\s*Job ID\s*$/.test(d.textContent || ""));
+    const promptId = jobIdLabel?.nextElementSibling?.querySelector("span")?.textContent?.trim();
+    if (!promptId) continue;
+    const existing = panel.querySelector(".cvz-buzz-txn");
+    if (existing && existing.dataset.promptId === promptId) continue; // already correct for this job
+    if (existing) existing.remove(); // panel reused for a different job — drop the stale row
+    const text = txnText(txnCache.get(promptId));
+    if (text) addRow(jobIdLabel, text, promptId);
+  }
+}
+
+const nowAligned = () => Date.now() + run.clockOffset;
+const num = (v) => (typeof v === "number" && isFinite(v) ? v : null);
+
+function stopTick() { if (timer) { clearInterval(timer); timer = null; } }
+
+function startTick() {
+  stopTick();
+  timer = setInterval(() => {
+    if (run.phase !== PHASE.RUNNING || run.rate <= 0 || run.anchorMs == null) return;
+    const elapsed = Math.max(0, (nowAligned() - run.anchorMs) / 1000);
+    run.display = Math.ceil(Math.max(1, run.rate * elapsed));
+    render();
+  }, TICK_MS);
+}
+
+function anchorCompute() {
+  if (run.phase === PHASE.FINAL || run.rate <= 0) return;
+  if (run.phase === PHASE.RUNNING && run.anchorMs != null) return;
+  if (run.anchorMs == null) run.anchorMs = nowAligned();
+  run.phase = PHASE.RUNNING;
+  startTick();
+  render();
+}
+
+function beginPreparing() {
+  if (run.phase === PHASE.PREPARING || run.phase === PHASE.RUNNING) return;
+  run.phase = PHASE.PREPARING;
+  run.anchorMs = null;
+  run.finalCost = null;
+  run.display = 0;
+  stopTick();
+  render();
+}
+
+function freeze() {
+  run.phase = PHASE.FINAL;
+  stopTick();
+  if (run.finalCost != null) run.display = Math.ceil(Math.max(0, run.finalCost));
+  render();
+}
+
+function onLifecycleEnd() {
+  if (run.phase === PHASE.IDLE) return;
+  freeze();
+}
+
+// Drop all meter state — used when a run that isn't the tracked offload starts (e.g. a plain local
+// "Run"), so a stale rate/badge from a prior offload can't bleed onto a free local run.
+function resetIdle() {
+  if (run.phase === PHASE.IDLE && run.promptId == null) return;
+  Object.assign(run, { phase: PHASE.IDLE, promptId: null, rate: 0, anchorMs: null, finalCost: null, display: null });
+  stopTick();
+  if (badge) { badge.remove(); badge = null; }
+}
+
+// A native execution frame drives the meter only if it belongs to the offload run a civitai.buzz
+// frame established. Local (free) runs never emit civitai.buzz, so their frames never match — the
+// meter stays idle for them. Backend synthetic + trace-relayed frames all carry the workflow id.
+function matchesRun(detail) {
+  if (run.promptId == null) return false;
+  const id = detail && typeof detail === "object" ? detail.prompt_id : null;
+  return id != null && String(id) === run.promptId;
+}
+
+function onBuzz(d) {
+  if (!d || typeof d !== "object") return;
+  const rate = num(d.buzz_per_second);
+  if (rate != null && rate > 0) run.rate = rate;
+  const computedAt = num(d.computed_at);
+  if (computedAt != null) run.clockOffset = computedAt - Date.now();
+
+  if (d.terminal) {
+    if (d.prompt_id) {
+      txnCache.set(String(d.prompt_id), {
+        transactions: Array.isArray(d.transactions) ? d.transactions : [],
+        total: num(d.cost_total),
+      });
+      injectJobDetails();
+      decorateQueueItems();
+    }
+    // A seed frame (reconnect replay of a past job) only warms the cache; don't settle the live meter.
+    if (!d.seed) { run.finalCost = num(d.estimated_cost); freeze(); }
+    return;
+  }
+
+  // A live buzz frame identifies the offload run to track; from here native frames can refine it.
+  if (d.prompt_id) run.promptId = String(d.prompt_id);
+  if (run.phase === PHASE.IDLE || run.phase === PHASE.FINAL) beginPreparing();
+  const startedAt = num(d.started_at);
+  if (startedAt != null) { run.anchorMs = startedAt; anchorCompute(); }
+  else render();
+}
+
+function nodeOf(detail) {
+  if (detail && typeof detail === "object") return detail.node ?? detail.display_node ?? null;
+  return detail ?? null;
+}
+
+function attachListeners() {
+  // Native execution frames only refine the tracked offload meter (matched by prompt_id). A frame
+  // from any other run — a plain local "Run" — resets the meter to idle so no stale badge lingers.
+  api.addEventListener("execution_start", (e) => (matchesRun(e.detail) ? beginPreparing() : resetIdle()));
+  api.addEventListener("progress", (e) => { if (matchesRun(e.detail)) anchorCompute(); });
+  api.addEventListener("executing", (e) => { if (nodeOf(e.detail) != null && matchesRun(e.detail)) anchorCompute(); });
+  api.addEventListener("execution_success", (e) => { if (matchesRun(e.detail)) onLifecycleEnd(); });
+  api.addEventListener("execution_error", (e) => { if (matchesRun(e.detail)) onLifecycleEnd(); });
+  api.addEventListener("execution_interrupted", (e) => { if (matchesRun(e.detail)) onLifecycleEnd(); });
+  api.addEventListener("civitai.buzz", (e) => onBuzz(e.detail));
+  api.addEventListener("unhandled", (e) => { if (e.detail && e.detail.type === "civitai.buzz") onBuzz(e.detail.detail); });
+
+  let sock = null;
+  const sniff = () => {
+    const s = api.socket;
+    if (!s || s === sock) return;
+    sock = s;
+    s.addEventListener("message", (ev) => {
+      if (typeof ev.data !== "string" || ev.data.indexOf("civitai.buzz") === -1) return;
+      try { const m = JSON.parse(ev.data); if (m && m.type === "civitai.buzz") onBuzz(m.data); } catch { /* not ours */ }
+    });
+  };
+  sniff();
+  api.addEventListener("status", sniff);
+  api.addEventListener("reconnected", sniff);
+}
+
+app.registerExtension({
+  name: "civitai.buzz",
+  async setup() {
+    injectStyles();
+    attachListeners();
+    // Keep the badge alive through the overlay's Vue re-renders and after the tick stops.
+    setInterval(() => { if (run.phase !== PHASE.IDLE) render(); }, 300);
+
+    // Re-stamp the popup row and inline badges on DOM changes — the queue rows are virtualized and
+    // get re-rendered. Debounced; idempotent.
+    let injectPending = false;
+    new MutationObserver(() => {
+      if (injectPending) return;
+      injectPending = true;
+      setTimeout(() => { injectPending = false; injectJobDetails(); decorateQueueItems(); }, 100);
+    }).observe(document.body, { childList: true, subtree: true });
+  },
+});
