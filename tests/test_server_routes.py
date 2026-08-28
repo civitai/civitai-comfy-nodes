@@ -461,6 +461,31 @@ def test_pack_config_payload_defaults(settings_store):
     assert payload["vramTiers"] == [24]
     assert payload["enableOffload"] is True
     assert payload["enableRecipeNodes"] is True
+    assert payload["buzzAccount"] == "blue"
+    assert payload["buzzAccounts"] == ["blue", "green", "yellow"]
+
+
+def test_apply_pack_config_update_buzz_account(settings_store):
+    sr._apply_pack_config_update({"buzzAccount": "yellow"})
+    assert sr._pack_config_payload()["buzzAccount"] == "yellow"
+    with pytest.raises(ValueError):
+        sr._apply_pack_config_update({"buzzAccount": "red"})
+    assert sr._pack_config_payload()["buzzAccount"] == "yellow"
+
+
+def test_buzz_accounts_payload_requires_credentials(monkeypatch):
+    from civitai_comfy_nodes import config as cfg
+    from civitai_comfy_nodes.errors import CivitaiAuthError
+
+    monkeypatch.setattr(cfg, "auth_state", lambda: (None, None))
+    with pytest.raises(CivitaiAuthError):
+        sr._buzz_accounts_payload()
+
+    from civitai_comfy_nodes import buzz
+
+    monkeypatch.setattr(cfg, "auth_state", lambda: ("tok", "apikey"))
+    monkeypatch.setattr(buzz, "fetch_buzz_accounts", lambda token: {"blue": 1, "green": 2, "yellow": 3, "_t": token})
+    assert sr._buzz_accounts_payload() == {"blue": 1, "green": 2, "yellow": 3, "_t": "tok"}
 
 
 def test_apply_pack_config_update_feature_toggles(settings_store):
@@ -752,6 +777,7 @@ def test_offload_submit_uses_wait_zero_and_requests_trace(monkeypatch):
     )
     monkeypatch.setattr(config_mod, "stored_min_vram_gb", lambda: 24)
     monkeypatch.setattr(config_mod, "stored_use_sage_attention", lambda: False)
+    monkeypatch.setattr(config_mod, "stored_buzz_account", lambda: "green")
     monkeypatch.setattr(client_mod, "OrchestrationClient", FakeClient)
     monkeypatch.setattr(offload_mod, "build_custom_comfy_offload", fake_build_offload)
 
@@ -762,6 +788,7 @@ def test_offload_submit_uses_wait_zero_and_requests_trace(monkeypatch):
     assert result["workflow"] == {"id": "wf-1", "status": "queued"}
     assert result["build"] is fake_build
     assert result["config"].token == "t"
+    assert result["config"].buzz_account == "green"  # the Pay-with wallet pins the offload charge
 
 
 def test_offload_submit_omits_trace_when_not_tailing(monkeypatch):

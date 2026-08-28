@@ -1014,9 +1014,10 @@ def _offload_submit(
     back immediately. The long-running poll + local replay happen later in `_offload_finalize`."""
     from . import offload
     from .client import OrchestrationClient
-    from .config import resolve_config, stored_min_vram_gb, stored_use_sage_attention
+    from .config import resolve_config, stored_buzz_account, stored_min_vram_gb, stored_use_sage_attention
 
     config = resolve_config(interactive=False)
+    config.buzz_account = stored_buzz_account()
     client = OrchestrationClient(config)
     started = time.monotonic()
     _log.info("offload submit: building customComfy payload (whatif=%s)", whatif)
@@ -1250,6 +1251,8 @@ def _pack_config_payload() -> dict:
         "vramTiers": cfg.VRAM_TIERS,
         "allowMatureContent": cfg.stored_mature_content(),
         "useSageAttention": cfg.stored_use_sage_attention(),
+        "buzzAccount": cfg.stored_buzz_account(),
+        "buzzAccounts": list(cfg.BUZZ_ACCOUNTS),
         "gpuGeneration": cfg.GPU_GENERATION_LABEL,
         "enableOffload": cfg.stored_enable_offload(),
         "enableRecipeNodes": cfg.stored_enable_recipe_nodes(),
@@ -1258,6 +1261,17 @@ def _pack_config_payload() -> dict:
         "linkUrlEffective": cfg.link_url(),
         "linkUrlSource": link.status()["urlSource"],
     }
+
+
+def _buzz_accounts_payload() -> dict:
+    """Balances for the Pay-with picker. Raises CivitaiAuthError without stored credentials."""
+    from . import buzz
+    from .config import _NO_CREDS_MESSAGE, auth_state
+
+    token, _source = auth_state()
+    if not token:
+        raise CivitaiAuthError(_NO_CREDS_MESSAGE)
+    return buzz.fetch_buzz_accounts(token)
 
 
 def _apply_pack_config_update(body: dict) -> None:
@@ -1289,6 +1303,11 @@ def _apply_pack_config_update(body: dict) -> None:
         settings["allowMatureContent"] = mode
     if "useSageAttention" in body:
         settings["useSageAttention"] = bool(body.get("useSageAttention"))
+    if "buzzAccount" in body:
+        account = body.get("buzzAccount")
+        if account not in cfg.BUZZ_ACCOUNTS:
+            raise ValueError(f"buzzAccount must be one of {list(cfg.BUZZ_ACCOUNTS)}")
+        settings["buzzAccount"] = account
     if "enableOffload" in body:
         settings["enableOffload"] = bool(body.get("enableOffload"))
     if "enableRecipeNodes" in body:
@@ -1444,6 +1463,17 @@ if _server is not None:
         except ValueError as e:
             return web.json_response({"error": str(e)}, status=400)
         return web.json_response({"ok": True})
+
+    @_server.routes.get("/civitai/buzz/accounts")
+    async def _civitai_buzz_accounts(request):
+        loop = asyncio.get_event_loop()
+        try:
+            payload = await loop.run_in_executor(None, _buzz_accounts_payload)
+        except CivitaiAuthError:
+            return web.json_response({"error": "auth_required"}, status=401)
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=502)
+        return web.json_response(payload)
 
     @_server.routes.get("/civitai/models/known")
     async def _civitai_models_known(request):

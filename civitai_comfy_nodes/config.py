@@ -19,6 +19,10 @@ GPU_GENERATION_LABEL = "Ada"
 VRAM_TIERS = [24]
 
 MATURE_CONTENT_MODES = ("auto", "true", "false")
+# Wallets a run may be charged to (orchestration `currencies` values). Blue is the free daily wallet
+# every account has, so it is the default just like the site's own generator.
+BUZZ_ACCOUNTS = ("blue", "green", "yellow")
+DEFAULT_BUZZ_ACCOUNT = "blue"
 
 # Workflows submitted by this pack carry two indexed tags so the gallery can scope its listing:
 # SOURCE_TAG (any workflow from this pack) and a per-session tag identifying the submitter.
@@ -119,6 +123,7 @@ class ClientConfig:
     token: str
     mature_content: str = "auto"
     timeout_minutes: float = 30.0
+    buzz_account: str | None = None
 
     @property
     def allow_mature_content(self) -> bool:
@@ -171,6 +176,11 @@ def stored_mature_content() -> str:
 
 def stored_use_sage_attention() -> bool:
     return bool(load_pack_settings().get("useSageAttention", True))
+
+
+def stored_buzz_account() -> str:
+    account = load_pack_settings().get("buzzAccount")
+    return account if account in BUZZ_ACCOUNTS else DEFAULT_BUZZ_ACCOUNT
 
 
 def stored_enable_offload() -> bool:

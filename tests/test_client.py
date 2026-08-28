@@ -110,3 +110,29 @@ def test_submit_steps_mature_false_blocks(monkeypatch):
     client, captured = _mature_client(monkeypatch, "false")
     client.submit_steps([], wait=0)
     assert captured["json"]["allowMatureContent"] is False
+
+
+def _wallet_client(monkeypatch, buzz_account):
+    client = OrchestrationClient(ClientConfig(base_url="http://x", token="t", buzz_account=buzz_account))
+    captured = {}
+
+    def fake_request(method, url, **kwargs):
+        captured.update(json=kwargs.get("json"))
+        return _Resp()
+
+    monkeypatch.setattr(client.session, "request", fake_request)
+    return client, captured
+
+
+def test_submit_steps_constrains_currencies_to_the_chosen_wallet(monkeypatch):
+    client, captured = _wallet_client(monkeypatch, "green")
+    client.submit_steps([], wait=0)
+    assert captured["json"]["currencies"] == ["green"]
+    assert captured["json"]["upgradeMode"] == "manual"  # never silently re-charge another wallet
+
+
+def test_submit_steps_without_wallet_lets_the_orchestrator_pick(monkeypatch):
+    client, captured = _wallet_client(monkeypatch, None)
+    client.submit_steps([], wait=0)
+    assert "currencies" not in captured["json"]
+    assert "upgradeMode" not in captured["json"]

@@ -56,6 +56,10 @@ class OrchestrationClient:
             body["tags"] = list(tags)
         if self.config.mature_content in ("true", "false"):
             body["allowMatureContent"] = self.config.mature_content == "true"
+        if self.config.buzz_account:
+            body["currencies"] = [self.config.buzz_account]
+            # The user picked this wallet; never let a mature-content upgrade silently re-charge another.
+            body["upgradeMode"] = "manual"
         return self._request("POST", "/v2/consumer/workflows", params=params, json=body).json()
 
     def submit_workflow(

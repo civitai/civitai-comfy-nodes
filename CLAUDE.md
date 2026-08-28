@@ -33,6 +33,12 @@ converts blob outputs to native Comfy types.
   per-currency Buzz cost) is rendered on the node by `web/civitai-status.js`.
 - `civitai_comfy_nodes/client.py` — `OrchestrationClient`: workflows submit/get/cancel,
   blob download with expired-URL refresh, presigned uploads for URL-only media fields.
+  `ClientConfig.buzz_account` becomes the workflow `currencies` constraint (+ `upgradeMode:
+  manual`); only `_offload_submit` sets it (pack setting `buzzAccount`, default `blue`) — recipe
+  nodes deliberately leave it `None` so the orchestrator picks the wallet.
+- `civitai_comfy_nodes/buzz.py` — wallet balances via civitai.com tRPC `buzz.getBuzzAccount`
+  (Bearer token; the orchestrator exposes no balance endpoint). Served at `/civitai/buzz/accounts`
+  for the toolbar picker in `web/civitai-run-bar.js`, which mounts after `.queue-button-group`.
 - `civitai_comfy_nodes/config.py` + `oauth.py` — auth chain: CivitaiAuth node input >
   `CIVITAI_API_TOKEN` env > stored OAuth tokens (auto-refresh) > interactive PKCE login.
 - `civitai_comfy_nodes/link.py` + `link_protocol.py` — Civitai Link client. `link_protocol` is

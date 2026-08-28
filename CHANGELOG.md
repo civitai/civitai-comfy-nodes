@@ -9,6 +9,16 @@ The section matching the `pyproject.toml` version is published to the Comfy Regi
 [`.github/workflows/publish.yml`](.github/workflows/publish.yml). Add a new `## [x.y.z]`
 section at the top before bumping the version.
 
+## [Unreleased]
+
+### Added
+- **Run on Civitai**: submit the current graph (or the region between the Offload Start/End
+  markers) as a `customComfy` workflow, with the remote run's progress, previews, logs and live
+  Buzz cost replayed onto the local canvas and the outputs imported back for the local tail.
+- Toolbar **Run on Civitai** button next to ComfyUI's Run button, plus a **Pay with** wallet
+  picker (Blue / Green / Yellow Buzz with live balances). The chosen wallet is stored in the pack
+  settings and pins offload runs to that wallet.
+
 ## [0.5.0] - 2026-08-27
 
 ### Added

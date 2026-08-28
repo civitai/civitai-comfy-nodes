@@ -73,6 +73,20 @@ def test_stored_getter_defaults(settings_store):
     assert config.stored_min_vram_gb() is None
     assert config.stored_mature_content() == "auto"
     assert config.stored_use_sage_attention() is True  # Sage Attention defaults on
+    assert config.stored_buzz_account() == "blue"
+
+
+def test_stored_buzz_account_ignores_unknown_wallets(settings_store):
+    config.save_pack_settings({"buzzAccount": "green"})
+    assert config.stored_buzz_account() == "green"
+    config.save_pack_settings({"buzzAccount": "red"})
+    assert config.stored_buzz_account() == "blue"
+
+
+def test_resolve_config_does_not_constrain_the_wallet(settings_with_key):
+    # Only offload runs pin a wallet; recipe nodes keep letting the orchestrator pick.
+    config.save_pack_settings({"buzzAccount": "yellow"})
+    assert config.resolve_config(interactive=False).buzz_account is None
 
 
 def test_base_url_precedence_env_over_stored_over_default(settings_store, monkeypatch):

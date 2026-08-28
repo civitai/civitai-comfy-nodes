@@ -121,7 +121,12 @@ configured, the tab shows a connect panel (OAuth sign-in or paste an API key).
 
 ### CustomComfy offload
 
-The **Run on Civitai** action submits the current graph as a `customComfy` workflow. Local model
+**Run on Civitai** sits in the toolbar right next to ComfyUI's own Run button, beside a **Pay with**
+pill that shows the selected Buzz wallet (Blue / Green / Yellow) and its balance. The wallet choice is
+saved in the pack settings and pins every offload run to that wallet (recipe nodes are unaffected and
+let the orchestrator pick). Turning **Run on Civitai (offload)** off in Settings hides both.
+
+The action submits the current graph as a `customComfy` workflow. Local model
 widgets are rewritten to AIRs when the model can be resolved by embedded metadata hash or computed
 hash, and installed custom node packs are advertised when a versioned nodepack AIR can be inferred.
 

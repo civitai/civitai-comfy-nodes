@@ -39,6 +39,7 @@ async function pushConfig(payload) {
     });
     const data = await res.json();
     if (!res.ok || data.error) throw new Error(data.error || res.status);
+    document.dispatchEvent(new CustomEvent("civitai.config.changed", { detail: payload }));
   } catch (e) {
     toast("error", "Civitai settings", String(e.message || e));
   }
