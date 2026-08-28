@@ -119,6 +119,26 @@ matching loader node — image→`LoadImage`, video/audio/3D→their loaders —
 **fill** a selected loader node, or **drag** a thumbnail onto the canvas. If no credentials are
 configured, the tab shows a connect panel (OAuth sign-in or paste an API key).
 
+### CustomComfy offload
+
+**Run on Civitai** sits in the toolbar right next to ComfyUI's own Run button, beside a **Pay with**
+pill that shows the selected Buzz wallet (Blue / Green / Yellow) and its balance. The wallet choice is
+saved in the pack settings and pins every offload run to that wallet (recipe nodes are unaffected and
+let the orchestrator pick). Turning **Run on Civitai (offload)** off in Settings hides both.
+
+The action submits the current graph as a `customComfy` workflow. Local model
+widgets are rewritten to AIRs when the model can be resolved by embedded metadata hash or computed
+hash, and installed custom node packs are advertised when a versioned nodepack AIR can be inferred.
+
+Use **Civitai/Offload/Civitai Offload Start** and **Civitai Offload End** to delimit a cloud region.
+Place `Start` to the left of the nodes to offload, put the normal Comfy workflow between the markers,
+include the user output node such as `SaveImage` inside that region, and place `End` to the right.
+Nodes after `End` are not included in the submitted customComfy job.
+
+The markers are selection hints for **Run on Civitai**. When the cloud job returns an output asset,
+the node pack imports that asset into local Comfy and queues the downstream nodes after `End` as a
+local continuation.
+
 ## Civitai Link
 
 The pack is a [Civitai Link](https://civitai.com/user/account) client: pair it once and the

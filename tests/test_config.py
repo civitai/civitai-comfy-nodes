@@ -45,6 +45,78 @@ def test_resolve_config_api_config_token_wins(no_creds):
 
 
 @pytest.fixture()
+def settings_store(tmp_path, monkeypatch):
+    monkeypatch.delenv("CIVITAI_ORCHESTRATION_URL", raising=False)
+    monkeypatch.setenv("CIVITAI_COMFY_SETTINGS_STORE", str(tmp_path / "settings.json"))
+    return tmp_path
+
+
+@pytest.fixture()
+def settings_with_key(settings_store, tmp_path, monkeypatch):
+    monkeypatch.delenv("CIVITAI_API_TOKEN", raising=False)
+    monkeypatch.setenv("CIVITAI_COMFY_API_KEY_STORE", str(tmp_path / "key"))
+    monkeypatch.setenv("CIVITAI_COMFY_OAUTH_STORE", str(tmp_path / "oauth.json"))
+    oauth.save_api_key("keytok")
+    return tmp_path
+
+
+def test_pack_settings_round_trip(settings_store):
+    assert config.load_pack_settings() == {}
+    config.save_pack_settings({"orchestratorUrl": "http://dev", "minVramGb": 24})
+    assert config.load_pack_settings() == {"orchestratorUrl": "http://dev", "minVramGb": 24}
+    assert config.stored_orchestrator_url() == "http://dev"
+    assert config.stored_min_vram_gb() == 24
+
+
+def test_stored_getter_defaults(settings_store):
+    assert config.stored_orchestrator_url() is None
+    assert config.stored_min_vram_gb() is None
+    assert config.stored_mature_content() == "auto"
+    assert config.stored_use_sage_attention() is True  # Sage Attention defaults on
+    assert config.stored_buzz_account() == "blue"
+
+
+def test_stored_buzz_account_ignores_unknown_wallets(settings_store):
+    config.save_pack_settings({"buzzAccount": "green"})
+    assert config.stored_buzz_account() == "green"
+    config.save_pack_settings({"buzzAccount": "red"})
+    assert config.stored_buzz_account() == "blue"
+
+
+def test_resolve_config_does_not_constrain_the_wallet(settings_with_key):
+    # Only offload runs pin a wallet; recipe nodes keep letting the orchestrator pick.
+    config.save_pack_settings({"buzzAccount": "yellow"})
+    assert config.resolve_config(interactive=False).buzz_account is None
+
+
+def test_base_url_precedence_env_over_stored_over_default(settings_store, monkeypatch):
+    assert config.base_url() == config.DEFAULT_BASE_URL
+    config.save_pack_settings({"orchestratorUrl": "http://stored"})
+    assert config.base_url() == "http://stored"  # stored beats default
+    monkeypatch.setenv("CIVITAI_ORCHESTRATION_URL", "http://env/")
+    assert config.base_url() == "http://env"  # env beats stored, trailing slash stripped
+
+
+def test_resolve_config_orchestrator_precedence(settings_with_key, monkeypatch):
+    config.save_pack_settings({"orchestratorUrl": "http://stored"})
+    assert config.resolve_config(interactive=False).base_url == "http://stored"
+    monkeypatch.setenv("CIVITAI_ORCHESTRATION_URL", "http://env")
+    assert config.resolve_config(interactive=False).base_url == "http://env"
+    cfg = config.resolve_config({"base_url": "http://node"}, interactive=False)
+    assert cfg.base_url == "http://node"  # node input beats env
+
+
+def test_resolve_config_mature_from_settings_and_node_override(settings_with_key):
+    assert config.resolve_config(interactive=False).mature_content == "auto"
+    config.save_pack_settings({"allowMatureContent": "true"})
+    cfg = config.resolve_config(interactive=False)
+    assert cfg.mature_content == "true"
+    assert cfg.allow_mature_content is True
+    # an explicit node value overrides the stored default
+    assert config.resolve_config({"allow_mature_content": False}, interactive=False).mature_content == "false"
+
+
+@pytest.fixture()
 def session_store(tmp_path, monkeypatch):
     monkeypatch.delenv("CIVITAI_COMFY_SESSION_ID", raising=False)
     monkeypatch.setenv("CIVITAI_COMFY_SESSION_STORE", str(tmp_path / "session-id"))
@@ -71,25 +143,11 @@ def test_session_tag_and_submit_tags(session_store, monkeypatch):
 
 
 @pytest.fixture()
-def settings_store(tmp_path, monkeypatch):
-    monkeypatch.setenv("CIVITAI_COMFY_SETTINGS_STORE", str(tmp_path / "settings.json"))
-    return tmp_path
-
-
-@pytest.fixture()
 def link_store(tmp_path, monkeypatch):
     monkeypatch.setenv("CIVITAI_COMFY_LINK_STORE", str(tmp_path / "link.json"))
     monkeypatch.delenv("CIVITAI_LINK_URL", raising=False)
     monkeypatch.delenv("CIVITAI_COMFY_SESSION_ID", raising=False)
     return tmp_path / "link.json"
-
-
-def test_pack_settings_store_round_trip(settings_store):
-    assert config.load_pack_settings() == {}
-    config.save_pack_settings({"enableLink": False})
-    assert config.load_pack_settings() == {"enableLink": False}
-    config.settings_store_path().write_text("{nope")
-    assert config.load_pack_settings() == {}
 
 
 def test_link_key_store_round_trip_is_private(link_store):
