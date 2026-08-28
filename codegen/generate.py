@@ -44,6 +44,11 @@ MODULES = {
     "training": ("training", "Civitai/Training"),
     "imageResourceTraining": ("training", "Civitai/Training"),
     "polyGen": ("misc", "Civitai/Misc"),
+    "imageToSvg": ("image", "Civitai/Image"),
+    "videoBackgroundRemoval": ("video", "Civitai/Video"),
+    "miniMaxMusic3": ("audio", "Civitai/Audio"),
+    "shieldstralModeration": ("analysis", "Civitai/Analysis"),
+    "model3DPreview": ("misc", "Civitai/Misc"),
 }
 
 
@@ -316,7 +321,9 @@ def assemble_node(
     # Variant nodes are titled by their discriminator path (ecosystem-first), which doubles as the
     # category submenu (Civitai/Image/<ecosystem>[/<engine>]). Non-discriminated nodes keep a
     # descriptive name (e.g. "Civitai Image Upscaler").
-    display_name = " / ".join(path_labels) if path_labels else f"Civitai {ir.title_case(recipe)}"
+    display_name = (
+        " / ".join(path_labels) if path_labels else recipe_overrides.get("title", f"Civitai {ir.title_case(recipe)}")
+    )
     if eco_key is None:
         category = base_category
     else:

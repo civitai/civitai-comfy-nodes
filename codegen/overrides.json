@@ -22,13 +22,18 @@
     "customComfy",
     "comfyNodepackSnapshot",
     "echo",
-    "textToImage"
+    "textToImage",
+    "prepareResource"
   ],
   "_provider_engines": ["fal"],
   "videoGen": {
     "display": {
       "ltx2": "LTX 2",
       "ltx2.3": "LTX 2.3",
+      "ltx2.5": "LTX 2.5",
+      "minimax-h3": "MiniMax H3",
+      "minimax-h3-comfy": "MiniMax H3 (Comfy)",
+      "gemini-omni": "Gemini Omni",
       "vidu-q3": "Vidu Q3",
       "kling-v3": "Kling V3",
       "happyHorse": "Happy Horse"
@@ -60,5 +65,13 @@
       "logitBias": "json"
     },
     "skip_fields": ["stream", "streamOptions", "logprobs", "topLogprobs", "chatTemplateKwargs"]
-  }
+  },
+  "xGuardModeration": {
+    "display": { "prompt": "XGuard Prompt", "text": "XGuard Text" }
+  },
+  "shieldstralModeration": {
+    "display": { "prompt": "Shieldstral Prompt", "text": "Shieldstral Text" }
+  },
+  "miniMaxMusic3": { "title": "Civitai MiniMax Music 3" },
+  "model3DPreview": { "title": "Civitai 3D Model Preview" }
 }

@@ -57,13 +57,13 @@ is organized **ecosystem-first** — `Civitai/<media>/<ecosystem>[/<engine>]/…
 (e.g. `Civitai/Image/zImage › zImage / turbo / createImage`, `Civitai/Image/anima/sdcpp`). Each
 discriminator variant is its own node so it shows only the inputs that variant actually uses:
 
-- **Civitai/Image** — Image Gen (one node per engine: Flux2, OpenAI, Google, Seedream, …), Upscaler, Background Removal
-- **Civitai/Video** — Video Gen (one node per engine: Wan, Kling, Vidu, Veo3, LTX, Sora, …), Upscaler, Interpolation, Enhancement
-- **Civitai/Audio** — Text To Speech, Transcription, Audio Captioning, ACE Step Audio
+- **Civitai/Image** — Image Gen (one node per engine: Flux2, OpenAI, Google, Seedream, …), Upscaler, Background Removal, Image To SVG
+- **Civitai/Video** — Video Gen (one node per engine: Wan, Kling, Vidu, Veo3, LTX, Sora, …), Upscaler, Interpolation, Enhancement, Background Removal
+- **Civitai/Audio** — Text To Speech, Transcription, Audio Captioning, ACE Step Audio, MiniMax Music 3
 - **Civitai/Text** — Chat Completion (plus a simple single-turn wrapper), Prompt Enhancement, Media Captioning
-- **Civitai/Analysis** — Media Rating, WD Tagging, XGuard Moderation
+- **Civitai/Analysis** — Media Rating, WD Tagging, XGuard Moderation, Shieldstral Moderation
 - **Civitai/Training** — Training, Image Resource Training
-- **Civitai/Misc** — Poly Gen (3D mesh generation)
+- **Civitai/Misc** — Poly Gen (3D mesh generation), 3D Model Preview
 - **Civitai/Loaders** — Model Selector, LoRA Selector, Embedding Selector, ControlNet (see below)
 
 Every node returns its media outputs as native Comfy types (IMAGE/VIDEO/AUDIO) plus

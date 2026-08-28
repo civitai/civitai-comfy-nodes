@@ -102,7 +102,7 @@ converts blob outputs to native Comfy types.
 
 New recipes fail generation loudly until assigned: a module in `MODULES`
 (codegen/generate.py) or a `_skip` entry in overrides.json. Skipped recipe groups:
-locally-trivial media utils, blob plumbing, model scans, preprocessImage, and the four
+locally-trivial media utils, blob plumbing, model scans, preprocessImage, and the five
 recipes without WorkflowStep mappings.
 
 ## Commands

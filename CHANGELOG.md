@@ -9,6 +9,30 @@ The section matching the `pyproject.toml` version is published to the Comfy Regi
 [`.github/workflows/publish.yml`](.github/workflows/publish.yml). Add a new `## [x.y.z]`
 section at the top before bumping the version.
 
+## [0.5.1] - 2026-08-28
+
+### Fixed
+- Re-synced the orchestration spec (previous sync: 2026-06-26). LTX 2.3 `duration` is a 3–20 s
+  slider again instead of a `[3, 20]` dropdown with a blank default, and Seedance `duration` goes
+  up to 30 s.
+
+### Added
+- Video Gen nodes for LTX 2.5, MiniMax H3 (direct and Comfy), Flux v3.0, Wan v3.0, Grok v1.5 and
+  Gemini Omni; Image Gen nodes for Boogu, Krea, Krea 2 raw/edit, Mageflow 4B, Qwen, Reve, Grok v2.0
+  and Nano Banana 2 Lite; Image To SVG (OmniSVG, StarVector, VTracer); Video Background Removal;
+  MiniMax Music 3; Shieldstral Moderation; 3D Model Preview; Poly Gen for Hunyuan3D, Trellis 2,
+  Meshy v6/v7 and Tripo; Comfy training.
+- `title` override in `codegen/overrides.json` for non-discriminated recipes whose auto-generated
+  display name reads badly.
+
+### Changed
+- XGuard Moderation nodes are titled "XGuard Prompt" / "XGuard Text" (were "prompt" / "text").
+- **Breaking:** node types renamed where orchestration versioned the engine — Grok image/video
+  (`CivitaiImageGenGrok*` → `…GrokV10*`/`…GrokV20*`, `CivitaiVideoGenGrok*` → `…GrokV10*`),
+  Meshy (`CivitaiPolyGenFalMeshy*` → `…MeshyV6*`/`…MeshyV7*`) and Krea 2 base
+  (`CivitaiImageGenComfyKrea2BaseCreateImage` → `…Krea2RawCreateImage`). Saved workflows using the
+  old types need those nodes re-added.
+
 ## [0.5.0] - 2026-08-27
 
 ### Added
