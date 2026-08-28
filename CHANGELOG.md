@@ -9,6 +9,15 @@ The section matching the `pyproject.toml` version is published to the Comfy Regi
 [`.github/workflows/publish.yml`](.github/workflows/publish.yml). Add a new `## [x.y.z]`
 section at the top before bumping the version.
 
+## [0.5.2] - 2026-08-28
+
+### Fixed
+- `first_frame` / `last_frame` on the LTX 2 / 2.3 / 2.5 and MiniMax H3 firstLastFrameToVideo nodes,
+  and `reference_image` on LTX 2.3 / 2.5 audioToVideo and Wan 2.7 editVideo, are IMAGE sockets
+  instead of text boxes. The orchestrator documents these `SourceImage` fields with a custom
+  summary that hides the DataURL marker the codegen keys on; they are now pinned as images in
+  `codegen/overrides.json`.
+
 ## [0.5.1] - 2026-08-28
 
 ### Fixed

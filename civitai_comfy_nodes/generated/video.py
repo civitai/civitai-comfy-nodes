@@ -534,8 +534,8 @@ class CivitaiVideoGenLtx2FirstLastFrameToVideo(CivitaiRecipeNodeBase):
         "steps": F("steps", "value"),
         "model": F("model", "value"),
         "loras": F("loras", "lora_strength_map"),
-        "first_frame": F("firstFrame", "value"),
-        "last_frame": F("lastFrame", "value"),
+        "first_frame": F("firstFrame", "image_inline"),
+        "last_frame": F("lastFrame", "image_inline"),
         "frame_guide_strength": F("frameGuideStrength", "value"),
     }
     OUTPUTS = (
@@ -562,18 +562,12 @@ class CivitaiVideoGenLtx2FirstLastFrameToVideo(CivitaiRecipeNodeBase):
                 "model": (["19b-dev", "19b-distilled"], {"default": "19b-dev"}),
                 "loras": ("CIVITAI_LORAS", {}),
                 "first_frame": (
-                    "STRING",
-                    {
-                        "tooltip": "First frame guide image. At least one of FirstFrame or LastFrame must be provided.",
-                        "default": "",
-                    },
+                    "IMAGE",
+                    {"tooltip": "First frame guide image. At least one of FirstFrame or LastFrame must be provided."},
                 ),
                 "last_frame": (
-                    "STRING",
-                    {
-                        "tooltip": "Last frame guide image. At least one of FirstFrame or LastFrame must be provided.",
-                        "default": "",
-                    },
+                    "IMAGE",
+                    {"tooltip": "Last frame guide image. At least one of FirstFrame or LastFrame must be provided."},
                 ),
                 "frame_guide_strength": (
                     "FLOAT",
@@ -868,8 +862,8 @@ class CivitaiVideoGenLtx23FirstLastFrameToVideo(CivitaiRecipeNodeBase):
         "loras": F("loras", "lora_strength_map"),
         "diffusion_model": F("diffusionModel", "air"),
         "quantity": F("quantity", "value"),
-        "first_frame": F("firstFrame", "value"),
-        "last_frame": F("lastFrame", "value"),
+        "first_frame": F("firstFrame", "image_inline"),
+        "last_frame": F("lastFrame", "image_inline"),
         "frame_guide_strength": F("frameGuideStrength", "value"),
     }
     OUTPUTS = (
@@ -915,18 +909,12 @@ class CivitaiVideoGenLtx23FirstLastFrameToVideo(CivitaiRecipeNodeBase):
                     },
                 ),
                 "first_frame": (
-                    "STRING",
-                    {
-                        "tooltip": "First frame guide image. At least one of FirstFrame or LastFrame must be provided.",
-                        "default": "",
-                    },
+                    "IMAGE",
+                    {"tooltip": "First frame guide image. At least one of FirstFrame or LastFrame must be provided."},
                 ),
                 "last_frame": (
-                    "STRING",
-                    {
-                        "tooltip": "Last frame guide image. At least one of FirstFrame or LastFrame must be provided.",
-                        "default": "",
-                    },
+                    "IMAGE",
+                    {"tooltip": "Last frame guide image. At least one of FirstFrame or LastFrame must be provided."},
                 ),
                 "frame_guide_strength": (
                     "FLOAT",
@@ -1055,7 +1043,7 @@ class CivitaiVideoGenLtx23AudioToVideo(CivitaiRecipeNodeBase):
         "loras": F("loras", "lora_strength_map"),
         "diffusion_model": F("diffusionModel", "air"),
         "quantity": F("quantity", "value"),
-        "reference_image": F("referenceImage", "value"),
+        "reference_image": F("referenceImage", "image_inline"),
         "source_audio": F("sourceAudio", "audio_url"),
         "image_guide_strength": F("imageGuideStrength", "value"),
         "audio_to_video_attention_scale": F("audioToVideoAttentionScale", "value"),
@@ -1104,10 +1092,9 @@ class CivitaiVideoGenLtx23AudioToVideo(CivitaiRecipeNodeBase):
                     },
                 ),
                 "reference_image": (
-                    "STRING",
+                    "IMAGE",
                     {
-                        "tooltip": "Optional reference image (e.g. talking-head subject). When provided, the video is anchored to this image.",
-                        "default": "",
+                        "tooltip": "Optional reference image (e.g. talking-head subject). When provided, the video is anchored to this image."
                     },
                 ),
                 "image_guide_strength": (
@@ -1409,8 +1396,8 @@ class CivitaiVideoGenLtx25FirstLastFrameToVideo(CivitaiRecipeNodeBase):
         "loras": F("loras", "lora_strength_map"),
         "diffusion_model": F("diffusionModel", "air"),
         "quantity": F("quantity", "value"),
-        "first_frame": F("firstFrame", "value"),
-        "last_frame": F("lastFrame", "value"),
+        "first_frame": F("firstFrame", "image_inline"),
+        "last_frame": F("lastFrame", "image_inline"),
         "frame_guide_strength": F("frameGuideStrength", "value"),
     }
     OUTPUTS = (
@@ -1456,18 +1443,12 @@ class CivitaiVideoGenLtx25FirstLastFrameToVideo(CivitaiRecipeNodeBase):
                     },
                 ),
                 "first_frame": (
-                    "STRING",
-                    {
-                        "tooltip": "First frame guide image. At least one of FirstFrame or LastFrame must be provided.",
-                        "default": "",
-                    },
+                    "IMAGE",
+                    {"tooltip": "First frame guide image. At least one of FirstFrame or LastFrame must be provided."},
                 ),
                 "last_frame": (
-                    "STRING",
-                    {
-                        "tooltip": "Last frame guide image. At least one of FirstFrame or LastFrame must be provided.",
-                        "default": "",
-                    },
+                    "IMAGE",
+                    {"tooltip": "Last frame guide image. At least one of FirstFrame or LastFrame must be provided."},
                 ),
                 "frame_guide_strength": (
                     "FLOAT",
@@ -1596,7 +1577,7 @@ class CivitaiVideoGenLtx25AudioToVideo(CivitaiRecipeNodeBase):
         "loras": F("loras", "lora_strength_map"),
         "diffusion_model": F("diffusionModel", "air"),
         "quantity": F("quantity", "value"),
-        "reference_image": F("referenceImage", "value"),
+        "reference_image": F("referenceImage", "image_inline"),
         "source_audio": F("sourceAudio", "audio_url"),
         "image_guide_strength": F("imageGuideStrength", "value"),
         "audio_to_video_attention_scale": F("audioToVideoAttentionScale", "value"),
@@ -1645,10 +1626,9 @@ class CivitaiVideoGenLtx25AudioToVideo(CivitaiRecipeNodeBase):
                     },
                 ),
                 "reference_image": (
-                    "STRING",
+                    "IMAGE",
                     {
-                        "tooltip": "Optional reference image (e.g. talking-head subject). When provided, the video is anchored to this image.",
-                        "default": "",
+                        "tooltip": "Optional reference image (e.g. talking-head subject). When provided, the video is anchored to this image."
                     },
                 ),
                 "image_guide_strength": (
@@ -2773,7 +2753,7 @@ class CivitaiVideoGenWanV27FalEditVideo(CivitaiRecipeNodeBase):
         "resolution": F("resolution", "value"),
         "enable_safety_checker": F("enableSafetyChecker", "value"),
         "video_url": F("videoUrl", "value"),
-        "reference_image": F("referenceImage", "value"),
+        "reference_image": F("referenceImage", "image_inline"),
         "aspect_ratio": F("aspectRatio", "value"),
         "audio_setting": F("audioSetting", "value"),
     }
@@ -2802,10 +2782,7 @@ class CivitaiVideoGenWanV27FalEditVideo(CivitaiRecipeNodeBase):
                 "loras": ("CIVITAI_LORAS", {}),
                 "resolution": (["720p", "1080p"], {"default": "1080p"}),
                 "enable_safety_checker": ("BOOLEAN", {"default": False}),
-                "reference_image": (
-                    "STRING",
-                    {"tooltip": "Reference image for reference-based editing", "default": ""},
-                ),
+                "reference_image": ("IMAGE", {"tooltip": "Reference image for reference-based editing"}),
                 "aspect_ratio": (
                     ["", "16:9", "9:16", "1:1", "4:3", "3:4"],
                     {

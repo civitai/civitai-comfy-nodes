@@ -27,6 +27,7 @@
   ],
   "_provider_engines": ["fal"],
   "videoGen": {
+    "field_types": { "firstFrame": "image", "lastFrame": "image", "referenceImage": "image" },
     "display": {
       "ltx2": "LTX 2",
       "ltx2.3": "LTX 2.3",
