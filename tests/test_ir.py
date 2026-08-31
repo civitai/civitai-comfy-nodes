@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from codegen import generate
+from codegen import generate, ir
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -176,3 +176,14 @@ def test_loras_shape_is_schema_driven(nodes):
     assert {f.api: f for f in anima.fields}["loras"].kind == "lora_strength_map"
     wan = node_by_name(nodes, "CivitaiVideoGenWanV21Fal")
     assert {f.api: f for f in wan.fields}["loras"].kind == "lora_array"
+
+
+def test_source_image_format_becomes_image_socket():
+    # SourceImage properties carry format=source-image; a custom XML summary on the property
+    # replaces the type's DataURL description, so the format is the reliable marker.
+    kind, comfy, detected = ir.classify_input_field(
+        "firstFrame",
+        {"type": ["null", "string"], "format": "source-image", "description": "First frame guide image."},
+        None,
+    )
+    assert (kind, comfy, detected) == ("image_inline", "IMAGE", "format:source-image")

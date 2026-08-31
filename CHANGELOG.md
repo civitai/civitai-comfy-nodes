@@ -17,6 +17,8 @@ section at the top before bumping the version.
   instead of text boxes. The orchestrator documents these `SourceImage` fields with a custom
   summary that hides the DataURL marker the codegen keys on; they are now pinned as images in
   `codegen/overrides.json`.
+- Codegen recognizes the upcoming `format: source-image` spec marker for `SourceImage` fields, so
+  future re-syncs classify them as IMAGE without per-field overrides.
 
 ## [0.5.1] - 2026-08-28
 

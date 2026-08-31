@@ -212,6 +212,11 @@ def classify_input_field(name: str, schema: dict, hint: str | None) -> tuple[str
     if name == "controlNets":
         return "controlnet_array", "CIVITAI_CONTROLNETS", "network:controlNets"
 
+    # The orchestrator marks SourceImage-typed properties with this format; unlike the DataURL
+    # description below, it survives a property-level XML summary.
+    if type_value == "string" and schema.get("format") == "source-image":
+        return "image_inline", "IMAGE", "format:source-image"
+
     if type_value == "string" and re.search(r"DataURL|Base64", description):
         if re.search(r"image|mask|cover", lower) or re.search(r"image", description, re.I):
             return "image_inline", "IMAGE", "desc:dataurl-image"
