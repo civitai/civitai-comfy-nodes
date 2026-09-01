@@ -734,10 +734,9 @@ def _emit_lifecycle_transition(
 def _max_progress_rate(workflow: dict) -> float | None:
     best = None
     for step in workflow.get("steps") or []:
-        for job in step.get("jobs") or []:
-            rate = job.get("estimatedProgressRate")
-            if isinstance(rate, (int, float)) and not isinstance(rate, bool):
-                best = rate if best is None else max(best, rate)
+        rate = step.get("estimatedProgressRate")
+        if isinstance(rate, (int, float)) and not isinstance(rate, bool):
+            best = rate if best is None else max(best, rate)
     return best
 
 
@@ -753,16 +752,16 @@ def _emit_progress(sid: str | None, prompt_id: str, workflow: dict) -> None:
 
 
 def _preparation_progress(workflow: dict) -> float | None:
-    """The download fraction shown during `preparing`: the max estimatedProgressRate among jobs still
-    preparing (the size-weighted fraction of the job's resources already local to the worker)."""
+    """The download fraction shown during `preparing`: step.preparation carries the gating
+    resource download while a step prepares; take the furthest-along step."""
     best = None
     for step in workflow.get("steps") or []:
-        for job in step.get("jobs") or []:
-            if str(job.get("status") or "").lower() != "preparing":
-                continue
-            rate = job.get("estimatedProgressRate")
-            if isinstance(rate, (int, float)) and not isinstance(rate, bool):
-                best = rate if best is None else max(best, rate)
+        preparation = step.get("preparation")
+        if not isinstance(preparation, dict):
+            continue
+        rate = preparation.get("progress")
+        if isinstance(rate, (int, float)) and not isinstance(rate, bool):
+            best = rate if best is None else max(best, rate)
     return best
 
 
@@ -1029,7 +1028,6 @@ def _offload_submit(
         trace="binary" if do_tail else None,
         min_vram_gb=stored_min_vram_gb(),
         use_sage_attention=stored_use_sage_attention(),
-        session_owner_api_token=config.token,
         upload_blob_file=client.upload_blob_file,
     )
     built = time.monotonic()

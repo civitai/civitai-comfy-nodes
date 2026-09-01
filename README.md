@@ -37,6 +37,15 @@ git clone https://github.com/civitai/civitai-comfy-nodes.git
 pip install -r civitai-comfy-nodes/requirements.txt   # `requests` + `python-socketio[client]`
 ```
 
+Install the requirements with **the Python that runs ComfyUI**, not whatever `pip` is on your PATH.
+On the Windows portable build that is the embedded interpreter:
+
+```powershell
+C:\path\to\ComfyUI_windows_portable\python_embeded\python.exe -m pip install -r ComfyUI\custom_nodes\civitai-comfy-nodes\requirements.txt
+```
+
+For a venv-based install, activate the venv first (or use `<venv>/bin/python -m pip …`).
+
 ## Authentication
 
 Nodes resolve credentials in this order:
@@ -130,14 +139,15 @@ The action submits the current graph as a `customComfy` workflow. Local model
 widgets are rewritten to AIRs when the model can be resolved by embedded metadata hash or computed
 hash, and installed custom node packs are advertised when a versioned nodepack AIR can be inferred.
 
-Use **Civitai/Offload/Civitai Offload Start** and **Civitai Offload End** to delimit a cloud region.
-Place `Start` to the left of the nodes to offload, put the normal Comfy workflow between the markers,
-include the user output node such as `SaveImage` inside that region, and place `End` to the right.
-Nodes after `End` are not included in the submitted customComfy job.
+To offload only part of a graph, put those nodes in a canvas **group** and right-click it → **Run on
+Civitai** (or just title the group `Civitai…`). Alternatively select nodes on the canvas before
+pressing Run on Civitai. Nodes outside the region run locally: everything downstream of it runs as a
+local continuation once the cloud outputs are back. The older **Civitai Offload Start/End** marker
+nodes still work (place `Start` left of the region and `End` right of it) but groups are preferred.
 
-The markers are selection hints for **Run on Civitai**. When the cloud job returns an output asset,
-the node pack imports that asset into local Comfy and queues the downstream nodes after `End` as a
-local continuation.
+Civitai API nodes (the recipe nodes and `Civitai Auth`) are refused inside an offload: they submit
+their own Civitai workflow, so running them on a per-second worker would bill twice. Keep them outside
+the group — they run locally after the offloaded part.
 
 ## Civitai Link
 

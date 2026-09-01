@@ -36,6 +36,9 @@ converts blob outputs to native Comfy types.
   `ClientConfig.buzz_account` becomes the workflow `currencies` constraint (+ `upgradeMode:
   manual`); only `_offload_submit` sets it (pack setting `buzzAccount`, default `blue`) — recipe
   nodes deliberately leave it `None` so the orchestrator picks the wallet.
+- `civitai_comfy_nodes/offload.py` region precedence: explicit canvas selection > canvas groups titled
+  `Civitai…` (`_group_region_node_ids`, node centre inside the group bounds; the frontend's group menu
+  toggles that title prefix) > visual Start/End markers > wired markers > whole graph.
 - `civitai_comfy_nodes/buzz.py` — wallet balances via civitai.com tRPC `buzz.getBuzzAccount`
   (Bearer token; the orchestrator exposes no balance endpoint). Served at `/civitai/buzz/accounts`
   for the toolbar picker in `web/civitai-run-bar.js`, which mounts after `.queue-button-group`.

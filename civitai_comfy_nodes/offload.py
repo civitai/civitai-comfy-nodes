@@ -536,6 +536,67 @@ def _serialized_region_id(node: dict[str, Any]) -> str:
     return "default"
 
 
+CIVITAI_GROUP_TITLE_RE = re.compile(r"^\s*(run on )?civitai\b", re.IGNORECASE)
+
+
+def is_civitai_group_title(title: Any) -> bool:
+    return bool(CIVITAI_GROUP_TITLE_RE.match(str(title or "")))
+
+
+def _serialized_workflow_groups(workflow: dict[str, Any] | None) -> list[dict[str, Any]]:
+    if not isinstance(workflow, dict):
+        return []
+    groups = workflow.get("groups")
+    if isinstance(groups, list):
+        return [group for group in groups if isinstance(group, dict)]
+    nested = workflow.get("workflow")
+    return _serialized_workflow_groups(nested) if isinstance(nested, dict) else []
+
+
+def _serialized_node_size(node: dict[str, Any]) -> tuple[float, float]:
+    size = node.get("size")
+    try:
+        if isinstance(size, (list, tuple)) and len(size) >= 2:
+            return float(size[0]), float(size[1])
+        if isinstance(size, dict):
+            return float(size.get("0", size.get(0, 0)) or 0), float(size.get("1", size.get(1, 0)) or 0)
+    except (TypeError, ValueError):
+        pass
+    return 0.0, 0.0
+
+
+def _group_region_node_ids(prompt: dict[str, Any], workflow: dict[str, Any] | None) -> set[str]:
+    """Select API prompt nodes whose centre lies inside a canvas group titled "Civitai…"."""
+    bounds = []
+    for group in _serialized_workflow_groups(workflow):
+        if not is_civitai_group_title(group.get("title")):
+            continue
+        bounding = group.get("bounding")
+        if not (isinstance(bounding, (list, tuple)) and len(bounding) >= 4):
+            continue
+        try:
+            x, y, w, h = (float(v) for v in bounding[:4])
+        except (TypeError, ValueError):
+            continue
+        bounds.append((x, y, x + w, y + h))
+    if not bounds:
+        return set()
+
+    selected: set[str] = set()
+    for node in _serialized_workflow_nodes(workflow):
+        node_id = _serialized_node_id(node)
+        if node_id is None or node_id not in prompt or _serialized_node_class(node) in OFFLOAD_MARKER_CLASSES:
+            continue
+        pos = _serialized_node_pos(node)
+        if pos is None:
+            continue
+        width, height = _serialized_node_size(node)
+        cx, cy = pos[0] + width / 2, pos[1] + height / 2
+        if any(left <= cx <= right and top <= cy <= bottom for left, top, right, bottom in bounds):
+            selected.add(node_id)
+    return selected
+
+
 def _visual_region_node_ids(prompt: dict[str, Any], workflow: dict[str, Any] | None) -> set[str]:
     """Select API prompt nodes visually placed between matching Start/End nodes.
 
@@ -1017,6 +1078,21 @@ def _selector_resources_by_slot(node: dict[str, Any]) -> dict[int, str]:
     return result
 
 
+def civitai_api_node_ids(prompt: dict[str, Any]) -> list[str]:
+    """Nodes of this pack that call the orchestrator themselves (recipe nodes, CivitaiAuth). The
+    local selector/loader helpers are not included: they only produce AIRs or download files."""
+    from . import generated, nodes_manual
+    from .base import CivitaiRecipeNodeBase
+
+    classes = {**generated.NODE_CLASS_MAPPINGS, **nodes_manual.NODE_CLASS_MAPPINGS}
+    api_classes = {
+        key for key, cls in classes.items() if key == "CivitaiAuth" or issubclass(cls, CivitaiRecipeNodeBase)
+    }
+    return sorted(
+        (node_id for node_id, node in prompt.items() if node.get("class_type") in api_classes), key=_node_sort_key
+    )
+
+
 def bake_model_selectors(prompt: dict[str, Any], resources: set[str]) -> list[str]:
     """Replace every downstream link consuming a CivitaiModelSelector output slot with that slot's
     file-pinned AIR, add the AIR to `resources`, and remove the selector so the worker never
@@ -1214,7 +1290,6 @@ def build_custom_comfy_offload(
     trace: str | None = None,
     min_vram_gb: int | None = None,
     use_sage_attention: bool | None = None,
-    session_owner_api_token: str | None = None,
     upload_blob_file: Callable[[Path, str], dict[str, Any]] | None = None,
     input_path_resolver: Callable[[str], str | os.PathLike[str]] | None = None,
 ) -> OffloadBuildResult:
@@ -1224,8 +1299,11 @@ def build_custom_comfy_offload(
 
     explicit_selection = {str(node_id) for node_id in selected_node_ids or [] if str(node_id) in normalized}
     region_selection = _region_node_ids(normalized)
-    visual_region_selection = set() if explicit_selection else _visual_region_node_ids(normalized, workflow)
-    selected = explicit_selection or visual_region_selection or region_selection or set(normalized)
+    group_selection = set() if explicit_selection else _group_region_node_ids(normalized, workflow)
+    visual_region_selection = (
+        set() if explicit_selection or group_selection else _visual_region_node_ids(normalized, workflow)
+    )
+    selected = explicit_selection or group_selection or visual_region_selection or region_selection or set(normalized)
     included = _dependency_closure(normalized, selected)
     if region_selection and not explicit_selection:
         included |= _user_output_nodes_within_region(normalized, included)
@@ -1239,6 +1317,15 @@ def build_custom_comfy_offload(
     # are removed, so they neither dangle nor re-download on the worker.
     resources: set[str] = set()
     selectors_left = bake_model_selectors(stripped, resources)
+
+    api_nodes = civitai_api_node_ids(stripped)
+    if api_nodes:
+        listed = ", ".join(f"{node_id} ({stripped[node_id].get('class_type')})" for node_id in api_nodes[:8])
+        raise CivitaiNodeError(
+            "Civitai API nodes already run on Civitai and would be billed twice on a worker: "
+            f"{listed}. Move them outside the Civitai group (they run locally) or use a native ComfyUI "
+            "node instead."
+        )
 
     # Resolve template HuggingFace models (built-in ComfyUI templates reference HF files by bare
     # filename + node metadata) to AIRs before the local-hash pass, which then skips the AIR values.
@@ -1345,8 +1432,6 @@ def build_custom_comfy_offload(
         custom_input["useSageAttention"] = True
     # The worker exposes this as CIVITAI_API_TOKEN so any civitai-comfy-nodes recipe nodes inside the
     # offloaded graph run as — and bill — the submitting user. Never logged.
-    if session_owner_api_token:
-        custom_input["sessionOwnerApiToken"] = session_owner_api_token
     steps.append({"$type": "customComfy", "input": custom_input})
     return OffloadBuildResult(
         steps=steps,

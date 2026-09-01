@@ -313,6 +313,40 @@ function attachOffloadStatus() {
   api.addCustomEventListener("civitai.offload.status", (event) => handleOffloadStatus(event.detail));
 }
 
+// Mirrors offload.is_civitai_group_title: a group titled "Civitai…" / "Run on Civitai…" is the region.
+const CIVITAI_GROUP_TITLE_RE = /^\s*(run on )?civitai\b/i;
+const CIVITAI_GROUP_PREFIX = "Civitai: ";
+
+function isCivitaiGroup(group) {
+  return CIVITAI_GROUP_TITLE_RE.test(group?.title || "");
+}
+
+function toggleCivitaiGroup(group) {
+  if (isCivitaiGroup(group)) {
+    const rest = group.title.replace(CIVITAI_GROUP_TITLE_RE, "").replace(/^[\s:\-–—]+/, "");
+    group.title = rest || "Group";
+  } else {
+    group.title = `${CIVITAI_GROUP_PREFIX}${group.title || ""}`.trim();
+  }
+  app.graph?.setDirtyCanvas?.(true, true);
+}
+
+function installGroupMenuItem() {
+  const proto = window.LGraphGroup?.prototype;
+  if (!proto || proto.__civitaiOffloadMenu || typeof proto.getMenuOptions !== "function") return;
+  proto.__civitaiOffloadMenu = true;
+  const original = proto.getMenuOptions;
+  proto.getMenuOptions = function civitaiAwareGroupMenu(...args) {
+    const options = original.apply(this, args) || [];
+    const group = this;
+    options.push(null, {
+      content: isCivitaiGroup(group) ? "Stop running on Civitai" : "Run on Civitai",
+      callback: () => toggleCivitaiGroup(group),
+    });
+    return options;
+  };
+}
+
 window.civitaiOffload = {
   run(button) {
     injectStyles();
@@ -326,6 +360,7 @@ app.registerExtension({
   setup() {
     installInterruptOverride();
     attachOffloadStatus();
+    installGroupMenuItem();
   },
   nodeCreated(node) {
     if (node.comfyClass === "CivitaiOffloadStart") node.color = "#1d4ed8";

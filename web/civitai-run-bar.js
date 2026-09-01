@@ -258,7 +258,8 @@ function buildGroup() {
   runButton = document.createElement("button");
   runButton.className = "cvr-run";
   runButton.type = "button";
-  runButton.title = "Run this workflow on Civitai's GPUs (customComfy offload)";
+  runButton.title =
+    "Run on Civitai's GPUs: the selected nodes, else the nodes inside a group titled \"Civitai\", else the whole graph";
   const icon = document.createElement("span");
   icon.className = "cvg-civitai-icon";
   runButton.append(icon, document.createTextNode(" Run on Civitai"));

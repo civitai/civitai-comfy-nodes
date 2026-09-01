@@ -12,9 +12,11 @@ section at the top before bumping the version.
 ## [Unreleased]
 
 ### Added
-- **Run on Civitai**: submit the current graph (or the region between the Offload Start/End
-  markers) as a `customComfy` workflow, with the remote run's progress, previews, logs and live
+- **Run on Civitai**: submit the current graph (or the selected nodes, or the nodes inside a group
+  titled "Civitai" — right-click a group → *Run on Civitai*) as a `customComfy` workflow, with the remote run's progress, previews, logs and live
   Buzz cost replayed onto the local canvas and the outputs imported back for the local tail.
+  Civitai API nodes inside the offloaded graph are refused (they would be billed twice) and the
+  user's token is never forwarded to the worker.
 - Toolbar **Run on Civitai** button next to ComfyUI's Run button, plus a **Pay with** wallet
   picker (Blue / Green / Yellow Buzz with live balances). The chosen wallet is stored in the pack
   settings and pins offload runs to that wallet.

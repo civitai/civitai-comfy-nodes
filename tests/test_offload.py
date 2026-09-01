@@ -2,7 +2,10 @@ import json
 import sys
 import types
 
+import pytest
+
 from civitai_comfy_nodes import offload
+from civitai_comfy_nodes.errors import CivitaiNodeError
 
 
 def test_scan_installed_nodepacks_infers_air_only_with_version(tmp_path):
@@ -89,18 +92,37 @@ def test_build_custom_comfy_offload_omits_vram_sage_and_gpu_by_default():
     assert "gpuGeneration" not in custom_input  # GPU generation is display-only, never submitted
 
 
-def test_build_custom_comfy_offload_sets_session_owner_api_token_when_provided():
-    prompt = {"1": {"class_type": "SaveImage", "inputs": {}}}
-    custom_input = offload.build_custom_comfy_offload(
-        prompt, model_records=[], nodepacks=[], session_owner_api_token="user-token-abc"
-    ).steps[0]["input"]
-    assert custom_input["sessionOwnerApiToken"] == "user-token-abc"
-
-
-def test_build_custom_comfy_offload_omits_session_owner_api_token_by_default():
+def test_build_custom_comfy_offload_never_forwards_the_user_token():
     prompt = {"1": {"class_type": "SaveImage", "inputs": {}}}
     custom_input = offload.build_custom_comfy_offload(prompt, model_records=[], nodepacks=[]).steps[0]["input"]
     assert "sessionOwnerApiToken" not in custom_input
+
+
+def test_build_custom_comfy_offload_refuses_civitai_api_nodes():
+    # Recipe nodes submit their own orchestrator workflow; on a per-second worker that bills twice.
+    from civitai_comfy_nodes import generated
+
+    recipe_class = next(iter(generated.NODE_CLASS_MAPPINGS))
+    prompt = {
+        "1": {"class_type": "CivitaiAuth", "inputs": {"api_token": "t"}},
+        "2": {"class_type": recipe_class, "inputs": {"api_config": ["1", 0]}},
+        "3": {"class_type": "SaveImage", "inputs": {"images": ["2", 0]}},
+    }
+    with pytest.raises(CivitaiNodeError) as excinfo:
+        offload.build_custom_comfy_offload(prompt, model_records=[], nodepacks=[])
+    message = str(excinfo.value)
+    assert "billed twice" in message
+    assert "1 (CivitaiAuth)" in message and f"2 ({recipe_class})" in message
+
+
+def test_civitai_api_node_ids_ignores_local_helpers():
+    prompt = {
+        "1": {"class_type": "CivitaiModelSelector", "inputs": {}},
+        "2": {"class_type": "CivitaiLoraLoader", "inputs": {}},
+        "3": {"class_type": "CivitaiOffloadStart", "inputs": {}},
+        "4": {"class_type": "KSampler", "inputs": {}},
+    }
+    assert offload.civitai_api_node_ids(prompt) == []
 
 
 def _selector_node(by_slot):
@@ -600,6 +622,65 @@ def test_offload_markers_preserve_user_save_inside_region_and_exclude_local_tail
         "class_type": "SaveImage",
         "inputs": {"filename_prefix": "civitai-offload-anima", "images": ["1", 0]},
     }
+
+
+def test_civitai_group_selects_nodes_inside_its_bounds():
+    prompt = {
+        "1": {"class_type": "EmptyImage", "inputs": {"width": 64, "height": 64, "batch_size": 1}},
+        "2": {"class_type": "ImageInvert", "inputs": {"image": ["1", 0]}},
+        "3": {"class_type": "SaveImage", "inputs": {"filename_prefix": "remote", "images": ["2", 0]}},
+        "4": {"class_type": "ImageBlur", "inputs": {"image": ["2", 0], "blur_radius": 2, "sigma": 1.0}},
+        "5": {"class_type": "SaveImage", "inputs": {"filename_prefix": "local", "images": ["4", 0]}},
+    }
+    workflow = {
+        "groups": [
+            {"title": "Other stuff", "bounding": [-1000, -1000, 100, 100]},
+            {"title": "civitai: heavy part", "bounding": [100, -200, 400, 200]},
+        ],
+        "nodes": [
+            {"id": 1, "type": "EmptyImage", "pos": [120, -120], "size": [100, 50]},
+            {"id": 2, "type": "ImageInvert", "pos": [280, -120], "size": [100, 50]},
+            {"id": 3, "type": "SaveImage", "pos": [440, -120], "size": [50, 50]},  # centre at 465, inside
+            {"id": 4, "type": "ImageBlur", "pos": [700, -120], "size": [100, 50]},
+            {"id": 5, "type": "SaveImage", "pos": [860, -120], "size": [100, 50]},
+        ],
+    }
+
+    assert offload._group_region_node_ids(prompt, workflow) == {"1", "2", "3"}
+    built = offload.build_custom_comfy_offload(prompt, workflow=workflow, model_records=[], nodepacks=[])
+    assert built.selected_node_ids == ["1", "2", "3"]
+    assert set(built.workflow) == {"1", "2", "3"}
+
+
+def test_civitai_group_wins_over_markers_but_not_over_an_explicit_selection():
+    prompt = {
+        "1": {"class_type": "EmptyImage", "inputs": {"width": 64, "height": 64, "batch_size": 1}},
+        "2": {"class_type": "ImageInvert", "inputs": {"image": ["1", 0]}},
+    }
+    workflow = {
+        "groups": [{"title": "Run on Civitai", "bounding": [0, 0, 200, 200]}],
+        "nodes": [
+            {"id": 100, "type": "CivitaiOffloadStart", "pos": [-50, 50]},
+            {"id": 1, "type": "EmptyImage", "pos": [50, 50], "size": [10, 10]},
+            {"id": 2, "type": "ImageInvert", "pos": [500, 50], "size": [10, 10]},
+            {"id": 101, "type": "CivitaiOffloadEnd", "pos": [600, 50]},
+        ],
+    }
+    grouped = offload.build_custom_comfy_offload(prompt, workflow=workflow, model_records=[], nodepacks=[])
+    assert grouped.selected_node_ids == ["1"]
+    explicit = offload.build_custom_comfy_offload(
+        prompt, workflow=workflow, selected_node_ids=["2"], model_records=[], nodepacks=[]
+    )
+    assert explicit.selected_node_ids == ["2"]
+
+
+def test_is_civitai_group_title():
+    assert offload.is_civitai_group_title("Civitai")
+    assert offload.is_civitai_group_title("  civitai – upscale ")
+    assert offload.is_civitai_group_title("Run on Civitai")
+    assert not offload.is_civitai_group_title("Civitaish")
+    assert not offload.is_civitai_group_title("My Civitai group")
+    assert not offload.is_civitai_group_title(None)
 
 
 def test_visual_offload_markers_select_nodes_between_start_and_end_with_save_image():

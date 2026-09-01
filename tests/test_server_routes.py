@@ -202,12 +202,11 @@ def test_guess_ext_sniffs_magic_bytes():
     assert sr._guess_ext("audio", b"not a known header") == ".flac"  # falls back by kind
 
 
-def _prep_step(job_status, rate, *, step_status="preparing"):
-    return {
-        "$type": "customComfy",
-        "status": step_status,
-        "jobs": [{"status": job_status, "estimatedProgressRate": rate}],
-    }
+def _prep_step(rate, *, step_status="preparing"):
+    step = {"$type": "customComfy", "status": step_status, "estimatedProgressRate": rate}
+    if step_status == "preparing":
+        step["preparation"] = {"resource": "urn:air:sdxl:checkpoint:civitai:1@2", "progress": rate}
+    return step
 
 
 def test_queue_phase_maps_orchestration_status():
@@ -221,19 +220,19 @@ def test_queue_phase_maps_orchestration_status():
 
 
 def test_queue_state_data_carries_preparation_progress():
-    wf = {"id": "6-1", "status": "Preparing", "steps": [_prep_step("preparing", 0.42)]}
+    wf = {"id": "6-1", "status": "Preparing", "steps": [_prep_step(0.42)]}
     data = sr._queue_state_data(wf, "6-1")
     assert data == {"prompt_id": "6-1", "status": "preparing", "progress": 0.42}
 
 
 def test_queue_state_data_processing_has_no_progress():
-    wf = {"id": "6-1", "status": "Processing", "steps": [_prep_step("processing", 0.9, step_status="processing")]}
+    wf = {"id": "6-1", "status": "Processing", "steps": [_prep_step(0.9, step_status="processing")]}
     data = sr._queue_state_data(wf, "6-1")
     assert data == {"prompt_id": "6-1", "status": "processing"}
 
 
-def test_preparation_progress_ignores_non_preparing_jobs():
-    wf = {"steps": [_prep_step("processing", 0.9, step_status="processing")]}
+def test_preparation_progress_ignores_steps_without_preparation():
+    wf = {"steps": [_prep_step(0.9, step_status="processing")]}
     assert sr._preparation_progress(wf) is None
 
 
@@ -997,11 +996,11 @@ def test_emit_lifecycle_transition_noop_on_same_status_or_no_sid(monkeypatch):
 
 def test_emit_progress_maps_max_estimated_rate(monkeypatch):
     fake = _install_fake_server(monkeypatch)
-    wf = {"steps": [{"jobs": [{"estimatedProgressRate": 0.25}, {"estimatedProgressRate": 0.6}]}]}
+    wf = {"steps": [{"estimatedProgressRate": 0.25}, {"estimatedProgressRate": 0.6}]}
     sr._emit_progress("sid", "wf-1", wf)
     assert fake.calls == [("progress", {"value": 600, "max": 1000, "prompt_id": "wf-1", "node": None}, "sid")]
     fake.calls.clear()
-    sr._emit_progress("sid", "wf-1", {"steps": [{"jobs": []}]})  # no rate -> no frame
+    sr._emit_progress("sid", "wf-1", {"steps": [{}]})  # no rate -> no frame
     assert fake.calls == []
 
 

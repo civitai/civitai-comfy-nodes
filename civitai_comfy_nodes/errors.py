@@ -48,10 +48,5 @@ def workflow_failure_message(workflow: dict) -> str:
         output = step.get("output") or {}
         for err in output.get("errors") or []:
             reasons.append(str(err))
-        for job in step.get("jobs") or []:
-            if job.get("reason"):
-                reasons.append(str(job["reason"]))
-            if job.get("blockedReason"):
-                reasons.append(f"blocked: {job['blockedReason']}")
     detail = "; ".join(dict.fromkeys(reasons)) or "no failure details reported"
     return f"Civitai workflow {workflow_id} {status}: {detail}"
