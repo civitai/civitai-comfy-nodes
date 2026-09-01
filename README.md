@@ -37,6 +37,15 @@ git clone https://github.com/civitai/civitai-comfy-nodes.git
 pip install -r civitai-comfy-nodes/requirements.txt   # `requests` + `python-socketio[client]`
 ```
 
+Install the requirements with **the Python that runs ComfyUI**, not whatever `pip` is on your PATH.
+On the Windows portable build that is the embedded interpreter:
+
+```powershell
+C:\path\to\ComfyUI_windows_portable\python_embeded\python.exe -m pip install -r ComfyUI\custom_nodes\civitai-comfy-nodes\requirements.txt
+```
+
+For a venv-based install, activate the venv first (or use `<venv>/bin/python -m pip …`).
+
 ## Authentication
 
 Nodes resolve credentials in this order:

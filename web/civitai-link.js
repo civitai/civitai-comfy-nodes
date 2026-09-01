@@ -114,7 +114,13 @@ function resourceLabel(r) {
 
 function statusLine() {
   if (!state) return ["", "Loading…"];
-  if (!state.available) return ["err", 'Needs python-socketio: pip install "python-socketio[client]" and restart'];
+  if (!state.available)
+    return [
+      "err",
+      "Needs python-socketio in ComfyUI's own Python: " +
+        '<ComfyUI python> -m pip install "python-socketio[client]" — then restart. ' +
+        "(Windows portable: python_embeded\\python.exe)",
+    ];
   if (!state.enabled) return ["", "Disabled in Settings › Civitai › Civitai Link"];
   if (!state.paired) return ["", "Not paired"];
   if (state.connected && state.joined) return state.roomReady ? ["ok", "Paired · civitai.com connected"] : ["warn", "Paired · open civitai.com to connect"];
