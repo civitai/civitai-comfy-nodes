@@ -27,12 +27,13 @@ OAUTH_BASE = os.environ.get("CIVITAI_OAUTH_BASE", "https://auth.civitai.com")
 # UserRead | AIServicesRead | AIServicesWrite | BuzzRead = 1 + 16384 + 32768 + 65536
 SCOPE = 114689
 # Opt-in bit above TokenScope.Full; link-service requires it on the token that pairs a Civitai Link
-# instance. Requested only when pairing Link, so a client whose allowedScopes lacks it (the hub
-# answers invalid_scope for any scope wider than the client's ceiling) still signs in for everything else.
+# instance. The official client grants it; a custom client set up through the app-settings UI cannot,
+# and the hub answers invalid_scope to any request wider than the client's ceiling.
 LINK_CONNECT = 1 << 27
 LINK_SCOPE = SCOPE | LINK_CONNECT
-# Registered for the official "Civitai ComfyUI Nodes" OAuth app; override for your own app.
-CLIENT_ID = os.environ.get("CIVITAI_OAUTH_CLIENT_ID", "2d61872c-9aa9-4dbc-93c3-899c222842c1")
+# Registered for the official "Civitai ComfyNodes" OAuth app; override for your own app.
+OFFICIAL_CLIENT_ID = "2d61872c-9aa9-4dbc-93c3-899c222842c1"
+CLIENT_ID = os.environ.get("CIVITAI_OAUTH_CLIENT_ID", OFFICIAL_CLIENT_ID)
 # Loopback callback ports the client tries, in order. EVERY one must be a registered redirect URI
 # on the OAuth app. They're spread across the range so a Windows reserved block (excluded port
 # range, the cause of WinError 10013) is very unlikely to cover them all. Override with
@@ -260,8 +261,14 @@ class _CallbackHandler(http.server.BaseHTTPRequestHandler):
         pass
 
 
-def interactive_login(scope: int = SCOPE) -> str:
+def login_scope() -> int:
+    return LINK_SCOPE if CLIENT_ID == OFFICIAL_CLIENT_ID else SCOPE
+
+
+def interactive_login(scope: int | None = None) -> str:
     """Run the loopback PKCE flow: open a browser, capture the code, exchange and store tokens."""
+    if scope is None:
+        scope = login_scope()
     if not CLIENT_ID:
         raise CivitaiNodeError(
             "No Civitai OAuth client id configured. Either set the CIVITAI_API_TOKEN environment variable "

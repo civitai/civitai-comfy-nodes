@@ -394,7 +394,11 @@ async function init(el) {
   try {
     const status = await (await fetch("/civitai/auth/status")).json();
     if (status.authenticated) renderGallery(body);
-    else renderConnect(body, () => renderGallery(body));
+    else
+      renderConnect(body, () => {
+        renderGallery(body);
+        window.civitaiLink?.refresh();
+      });
   } catch (e) {
     body.innerHTML = `<div class="cvg-msg">Civitai gallery unavailable: ${esc(e.message || e)}</div>`;
   }

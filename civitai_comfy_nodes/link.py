@@ -617,14 +617,16 @@ def _post_self(token: str, body: dict) -> requests.Response:
         time.sleep(delays.pop(0))
 
 
-def pair_via_oauth(name: str | None = None) -> dict:
+def pair_via_oauth(name: str | None = None, *, login: bool = True) -> dict:
     """Pair through the user's Civitai account: sign in (browser) if needed, then exchange the access
     token for an instance key. The persisted install id makes re-pairing re-key the same instance; a
     pairing made earlier with a code is sent as ``legacyKey`` so its instance is adopted, not duplicated."""
     reason = disabled_reason()
     if reason:
         raise ValueError(f"Civitai Link is {reason}")
-    token = _link_access_token(login=True)
+    token = _link_access_token(login=login)
+    if not token:
+        raise ValueError("Sign in to Civitai first")
     stored = config.load_link_key()
     body = {"installId": config.install_id(), "name": (name or "").strip() or _default_instance_name()}
     if stored and not stored.get("instance_id"):
@@ -637,6 +639,7 @@ def pair_via_oauth(name: str | None = None) -> dict:
         _log.info("Civitai Link paired instance %s via account", data.get("id"))
         reconfigure()
         return status()
+    _log.warning("Civitai Link pairing refused: HTTP %s %s", response.status_code, response.text[:300])
     if response.status_code == 401:
         # Also what a token minted before the client could grant LinkConnect gets; a fresh sign-in
         # is the only fix for both, so drop the login and let the next attempt run one.
@@ -657,17 +660,29 @@ def pair_via_oauth(name: str | None = None) -> dict:
     raise ValueError(f"Civitai Link pairing failed ({response.status_code}): {detail or response.text}")
 
 
+def pair_after_login() -> None:
+    """Best-effort pairing right after an account sign-in, so one sign-in sets up both the pack and
+    Link. Never opens a second browser flow and never fails the sign-in."""
+    if disabled_reason() or config.load_link_key():
+        return
+    try:
+        pair_via_oauth(login=False)
+    except Exception as e:
+        _log.warning("Civitai Link did not pair after sign-in: %s", e)
+
+
 def _delete_remote_instance(instance_id: int) -> None:
     token = _link_access_token(login=False)
     if not token:
         return
     try:
-        requests.delete(
+        response = requests.delete(
             f"{config.link_url()}/api/link",
             params={"id": instance_id},
             headers={"Authorization": f"Bearer {token}"},
             timeout=PAIR_HTTP_TIMEOUT,
         )
+        _log.info("Civitai Link instance %s removed on the site: HTTP %s", instance_id, response.status_code)
     except requests.RequestException:
         _log.debug("Could not remove Civitai Link instance %s on the site", instance_id, exc_info=True)
 
@@ -702,6 +717,7 @@ def status() -> dict:
         "paired": bool(stored),
         "activated": bool(stored and stored["activated"]),
         "viaAccount": bool(stored and stored.get("instance_id") is not None),
+        "auth": config.auth_state()[1],
         "keyHint": stored["key"][-4:] if stored else "",
         "url": config.link_url(),
         "urlSource": "env"

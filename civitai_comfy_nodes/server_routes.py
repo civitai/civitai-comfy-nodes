@@ -392,6 +392,7 @@ if _server is not None:
             await loop.run_in_executor(None, oauth.interactive_login)
         except Exception as e:
             return web.json_response({"error": str(e)}, status=502)
+        await loop.run_in_executor(None, link.pair_after_login)
         return web.json_response({"ok": True})
 
     @_server.routes.post("/civitai/auth/logout")

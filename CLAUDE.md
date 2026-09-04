@@ -71,11 +71,13 @@ converts blob outputs to native Comfy types.
   create-ops vs edit-ops) the node is disambiguated by the group's lead operation.
 - OAuth: PKCE at `auth.civitai.com/api/auth/oauth/*` (civitai.com only 308-redirects there),
   `scope` is a decimal bitmask (114689 = UserRead|AIServicesRead|AIServicesWrite|BuzzRead),
-  access 1h / refresh 30d. The hub answers `invalid_scope` to any request wider than the client's
-  `allowedScopes`, so `LinkConnect` (bit 27, above `TokenScope.Full`) is requested only by Link
-  pairing (`LINK_SCOPE` = 134332417), never by the plain sign-in. Refresh never widens a token's
-  scope; only a fresh consent does. Interactive login needs `CIVITAI_OAUTH_CLIENT_ID` (registered
-  app with every port in `DEFAULT_PORTS` as `http://localhost:<port>/civitai/callback`).
+  access 1h / refresh 30d. The official client also grants `LinkConnect` (bit 27, above
+  `TokenScope.Full`, granted by raw SQL since the app-settings UI caps at Full), so its sign-in
+  requests `LINK_SCOPE` = 134332417 and `/civitai/auth/login` auto-pairs Link afterwards. The hub
+  answers `invalid_scope` to any request wider than the client's `allowedScopes`, so a custom
+  `CIVITAI_OAUTH_CLIENT_ID` gets the base `SCOPE` and can only pair Link with a code. Refresh never
+  widens a token's scope; only a fresh consent does. Every port in `DEFAULT_PORTS` must be a
+  registered redirect URI (`http://localhost:<port>/civitai/callback`).
 
 ## Load-bearing Civitai Link facts (verified against link-service + civitai `shared-types.ts`)
 

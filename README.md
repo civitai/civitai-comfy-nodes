@@ -136,14 +136,15 @@ the matching ComfyUI folder (`models/loras`, `models/checkpoints`, `models/diffu
 verifies its SHA256, and refreshes the model lists. The site also sees which models you already have,
 and the Model Library shows a Civitai icon next to every model it recognises (click to open it).
 
-Open the **Civitai** sidebar tab and click **Pair with your Civitai account** in the **Civitai Link**
-panel. A browser opens on the machine running ComfyUI; approve the sign-in and the pairing completes
-by itself. The instance shows up under Civitai Link on civitai.com, where it can be renamed or revoked.
+Open the **Civitai** sidebar tab and click **Connect with Civitai**. The sign-in that opens in your
+browser also covers Link, so this ComfyUI pairs itself as soon as you approve. The instance shows up
+under Civitai Link on civitai.com, where it can be renamed or revoked; if you were already signed in,
+the panel offers a one-click **Pair this ComfyUI** instead.
 
-If ComfyUI runs on another machine (the browser can't reach it), use a pairing code instead: on
-civitai.com open **Civitai Link** (the link icon in the header), add an instance, copy its 6-character
-code and paste it into the panel. A code pairing can be switched to the account pairing later from the
-same panel.
+If ComfyUI runs on another machine (the browser can't reach it) or you connected with an API key, use
+a pairing code instead: on civitai.com open **Civitai Link** (the link icon in the header), add an
+instance, copy its 6-character code and paste it into the panel. A code pairing can be switched to the
+account pairing later from the same panel.
 
 The pairing is stored in `~/.civitai/comfy-link.json` and reconnects automatically after restarts;
 `~/.civitai/comfy-install-id` identifies this install so re-pairing replaces the same instance instead

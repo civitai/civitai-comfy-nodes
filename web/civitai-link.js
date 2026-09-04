@@ -200,6 +200,27 @@ function updateRailBadge(flash) {
 
 let showCodeEntry = false;
 
+function pairingMarkup(auth) {
+  const codeEntry = `
+        <div class="cvl-row"><input class="cvl-code" maxlength="6" placeholder="6-char code" autocomplete="off" spellcheck="false" />
+          <button class="cvl-btn cvl-pair">Pair</button></div>
+        <div class="cvl-hint">On civitai.com open <b>Civitai Link</b> (the link icon in the header), add an instance and paste its
+          code here. <a href="${LINK_HELP_URL}" target="_blank" rel="noopener">Account ↗</a></div>`;
+  const codeToggle = '<button class="cvl-link cvl-show-code">Use a pairing code instead</button>';
+  if (auth === "oauth")
+    return `
+        <div class="cvl-row"><button class="cvl-btn primary cvl-pair-account">Pair this ComfyUI</button></div>
+        <div class="cvl-hint">Adds this ComfyUI to Civitai Link on your account. Models you send from the site land in the
+          matching <code>models/</code> folder. ${showCodeEntry ? "" : codeToggle}</div>${showCodeEntry ? codeEntry : ""}`;
+  if (auth)
+    return `
+        <div class="cvl-hint">You're connected with an API key. Link pairs with your account — sign in below with
+          <b>Connect with Civitai</b> — or with a code:</div>${codeEntry}`;
+  return `
+        <div class="cvl-hint">Sign in below with <b>Connect with Civitai</b> and this ComfyUI pairs automatically.
+          ${showCodeEntry ? "" : '<button class="cvl-link cvl-show-code">ComfyUI runs on another machine? Use a pairing code</button>'}</div>${showCodeEntry ? codeEntry : ""}`;
+}
+
 function render() {
   if (!panelEl) return;
   if (isHostedSession() || (state && state.hosted)) {
@@ -211,25 +232,17 @@ function render() {
   const paired = !!(state && state.paired);
   const viaAccount = !!(state && state.viaAccount);
   const canPair = !!(state && state.available && state.enabled);
+  const auth = state?.auth || null;
   panelEl.innerHTML = `
     <div class="cvl-panel">
       <div class="cvl-head"><span class="cvl-dot ${tone}"></span><span class="cvl-title">Civitai Link</span>
         <span class="cvl-status" title="${esc(text)}">${esc(text)}</span>
         ${paired ? '<button class="cvl-btn cvl-unpair" title="Forget this pairing">Unpair</button>' : ""}
       </div>
-      ${!paired && canPair ? `
-        <div class="cvl-row"><button class="cvl-btn primary cvl-pair-account">Pair with your Civitai account</button></div>
-        <div class="cvl-hint">Approve ComfyUI in the browser that opens on this machine. Models you send from the site land in
-          the matching <code>models/</code> folder.
-          ${showCodeEntry ? "" : '<button class="cvl-link cvl-show-code">ComfyUI runs on another machine? Use a pairing code</button>'}</div>
-        ${showCodeEntry ? `
-        <div class="cvl-row"><input class="cvl-code" maxlength="6" placeholder="6-char code" autocomplete="off" spellcheck="false" />
-          <button class="cvl-btn cvl-pair">Pair</button></div>
-        <div class="cvl-hint">On civitai.com open <b>Civitai Link</b> (the link icon in the header), add an instance and paste its
-          code here. <a href="${LINK_HELP_URL}" target="_blank" rel="noopener">Account ↗</a></div>` : ""}` : ""}
-      ${paired && !viaAccount && canPair ? `
+      ${!paired && canPair ? pairingMarkup(auth) : ""}
+      ${paired && !viaAccount && canPair && auth === "oauth" ? `
         <div class="cvl-legacy"><span>Paired with a code.</span>
-          <button class="cvl-btn cvl-pair-account" title="Sign in so this pairing is tied to your account and revocable from civitai.com">Switch to account pairing</button></div>` : ""}
+          <button class="cvl-btn cvl-pair-account" title="Tie this pairing to your account so it can be revoked from civitai.com">Switch to account pairing</button></div>` : ""}
       <div class="cvl-err"></div>
       ${activityMarkup()}
     </div>`;
@@ -274,7 +287,7 @@ function render() {
   accountBtn?.addEventListener("click", async () => {
     accountBtn.disabled = true;
     err.className = "cvl-err note";
-    err.textContent = "Complete the Civitai sign-in in your browser… this pairs automatically once approved.";
+    err.textContent = "Pairing… if a Civitai sign-in opens in your browser, approve it to continue.";
     try {
       await applyPairResult(await fetch("/civitai/link/pair-account", { method: "POST" }));
       toast("success", "Civitai Link paired", "This ComfyUI is linked to your Civitai account.");
@@ -361,7 +374,11 @@ function handleActivity(r) {
   render();
 }
 
-window.civitaiLink = { renderPanel };
+async function refresh() {
+  if (panelEl) await renderPanel(panelEl);
+}
+
+window.civitaiLink = { renderPanel, refresh };
 
 app.registerExtension({
   name: "civitai.link",

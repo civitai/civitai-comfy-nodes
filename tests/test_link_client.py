@@ -689,6 +689,28 @@ def test_pair_via_account_retries_503_then_gives_up(account):
     assert link.pair_via_oauth()["paired"]
 
 
+def test_pair_after_login_never_opens_a_browser_and_never_raises(account, monkeypatch):
+    from civitai_comfy_nodes import oauth
+
+    calls, responses = account
+    oauth._save_tokens({"access_token": "old", "expires_at": time.time() + 3600, "scope": 114689})
+    link.pair_after_login()  # narrow login: nothing to do, no browser
+    assert calls == [] and config.load_link_key() is None
+    oauth._save_tokens({"access_token": "wide", "expires_at": time.time() + 3600, "scope": oauth.LINK_SCOPE})
+    responses.append(FakeResponse(400, {"error": "Instance limit reached"}))
+    link.pair_after_login()  # failure is logged, not raised
+    assert config.load_link_key() is None
+    responses.append(FakeResponse(200, {"id": 5, "key": "5" * 128, "name": "x"}))
+    link.pair_after_login()
+    assert config.load_link_key()["instance_id"] == 5
+    link.pair_after_login()  # already paired: no call
+    assert len(calls) == 2
+
+
+def test_status_reports_the_auth_source(account):
+    assert link.status()["auth"] == "oauth"
+
+
 def test_pair_via_account_respects_disabled(account):
     config.save_pack_settings({"enableLink": False})
     with pytest.raises(ValueError, match="disabled"):

@@ -74,6 +74,13 @@ def test_link_scope_adds_only_the_link_connect_bit():
     assert not oauth.has_scope(None, oauth.LINK_CONNECT)
 
 
+def test_login_scope_requests_link_only_for_the_official_client(monkeypatch):
+    monkeypatch.setattr(oauth, "CLIENT_ID", oauth.OFFICIAL_CLIENT_ID)
+    assert oauth.login_scope() == oauth.LINK_SCOPE
+    monkeypatch.setattr(oauth, "CLIENT_ID", "someone-elses-app")
+    assert oauth.login_scope() == oauth.SCOPE
+
+
 def test_stored_scope_reads_number_or_string_and_tolerates_absence(token_store):
     assert oauth.stored_scope() is None
     token_store.write_text(json.dumps({"access_token": "a", "expires_at": 0, "scope": "114689"}))
