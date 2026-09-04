@@ -131,10 +131,13 @@ def clear_tokens() -> None:
 
 
 def stored_scope() -> int | None:
-    """The scope bitmask of the stored OAuth login, or None when unknown."""
-    tokens = _load_tokens()
+    """The scope bitmask of the stored OAuth login, or None when unknown. The token response carries
+    it as a number, a decimal string, or a one-element list of either, depending on the hub build."""
+    scope = (_load_tokens() or {}).get("scope")
+    if isinstance(scope, list):
+        scope = scope[0] if len(scope) == 1 else None
     try:
-        return int((tokens or {}).get("scope"))
+        return int(scope)
     except (TypeError, ValueError):
         return None
 

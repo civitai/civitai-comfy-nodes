@@ -80,6 +80,8 @@ def test_stored_scope_reads_number_or_string_and_tolerates_absence(token_store):
     assert oauth.stored_scope() == 114689
     token_store.write_text(json.dumps({"access_token": "a", "expires_at": 0, "scope": 134332417}))
     assert oauth.stored_scope() == 134332417
+    token_store.write_text(json.dumps({"access_token": "a", "expires_at": 0, "scope": ["114689"]}))
+    assert oauth.stored_scope() == 114689
     token_store.write_text(json.dumps({"access_token": "a", "expires_at": 0}))
     assert oauth.stored_scope() is None
 
