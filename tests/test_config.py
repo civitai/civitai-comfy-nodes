@@ -1,3 +1,7 @@
+import os
+import stat
+import uuid
+
 import pytest
 
 from civitai_comfy_nodes import config, oauth
@@ -124,3 +128,19 @@ def test_is_hosted_session_follows_the_pinned_session_env(link_store, monkeypatc
     assert config.is_hosted_session() is False
     monkeypatch.setenv("CIVITAI_COMFY_SESSION_ID", " cloud ")
     assert config.is_hosted_session() is True
+
+
+def test_install_id_is_a_stable_private_uuid4(tmp_path, monkeypatch):
+    from civitai_comfy_nodes import config
+
+    path = tmp_path / "install-id"
+    monkeypatch.setenv("CIVITAI_COMFY_INSTALL_ID_STORE", str(path))
+    first = config.install_id()
+    assert uuid.UUID(first).version == 4
+    assert config.install_id() == first and path.read_text() == first
+    assert stat.S_IMODE(os.stat(path).st_mode) == 0o600
+    path.write_text("not-a-uuid")
+    regenerated = config.install_id()
+    assert regenerated != first and uuid.UUID(regenerated).version == 4
+    path.write_text(str(uuid.uuid1()))
+    assert uuid.UUID(config.install_id()).version == 4

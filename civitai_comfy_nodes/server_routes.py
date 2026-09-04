@@ -9,7 +9,7 @@ import re
 import uuid
 
 from . import catalog, link
-from .errors import CivitaiAuthError
+from .errors import CivitaiAuthError, CivitaiNodeError
 
 _log = logging.getLogger("civitai_comfy_nodes.server_routes")
 
@@ -278,6 +278,10 @@ def _link_pair(body: dict) -> dict:
     return link.pair(str((body or {}).get("code") or ""))
 
 
+def _link_pair_via_account(body: dict) -> dict:
+    return link.pair_via_oauth(name=str((body or {}).get("name") or ""))
+
+
 _AIR_IDS_RE = re.compile(r":civitai:(\d+)@(\d+)")
 
 
@@ -427,6 +431,16 @@ if _server is not None:
         try:
             payload = await loop.run_in_executor(None, lambda: _link_pair(body))
         except ValueError as e:
+            return web.json_response({"error": str(e)}, status=400)
+        return web.json_response(payload)
+
+    @_server.routes.post("/civitai/link/pair-account")
+    async def _civitai_link_pair_account(request):
+        body = await request.json() if request.can_read_body else {}
+        loop = asyncio.get_event_loop()
+        try:
+            payload = await loop.run_in_executor(None, lambda: _link_pair_via_account(body))
+        except (ValueError, CivitaiNodeError) as e:
             return web.json_response({"error": str(e)}, status=400)
         return web.json_response(payload)
 

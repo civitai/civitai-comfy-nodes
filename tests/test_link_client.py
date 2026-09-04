@@ -164,7 +164,7 @@ def test_upgrade_key_is_persisted_activated_and_private(env, tmp_path):
     client._bind(fake)
     fake.handlers["upgradeKey"]({"key": "f" * 128})
     stored = config.load_link_key()
-    assert stored == {"key": "f" * 128, "activated": True, "paired_at": stored["paired_at"]}
+    assert stored == {"key": "f" * 128, "activated": True, "instance_id": None, "paired_at": stored["paired_at"]}
     assert stat.S_IMODE(os.stat(tmp_path / "link.json").st_mode) == 0o600
     assert client.status()["keyHint"] == "ffff" and client.status()["activated"]
 
@@ -547,14 +547,164 @@ class FakeLinkClient:
 
 
 @pytest.fixture()
-def singleton(env, monkeypatch):
+def singleton(env, monkeypatch, tmp_path):
     FakeLinkClient.instances.clear()
     monkeypatch.setattr(link, "LinkClient", FakeLinkClient)
     monkeypatch.setattr(link, "HAVE_SOCKETIO", True)
     monkeypatch.setattr(link, "_client", None)
     monkeypatch.setattr(link, "_registered", False)
+    monkeypatch.setenv("CIVITAI_COMFY_INSTALL_ID_STORE", str(tmp_path / "install-id"))
+    monkeypatch.setenv("CIVITAI_COMFY_OAUTH_STORE", str(tmp_path / "oauth.json"))
+    monkeypatch.setattr(link, "PAIR_RETRY_DELAYS", (0.0,))
     yield
     link._client = None
+
+
+class FakeResponse:
+    def __init__(self, status_code, payload=None, text=""):
+        self.status_code = status_code
+        self._payload = payload
+        self.text = text
+
+    def json(self):
+        if self._payload is None:
+            raise ValueError("no json")
+        return self._payload
+
+
+@pytest.fixture()
+def account(singleton, monkeypatch):
+    """Stored OAuth login that already carries LinkConnect, plus a scripted link-service."""
+    from civitai_comfy_nodes import oauth
+
+    calls = []
+    responses = []
+
+    def post(url, json=None, headers=None, timeout=None):
+        calls.append({"method": "POST", "url": url, "json": json, "headers": headers})
+        return responses.pop(0)
+
+    def delete(url, params=None, headers=None, timeout=None):
+        calls.append({"method": "DELETE", "url": url, "params": params, "headers": headers})
+        return FakeResponse(200, {"success": True})
+
+    monkeypatch.setattr(link.requests, "post", post)
+    monkeypatch.setattr(link.requests, "delete", delete)
+    monkeypatch.setattr(link.oauth, "interactive_login", lambda scope=None: pytest.fail("unexpected browser login"))
+    oauth._save_tokens(
+        {
+            "access_token": "civitai_tok",
+            "refresh_token": "r",
+            "expires_at": time.time() + 3600,
+            "scope": oauth.LINK_SCOPE,
+        }
+    )
+    return calls, responses
+
+
+def test_pair_via_account_exchanges_the_token_for_a_full_key(account):
+    calls, responses = account
+    responses.append(FakeResponse(200, {"id": 834, "key": "A" * 128, "name": "ComfyUI (box)"}))
+    status = link.pair_via_oauth(name="ComfyUI (box)")
+    sent = calls[0]
+    assert sent["url"] == "https://link.civitai.com/api/link/self"
+    assert sent["headers"] == {"Authorization": "Bearer civitai_tok"}
+    assert sent["json"] == {"installId": config.install_id(), "name": "ComfyUI (box)"}  # no legacyKey: never paired
+    stored = config.load_link_key()
+    assert stored["key"] == "a" * 128 and stored["activated"] is True and stored["instance_id"] == 834
+    assert FakeLinkClient.instances[-1].kwargs["key"] == "a" * 128 and FakeLinkClient.instances[-1].started
+    assert status["paired"] and status["viaAccount"] and status["activated"]
+    # Re-pairing reuses the persisted install id, which is what keeps the instance count flat.
+    responses.append(FakeResponse(200, {"id": 834, "key": "b" * 128, "name": "ComfyUI (box)"}))
+    link.pair_via_oauth()
+    assert calls[1]["json"]["installId"] == sent["json"]["installId"]
+    assert "legacyKey" not in calls[1]["json"]
+
+
+def test_pair_via_account_adopts_a_code_pairing(account):
+    calls, responses = account
+    config.save_link_key("a1b2c3", activated=False)
+    responses.append(FakeResponse(200, {"id": 12, "key": "c" * 128, "name": None}))
+    link.pair_via_oauth()
+    assert calls[0]["json"]["legacyKey"] == "a1b2c3"
+    assert config.load_link_key()["instance_id"] == 12
+    config.save_link_key("d" * 128, activated=True)  # upgraded by the socket, still no instance id
+    responses.append(FakeResponse(200, {"id": 12, "key": "e" * 128, "name": None}))
+    link.pair_via_oauth()
+    assert calls[1]["json"]["legacyKey"] == "d" * 128
+
+
+def test_pair_via_account_signs_in_when_the_login_lacks_link_scope(account, monkeypatch):
+    from civitai_comfy_nodes import oauth
+
+    calls, responses = account
+    oauth._save_tokens({"access_token": "old", "refresh_token": "r", "expires_at": time.time() + 3600, "scope": 114689})
+    requested = []
+
+    def login(scope=None):
+        requested.append(scope)
+        oauth._save_tokens({"access_token": "fresh", "expires_at": time.time() + 3600, "scope": oauth.LINK_SCOPE})
+        return "fresh"
+
+    monkeypatch.setattr(link.oauth, "interactive_login", login)
+    responses.append(FakeResponse(200, {"id": 1, "key": "f" * 128, "name": "x"}))
+    link.pair_via_oauth()
+    assert requested == [oauth.LINK_SCOPE]
+    assert calls[0]["headers"]["Authorization"] == "Bearer fresh"
+    # No stored login at all takes the same path.
+    oauth.clear_tokens()
+    responses.append(FakeResponse(200, {"id": 1, "key": "f" * 128, "name": "x"}))
+    link.pair_via_oauth()
+    assert requested == [oauth.LINK_SCOPE, oauth.LINK_SCOPE]
+
+
+def test_pair_via_account_401_drops_the_login(account):
+    from civitai_comfy_nodes import oauth
+
+    calls, responses = account
+    responses.append(FakeResponse(401, {"error": "unauthorized"}))
+    with pytest.raises(ValueError, match="sign in afresh"):
+        link.pair_via_oauth()
+    assert oauth.get_valid_access_token() is None
+    assert config.load_link_key() is None and FakeLinkClient.instances == []
+
+
+def test_pair_via_account_reports_the_instance_limit_without_retrying(account):
+    calls, responses = account
+    responses.append(FakeResponse(400, {"error": "Instance limit reached"}))
+    with pytest.raises(ValueError, match="instance limit"):
+        link.pair_via_oauth()
+    assert len(calls) == 1
+
+
+def test_pair_via_account_retries_503_then_gives_up(account):
+    calls, responses = account
+    responses.extend([FakeResponse(503, {"error": "hub_unavailable"}), FakeResponse(503, {"error": "hub_unavailable"})])
+    with pytest.raises(ValueError, match="temporarily unavailable"):
+        link.pair_via_oauth()
+    assert len(calls) == 2
+    responses.extend(
+        [FakeResponse(503, {"error": "hub_unavailable"}), FakeResponse(200, {"id": 2, "key": "9" * 128, "name": "x"})]
+    )
+    assert link.pair_via_oauth()["paired"]
+
+
+def test_pair_via_account_respects_disabled(account):
+    config.save_pack_settings({"enableLink": False})
+    with pytest.raises(ValueError, match="disabled"):
+        link.pair_via_oauth()
+
+
+def test_unpair_removes_an_account_instance_on_the_site_only(account):
+    calls, responses = account
+    config.save_link_key("a1b2c3", activated=False)
+    link.unpair()
+    assert calls == []  # a code pairing has no instance id to delete
+    responses.append(FakeResponse(200, {"id": 7, "key": "1" * 128, "name": "x"}))
+    link.pair_via_oauth()
+    assert link.unpair()["paired"] is False
+    assert calls[-1]["method"] == "DELETE" and calls[-1]["params"] == {"id": 7}
+    assert calls[-1]["url"] == "https://link.civitai.com/api/link"
 
 
 def test_pair_validates_saves_and_starts_a_client(singleton):

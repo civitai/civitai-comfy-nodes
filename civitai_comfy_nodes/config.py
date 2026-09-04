@@ -90,6 +90,7 @@ def save_pack_settings(data: dict) -> None:
     except OSError:
         pass
 
+
 def stored_enable_link() -> bool:
     return bool(load_pack_settings().get("enableLink", True))
 
@@ -111,7 +112,8 @@ def link_key_store_path() -> Path:
 
 
 def load_link_key() -> dict | None:
-    """The persisted Civitai Link pairing: ``{"key", "activated", "paired_at"}`` or None."""
+    """The persisted Civitai Link pairing: ``{"key", "activated", "instance_id", "paired_at"}`` or None.
+    ``instance_id`` is set only for pairings made through the account (OAuth) flow."""
     try:
         data = json.loads(link_key_store_path().read_text())
     except (FileNotFoundError, json.JSONDecodeError, OSError):
@@ -119,15 +121,50 @@ def load_link_key() -> dict | None:
     key = (data.get("key") or "").strip() if isinstance(data, dict) else ""
     if not key:
         return None
-    return {"key": key, "activated": bool(data.get("activated")), "paired_at": data.get("paired_at")}
+    return {
+        "key": key,
+        "activated": bool(data.get("activated")),
+        "instance_id": data.get("instance_id"),
+        "paired_at": data.get("paired_at"),
+    }
 
 
-def save_link_key(key: str, *, activated: bool) -> None:
+def save_link_key(key: str, *, activated: bool, instance_id: int | None = None) -> None:
     path = link_key_store_path()
     path.parent.mkdir(parents=True, exist_ok=True)
-    record = {"key": key, "activated": activated, "paired_at": datetime.now(timezone.utc).isoformat()}
+    record = {
+        "key": key,
+        "activated": activated,
+        "instance_id": instance_id,
+        "paired_at": datetime.now(timezone.utc).isoformat(),
+    }
     path.write_text(json.dumps(record))
     path.chmod(0o600)
+
+
+def install_id_store_path() -> Path:
+    override = os.environ.get("CIVITAI_COMFY_INSTALL_ID_STORE")
+    if override:
+        return Path(override)
+    return Path.home() / ".civitai" / "comfy-install-id"
+
+
+def install_id() -> str:
+    """A UUID v4 identifying this install to link-service, generated once and kept across unpair and
+    logout: re-pairing with the same id re-keys the same instance instead of adding one towards the
+    per-user instance limit."""
+    path = install_id_store_path()
+    try:
+        candidate = uuid.UUID(path.read_text().strip())
+        if candidate.version == 4:
+            return str(candidate)
+    except (FileNotFoundError, OSError, ValueError):
+        pass
+    fresh = str(uuid.uuid4())
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(fresh)
+    path.chmod(0o600)
+    return fresh
 
 
 def clear_link_key() -> None:
@@ -135,6 +172,7 @@ def clear_link_key() -> None:
         link_key_store_path().unlink()
     except FileNotFoundError:
         pass
+
 
 _NO_CREDS_MESSAGE = (
     "No Civitai credentials. Set the CIVITAI_API_TOKEN environment variable to a token from "

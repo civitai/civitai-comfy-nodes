@@ -136,14 +136,21 @@ the matching ComfyUI folder (`models/loras`, `models/checkpoints`, `models/diffu
 verifies its SHA256, and refreshes the model lists. The site also sees which models you already have,
 and the Model Library shows a Civitai icon next to every model it recognises (click to open it).
 
-1. On civitai.com open **Civitai Link** (the link icon in the header), add an instance and copy its
-   6-character code.
-2. In ComfyUI open the **Civitai** sidebar tab and paste the code into the **Civitai Link** panel.
+Open the **Civitai** sidebar tab and click **Pair with your Civitai account** in the **Civitai Link**
+panel. A browser opens on the machine running ComfyUI; approve the sign-in and the pairing completes
+by itself. The instance shows up under Civitai Link on civitai.com, where it can be renamed or revoked.
 
-The pairing is stored in `~/.civitai/comfy-link.json` and reconnects automatically after restarts.
-Removing a model from the site's Link panel deletes the file locally. Toggle the feature under
-**Settings › Civitai › Civitai Link**; a `CIVITAI_LINK_URL` env var (or the settings entry) points
-at a different relay. Link stays off in hosted comfy-cloud sessions.
+If ComfyUI runs on another machine (the browser can't reach it), use a pairing code instead: on
+civitai.com open **Civitai Link** (the link icon in the header), add an instance, copy its 6-character
+code and paste it into the panel. A code pairing can be switched to the account pairing later from the
+same panel.
+
+The pairing is stored in `~/.civitai/comfy-link.json` and reconnects automatically after restarts;
+`~/.civitai/comfy-install-id` identifies this install so re-pairing replaces the same instance instead
+of adding one (civitai.com allows ten per account). Removing a model from the site's Link panel deletes
+the file locally. Toggle the feature under **Settings › Civitai › Civitai Link**; a `CIVITAI_LINK_URL`
+env var (or the settings entry) points at a different relay. Link stays off in hosted comfy-cloud
+sessions.
 
 ## Development
 

@@ -67,6 +67,32 @@ def test_failed_refresh_returns_none(token_store, monkeypatch):
     assert oauth.get_valid_access_token() is None
 
 
+def test_link_scope_adds_only_the_link_connect_bit():
+    assert oauth.LINK_CONNECT == 134217728 and oauth.LINK_SCOPE == 134332417
+    assert oauth.has_scope(oauth.LINK_SCOPE, oauth.LINK_CONNECT)
+    assert not oauth.has_scope(oauth.SCOPE, oauth.LINK_CONNECT)
+    assert not oauth.has_scope(None, oauth.LINK_CONNECT)
+
+
+def test_stored_scope_reads_number_or_string_and_tolerates_absence(token_store):
+    assert oauth.stored_scope() is None
+    token_store.write_text(json.dumps({"access_token": "a", "expires_at": 0, "scope": "114689"}))
+    assert oauth.stored_scope() == 114689
+    token_store.write_text(json.dumps({"access_token": "a", "expires_at": 0, "scope": 134332417}))
+    assert oauth.stored_scope() == 134332417
+    token_store.write_text(json.dumps({"access_token": "a", "expires_at": 0}))
+    assert oauth.stored_scope() is None
+
+
+def test_clear_tokens_leaves_the_api_key_alone(token_store, tmp_path, monkeypatch):
+    monkeypatch.setenv("CIVITAI_COMFY_API_KEY_STORE", str(tmp_path / "api-key"))
+    oauth.save_api_key("civitai_key")
+    token_store.write_text("{}")
+    oauth.clear_tokens()
+    oauth.clear_tokens()
+    assert not token_store.exists() and oauth.stored_api_key() == "civitai_key"
+
+
 def test_store_permissions(token_store, monkeypatch):
     oauth._save_tokens({"access_token": "x"})
     assert oauth.token_store_path().stat().st_mode & 0o777 == 0o600

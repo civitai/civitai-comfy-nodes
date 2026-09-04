@@ -22,9 +22,15 @@ import requests
 from . import comfy_compat
 from .errors import CivitaiNodeError
 
-OAUTH_BASE = os.environ.get("CIVITAI_OAUTH_BASE", "https://civitai.com")
+# The hub serves the OAuth endpoints; civitai.com only 308-redirects to it.
+OAUTH_BASE = os.environ.get("CIVITAI_OAUTH_BASE", "https://auth.civitai.com")
 # UserRead | AIServicesRead | AIServicesWrite | BuzzRead = 1 + 16384 + 32768 + 65536
 SCOPE = 114689
+# Opt-in bit above TokenScope.Full; link-service requires it on the token that pairs a Civitai Link
+# instance. Requested only when pairing Link, so a client whose allowedScopes lacks it (the hub
+# answers invalid_scope for any scope wider than the client's ceiling) still signs in for everything else.
+LINK_CONNECT = 1 << 27
+LINK_SCOPE = SCOPE | LINK_CONNECT
 # Registered for the official "Civitai ComfyUI Nodes" OAuth app; override for your own app.
 CLIENT_ID = os.environ.get("CIVITAI_OAUTH_CLIENT_ID", "2d61872c-9aa9-4dbc-93c3-899c222842c1")
 # Loopback callback ports the client tries, in order. EVERY one must be a registered redirect URI
@@ -106,11 +112,35 @@ def save_api_key(key: str) -> None:
 
 def clear_credentials() -> None:
     """Remove the stored manual API key and OAuth tokens (the sidebar 'disconnect')."""
-    for path in (api_key_store_path(), token_store_path()):
-        try:
-            path.unlink()
-        except FileNotFoundError:
-            pass
+    clear_api_key()
+    clear_tokens()
+
+
+def clear_api_key() -> None:
+    try:
+        api_key_store_path().unlink()
+    except FileNotFoundError:
+        pass
+
+
+def clear_tokens() -> None:
+    try:
+        token_store_path().unlink()
+    except FileNotFoundError:
+        pass
+
+
+def stored_scope() -> int | None:
+    """The scope bitmask of the stored OAuth login, or None when unknown."""
+    tokens = _load_tokens()
+    try:
+        return int((tokens or {}).get("scope"))
+    except (TypeError, ValueError):
+        return None
+
+
+def has_scope(scope: int | None, required: int) -> bool:
+    return scope is not None and (scope & required) == required
 
 
 def _store_token_response(payload: dict) -> dict:
@@ -227,7 +257,7 @@ class _CallbackHandler(http.server.BaseHTTPRequestHandler):
         pass
 
 
-def interactive_login() -> str:
+def interactive_login(scope: int = SCOPE) -> str:
     """Run the loopback PKCE flow: open a browser, capture the code, exchange and store tokens."""
     if not CLIENT_ID:
         raise CivitaiNodeError(
@@ -249,7 +279,7 @@ def interactive_login() -> str:
             "response_type": "code",
             "client_id": CLIENT_ID,
             "redirect_uri": redirect_uri,
-            "scope": SCOPE,
+            "scope": scope,
             "state": state,
             "code_challenge": challenge,
             "code_challenge_method": "S256",

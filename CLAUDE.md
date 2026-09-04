@@ -69,10 +69,13 @@ converts blob outputs to native Comfy types.
   like openai gpt-image-1/1.5/2 — where they ARE identical — stay one node with a dropdown.
   `engine` never collapses. When a collapsed group splits a fixed path (e.g. fal/qwen2
   create-ops vs edit-ops) the node is disambiguated by the group's lead operation.
-- OAuth: PKCE at `civitai.com/api/auth/oauth/*`, `scope` is a decimal bitmask
-  (114689 = UserRead|AIServicesRead|AIServicesWrite|BuzzRead), access 1h / refresh 30d.
-  Interactive login needs `CIVITAI_OAUTH_CLIENT_ID` (registered app with
-  `http://localhost:18188/civitai/callback` as redirect URI).
+- OAuth: PKCE at `auth.civitai.com/api/auth/oauth/*` (civitai.com only 308-redirects there),
+  `scope` is a decimal bitmask (114689 = UserRead|AIServicesRead|AIServicesWrite|BuzzRead),
+  access 1h / refresh 30d. The hub answers `invalid_scope` to any request wider than the client's
+  `allowedScopes`, so `LinkConnect` (bit 27, above `TokenScope.Full`) is requested only by Link
+  pairing (`LINK_SCOPE` = 134332417), never by the plain sign-in. Refresh never widens a token's
+  scope; only a fresh consent does. Interactive login needs `CIVITAI_OAUTH_CLIENT_ID` (registered
+  app with every port in `DEFAULT_PORTS` as `http://localhost:<port>/civitai/callback`).
 
 ## Load-bearing Civitai Link facts (verified against link-service + civitai `shared-types.ts`)
 
@@ -80,6 +83,14 @@ converts blob outputs to native Comfy types.
   (reconnects re-fire the `connect` handler); `commandStatus` sent before the join ack is dropped.
 - `upgradeKey` replaces the 6-char pairing code with a 128-hex key and the code stops working —
   persist it immediately. `kicked` means the instance was deleted: drop the key, don't rejoin.
+- Account pairing = `POST {link_url}/api/link/self` with the OAuth bearer (link-service introspects
+  it at the hub and requires the LinkConnect bit; an API key is not accepted). Body `installId`
+  (UUID v4, persisted in `~/.civitai/comfy-install-id`, stable across unpair/logout so re-pairing
+  re-keys the same instance) + optional `name` + optional `legacyKey` (the key of a code pairing,
+  6 or 128 chars, so link-service adopts that row instead of creating a second one). The key it
+  returns is already 128 chars and activated, so `upgradeKey` never fires for it. 401 is both "bad
+  token" and "token lacks LinkConnect" (deliberately indistinguishable) → drop the login and sign
+  in again; 400 = instance limit (10/user), don't retry; 503 = hub unreachable, retry.
 - python-socketio runs handlers, acks and callbacks on its read-loop thread: never `sio.call()`
   or block in a handler; every command runs on its own thread.
 - `resources:add` carries the SHA256 **uppercase**; `resources:list` must report it **lowercase**

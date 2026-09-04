@@ -9,6 +9,21 @@ The section matching the `pyproject.toml` version is published to the Comfy Regi
 [`.github/workflows/publish.yml`](.github/workflows/publish.yml). Add a new `## [x.y.z]`
 section at the top before bumping the version.
 
+## [0.6.0] - 2026-09-04
+
+### Added
+- Civitai Link pairs through your Civitai account: **Pair with your Civitai account** in the sidebar
+  runs the browser sign-in (asking for the Link permission) and registers this ComfyUI as a Link
+  instance — no code to copy, and the instance is revocable from civitai.com. A stable install id
+  makes re-pairing replace the same instance rather than adding one. Existing code pairings keep
+  working and can be switched to the account pairing from the panel; the instance they hold is
+  adopted, not duplicated. The pairing code stays available for ComfyUI installs the browser can't
+  reach.
+- Unpairing an account-paired instance also removes it on civitai.com.
+
+### Changed
+- OAuth sign-in talks to `auth.civitai.com` directly instead of via civitai.com's redirect.
+
 ## [0.5.2] - 2026-08-28
 
 ### Fixed
