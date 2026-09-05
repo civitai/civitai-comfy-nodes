@@ -22,11 +22,18 @@ import requests
 from . import comfy_compat
 from .errors import CivitaiNodeError
 
-OAUTH_BASE = os.environ.get("CIVITAI_OAUTH_BASE", "https://civitai.com")
+# The hub serves the OAuth endpoints; civitai.com only 308-redirects to it.
+OAUTH_BASE = os.environ.get("CIVITAI_OAUTH_BASE", "https://auth.civitai.com")
 # UserRead | AIServicesRead | AIServicesWrite | BuzzRead = 1 + 16384 + 32768 + 65536
 SCOPE = 114689
-# Registered for the official "Civitai ComfyUI Nodes" OAuth app; override for your own app.
-CLIENT_ID = os.environ.get("CIVITAI_OAUTH_CLIENT_ID", "2d61872c-9aa9-4dbc-93c3-899c222842c1")
+# Opt-in bit above TokenScope.Full; link-service requires it on the token that pairs a Civitai Link
+# instance. The official client grants it; a custom client set up through the app-settings UI cannot,
+# and the hub answers invalid_scope to any request wider than the client's ceiling.
+LINK_CONNECT = 1 << 27
+LINK_SCOPE = SCOPE | LINK_CONNECT
+# Registered for the official "Civitai ComfyNodes" OAuth app; override for your own app.
+OFFICIAL_CLIENT_ID = "2d61872c-9aa9-4dbc-93c3-899c222842c1"
+CLIENT_ID = os.environ.get("CIVITAI_OAUTH_CLIENT_ID", OFFICIAL_CLIENT_ID)
 # Loopback callback ports the client tries, in order. EVERY one must be a registered redirect URI
 # on the OAuth app. They're spread across the range so a Windows reserved block (excluded port
 # range, the cause of WinError 10013) is very unlikely to cover them all. Override with
@@ -106,11 +113,38 @@ def save_api_key(key: str) -> None:
 
 def clear_credentials() -> None:
     """Remove the stored manual API key and OAuth tokens (the sidebar 'disconnect')."""
-    for path in (api_key_store_path(), token_store_path()):
-        try:
-            path.unlink()
-        except FileNotFoundError:
-            pass
+    clear_api_key()
+    clear_tokens()
+
+
+def clear_api_key() -> None:
+    try:
+        api_key_store_path().unlink()
+    except FileNotFoundError:
+        pass
+
+
+def clear_tokens() -> None:
+    try:
+        token_store_path().unlink()
+    except FileNotFoundError:
+        pass
+
+
+def stored_scope() -> int | None:
+    """The scope bitmask of the stored OAuth login, or None when unknown. The token response carries
+    it as a number, a decimal string, or a one-element list of either, depending on the hub build."""
+    scope = (_load_tokens() or {}).get("scope")
+    if isinstance(scope, list):
+        scope = scope[0] if len(scope) == 1 else None
+    try:
+        return int(scope)
+    except (TypeError, ValueError):
+        return None
+
+
+def has_scope(scope: int | None, required: int) -> bool:
+    return scope is not None and (scope & required) == required
 
 
 def _store_token_response(payload: dict) -> dict:
@@ -227,8 +261,14 @@ class _CallbackHandler(http.server.BaseHTTPRequestHandler):
         pass
 
 
-def interactive_login() -> str:
+def login_scope() -> int:
+    return LINK_SCOPE if CLIENT_ID == OFFICIAL_CLIENT_ID else SCOPE
+
+
+def interactive_login(scope: int | None = None) -> str:
     """Run the loopback PKCE flow: open a browser, capture the code, exchange and store tokens."""
+    if scope is None:
+        scope = login_scope()
     if not CLIENT_ID:
         raise CivitaiNodeError(
             "No Civitai OAuth client id configured. Either set the CIVITAI_API_TOKEN environment variable "
@@ -249,7 +289,7 @@ def interactive_login() -> str:
             "response_type": "code",
             "client_id": CLIENT_ID,
             "redirect_uri": redirect_uri,
-            "scope": SCOPE,
+            "scope": scope,
             "state": state,
             "code_challenge": challenge,
             "code_challenge_method": "S256",

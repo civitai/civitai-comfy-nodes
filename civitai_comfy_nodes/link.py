@@ -5,11 +5,14 @@ package still imports and Link reports itself unavailable."""
 
 import logging
 import os
+import platform
 import threading
 import time
 import uuid
 
-from . import config, local_models, model_cache, model_resolve
+import requests
+
+from . import config, local_models, model_cache, model_resolve, oauth
 from . import link_protocol as proto
 
 try:
@@ -29,6 +32,8 @@ CONNECT_BACKOFF_MAX = 60.0
 LIST_PUSH_EVERY = 25
 STATUS_EVENT = "civitai.link.status"
 ACTIVITY_EVENT = "civitai.link.activity"
+PAIR_HTTP_TIMEOUT = 30
+PAIR_RETRY_DELAYS = (2.0, 4.0)
 
 
 def _default_sio():
@@ -202,7 +207,7 @@ class LinkClient:
         self.joined = False
         self.room_ready = False
         config.clear_link_key()
-        self.last_error = "civitai.com rejected this pairing — generate a new code and pair again"
+        self.last_error = "civitai.com removed this pairing — pair again"
         self._wake.set()
         self._changed()
 
@@ -576,13 +581,122 @@ def pair(code: str) -> dict:
     return status()
 
 
+def _link_access_token(*, login: bool) -> str | None:
+    """A stored OAuth access token carrying LinkConnect; with ``login`` a browser sign-in requesting
+    that scope replaces a missing or too-narrow login (tokens issued before the scope existed keep
+    their old mask through refresh, so only a fresh consent widens them)."""
+    token = oauth.get_valid_access_token()
+    if token and oauth.has_scope(oauth.stored_scope(), oauth.LINK_CONNECT):
+        return token
+    if not login:
+        return None
+    return oauth.interactive_login(scope=oauth.LINK_SCOPE)
+
+
+def _default_instance_name() -> str:
+    host = (platform.node() or "").strip()
+    return f"ComfyUI ({host})" if host else "ComfyUI"
+
+
+def _post_self(token: str, body: dict) -> requests.Response:
+    """POST /api/link/self, retrying the transient cases (hub unreachable → 503, connection errors)."""
+    url = f"{config.link_url()}/api/link/self"
+    delays = list(PAIR_RETRY_DELAYS)
+    while True:
+        try:
+            response = requests.post(
+                url, json=body, headers={"Authorization": f"Bearer {token}"}, timeout=PAIR_HTTP_TIMEOUT
+            )
+            if response.status_code != 503:
+                return response
+            last_error = "civitai.com's sign-in service is temporarily unavailable"
+        except requests.RequestException as e:
+            last_error = f"Cannot reach {config.link_url()}: {e}"
+        if not delays:
+            raise ValueError(f"{last_error} — try again in a minute")
+        time.sleep(delays.pop(0))
+
+
+def pair_via_oauth(name: str | None = None, *, login: bool = True) -> dict:
+    """Pair through the user's Civitai account: sign in (browser) if needed, then exchange the access
+    token for an instance key. The persisted install id makes re-pairing re-key the same instance; a
+    pairing made earlier with a code is sent as ``legacyKey`` so its instance is adopted, not duplicated."""
+    reason = disabled_reason()
+    if reason:
+        raise ValueError(f"Civitai Link is {reason}")
+    token = _link_access_token(login=login)
+    if not token:
+        raise ValueError("Sign in to Civitai first")
+    stored = config.load_link_key()
+    body = {"installId": config.install_id(), "name": (name or "").strip() or _default_instance_name()}
+    if stored and not stored.get("instance_id"):
+        body["legacyKey"] = stored["key"]
+    response = _post_self(token, body)
+    if response.status_code == 200:
+        data = response.json()
+        key = proto.normalize_key(data.get("key"))
+        config.save_link_key(key, activated=True, instance_id=data.get("id"))
+        _log.info("Civitai Link paired instance %s via account", data.get("id"))
+        reconfigure()
+        return status()
+    _log.warning("Civitai Link pairing refused: HTTP %s %s", response.status_code, response.text[:300])
+    if response.status_code == 401:
+        # Also what a token minted before the client could grant LinkConnect gets; a fresh sign-in
+        # is the only fix for both, so drop the login and let the next attempt run one.
+        oauth.clear_tokens()
+        raise ValueError(
+            "civitai.com did not accept this sign-in for Civitai Link — click Pair again to sign in afresh"
+        )
+    try:
+        detail = (response.json() or {}).get("error")
+    except ValueError:
+        detail = None
+    if response.status_code == 400:
+        raise ValueError(
+            "Civitai Link instance limit reached — remove an instance on civitai.com and try again"
+            if "limit" in str(detail or "").lower()
+            else f"civitai.com rejected the pairing: {detail or response.text}"
+        )
+    raise ValueError(f"Civitai Link pairing failed ({response.status_code}): {detail or response.text}")
+
+
+def pair_after_login() -> None:
+    """Best-effort pairing right after an account sign-in, so one sign-in sets up both the pack and
+    Link. Never opens a second browser flow and never fails the sign-in."""
+    if disabled_reason() or config.load_link_key():
+        return
+    try:
+        pair_via_oauth(login=False)
+    except Exception as e:
+        _log.warning("Civitai Link did not pair after sign-in: %s", e)
+
+
+def _delete_remote_instance(instance_id: int) -> None:
+    token = _link_access_token(login=False)
+    if not token:
+        return
+    try:
+        response = requests.delete(
+            f"{config.link_url()}/api/link",
+            params={"id": instance_id},
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=PAIR_HTTP_TIMEOUT,
+        )
+        _log.info("Civitai Link instance %s removed on the site: HTTP %s", instance_id, response.status_code)
+    except requests.RequestException:
+        _log.debug("Could not remove Civitai Link instance %s on the site", instance_id, exc_info=True)
+
+
 def unpair() -> dict:
     global _client
     with _lock:
         client, _client = _client, None
     if client is not None:
         client.leave()
+    stored = config.load_link_key()
     config.clear_link_key()
+    if stored and stored.get("instance_id") is not None:
+        _delete_remote_instance(stored["instance_id"])
     return status()
 
 
@@ -602,6 +716,8 @@ def status() -> dict:
         "disabledReason": disabled_reason(),
         "paired": bool(stored),
         "activated": bool(stored and stored["activated"]),
+        "viaAccount": bool(stored and stored.get("instance_id") is not None),
+        "auth": config.auth_state()[1],
         "keyHint": stored["key"][-4:] if stored else "",
         "url": config.link_url(),
         "urlSource": "env"

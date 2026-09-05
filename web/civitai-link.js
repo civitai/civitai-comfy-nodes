@@ -28,6 +28,11 @@ function injectStyles() {
     .cvl-hint { color: #a1a1aa; font-size: 12px; line-height: 1.4; }
     .cvl-hint a { color: #60a5fa; }
     .cvl-err { color: #f87171; font-size: 12px; }
+    .cvl-err.note { color: #a1a1aa; }
+    .cvl-link { background: none; border: none; padding: 0; color: #60a5fa; font: inherit; font-size: 12px; cursor: pointer; }
+    .cvl-link:hover { text-decoration: underline; }
+    .cvl-legacy { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #a1a1aa; }
+    .cvl-legacy .cvl-btn { padding: 3px 8px; font-size: 12px; }
     .cvl-act { display: flex; flex-direction: column; gap: 2px; }
     .cvl-item { display: flex; flex-direction: column; gap: 4px; font-size: 12px; padding: 5px 6px;
       border-radius: 6px; background: #1f1f23; }
@@ -193,6 +198,29 @@ function updateRailBadge(flash) {
   if (!/done|error/.test(badge.className)) badge.className = "cvl-rail-badge";
 }
 
+let showCodeEntry = false;
+
+function pairingMarkup(auth) {
+  const codeEntry = `
+        <div class="cvl-row"><input class="cvl-code" maxlength="6" placeholder="6-char code" autocomplete="off" spellcheck="false" />
+          <button class="cvl-btn cvl-pair">Pair</button></div>
+        <div class="cvl-hint">On civitai.com open <b>Civitai Link</b> (the link icon in the header), add an instance and paste its
+          code here. <a href="${LINK_HELP_URL}" target="_blank" rel="noopener">Account ↗</a></div>`;
+  const codeToggle = '<button class="cvl-link cvl-show-code">Use a pairing code instead</button>';
+  if (auth === "oauth")
+    return `
+        <div class="cvl-row"><button class="cvl-btn primary cvl-pair-account">Pair this ComfyUI</button></div>
+        <div class="cvl-hint">Adds this ComfyUI to Civitai Link on your account. Models you send from the site land in the
+          matching <code>models/</code> folder. ${showCodeEntry ? "" : codeToggle}</div>${showCodeEntry ? codeEntry : ""}`;
+  if (auth)
+    return `
+        <div class="cvl-hint">You're connected with an API key. Link pairs with your account — sign in below with
+          <b>Connect with Civitai</b> — or with a code:</div>${codeEntry}`;
+  return `
+        <div class="cvl-hint">Sign in below with <b>Connect with Civitai</b> and this ComfyUI pairs automatically.
+          ${showCodeEntry ? "" : '<button class="cvl-link cvl-show-code">ComfyUI runs on another machine? Use a pairing code</button>'}</div>${showCodeEntry ? codeEntry : ""}`;
+}
+
 function render() {
   if (!panelEl) return;
   if (isHostedSession() || (state && state.hosted)) {
@@ -202,40 +230,46 @@ function render() {
   injectStyles();
   const [tone, text] = statusLine();
   const paired = !!(state && state.paired);
+  const viaAccount = !!(state && state.viaAccount);
   const canPair = !!(state && state.available && state.enabled);
+  const auth = state?.auth || null;
   panelEl.innerHTML = `
     <div class="cvl-panel">
       <div class="cvl-head"><span class="cvl-dot ${tone}"></span><span class="cvl-title">Civitai Link</span>
         <span class="cvl-status" title="${esc(text)}">${esc(text)}</span>
         ${paired ? '<button class="cvl-btn cvl-unpair" title="Forget this pairing">Unpair</button>' : ""}
       </div>
-      ${!paired && canPair ? `
-        <div class="cvl-row"><input class="cvl-code" maxlength="6" placeholder="6-char code" autocomplete="off" spellcheck="false" />
-          <button class="cvl-btn primary cvl-pair">Pair</button></div>
-        <div class="cvl-hint">On civitai.com open <b>Civitai Link</b> (the link icon in the header), add an instance and paste its
-          code here. Models you send from the site land in the matching <code>models/</code> folder.
-          <a href="${LINK_HELP_URL}" target="_blank" rel="noopener">Account ↗</a></div>` : ""}
+      ${!paired && canPair ? pairingMarkup(auth) : ""}
+      ${paired && !viaAccount && canPair && auth === "oauth" ? `
+        <div class="cvl-legacy"><span>Paired with a code.</span>
+          <button class="cvl-btn cvl-pair-account" title="Tie this pairing to your account so it can be revoked from civitai.com">Switch to account pairing</button></div>` : ""}
       <div class="cvl-err"></div>
       ${activityMarkup()}
     </div>`;
   const err = panelEl.querySelector(".cvl-err");
   const pairBtn = panelEl.querySelector(".cvl-pair");
   const input = panelEl.querySelector(".cvl-code");
+  const accountBtn = panelEl.querySelector(".cvl-pair-account");
+  const applyPairResult = async (res) => {
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || res.status);
+    state = data;
+    render();
+  };
   const pair = async () => {
     const code = (input?.value || "").trim();
     if (!code) return;
     pairBtn.disabled = true;
+    err.className = "cvl-err";
     err.textContent = "";
     try {
-      const res = await fetch("/civitai/link/pair", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code }),
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error || res.status);
-      state = data;
-      render();
+      await applyPairResult(
+        await fetch("/civitai/link/pair", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code }),
+        })
+      );
     } catch (e) {
       err.textContent = String(e.message || e);
       pairBtn.disabled = false;
@@ -244,6 +278,24 @@ function render() {
   pairBtn?.addEventListener("click", pair);
   input?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") pair();
+  });
+  panelEl.querySelector(".cvl-show-code")?.addEventListener("click", () => {
+    showCodeEntry = true;
+    render();
+    panelEl.querySelector(".cvl-code")?.focus();
+  });
+  accountBtn?.addEventListener("click", async () => {
+    accountBtn.disabled = true;
+    err.className = "cvl-err note";
+    err.textContent = "Pairing… if a Civitai sign-in opens in your browser, approve it to continue.";
+    try {
+      await applyPairResult(await fetch("/civitai/link/pair-account", { method: "POST" }));
+      toast("success", "Civitai Link paired", "This ComfyUI is linked to your Civitai account.");
+    } catch (e) {
+      err.className = "cvl-err";
+      err.textContent = String(e.message || e);
+      accountBtn.disabled = false;
+    }
   });
   for (const btn of panelEl.querySelectorAll(".cvl-cancel")) {
     btn.addEventListener("click", async () => {
@@ -322,7 +374,11 @@ function handleActivity(r) {
   render();
 }
 
-window.civitaiLink = { renderPanel };
+async function refresh() {
+  if (panelEl) await renderPanel(panelEl);
+}
+
+window.civitaiLink = { renderPanel, refresh };
 
 app.registerExtension({
   name: "civitai.link",
