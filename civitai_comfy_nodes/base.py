@@ -258,8 +258,7 @@ class CivitaiRecipeNodeBase:
         progress = PROGRESS_BY_STATUS.get(status, 5)
         if status == "processing":
             steps = workflow.get("steps") or [{}]
-            rates = [j.get("estimatedProgressRate") or 0 for j in (steps[0].get("jobs") or [])]
-            progress += int(55 * max(rates, default=0))
+            progress += int(55 * (steps[0].get("estimatedProgressRate") or 0))
         bar.update_absolute(progress)
         return progress
 
@@ -291,13 +290,8 @@ class CivitaiRecipeNodeBase:
     @staticmethod
     def _preceding_jobs(workflow: dict):
         """How many jobs are ahead in the queue (queuePosition is an object, not a number)."""
-        jobs = ((workflow.get("steps") or [{}])[0].get("jobs")) or []
-        counts = [
-            j["queuePosition"]["precedingJobs"]
-            for j in jobs
-            if isinstance(j.get("queuePosition"), dict) and j["queuePosition"].get("precedingJobs") is not None
-        ]
-        return min(counts) if counts else None
+        position = ((workflow.get("steps") or [{}])[0].get("queuePosition")) or {}
+        return position.get("precedingJobs") if isinstance(position, dict) else None
 
     def _convert_outputs(self, client: OrchestrationClient, output: dict) -> list:
         results = []
